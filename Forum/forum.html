@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forum - Green.tn</title>
+    <link rel="stylesheet" href="../green.css">
+    <link rel="stylesheet" href="forum.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <!-- Header -->
+    <header>
+        <div class="logo-nav-container">
+            <div class="logo">
+                <img src="../image/ve.png" alt="Green.tn Logo">
+            </div>
+            <nav class="nav-left">
+                <ul>
+                    <li><a href="../green.html">Home</a></li>
+                    <li><a href="../green.html#a-nos-velos">Nos vélos</a></li>
+                    <li><a href="../green.html#a-propos-de-nous">À propos de nous</a></li>
+                    <li><a href="../green.html#pricing">Tarifs</a></li>
+                    <li><a href="../green.html#contact">Contact</a></li>
+                    <li><a href="forum.html" class="active">Forum</a></li>
+                </ul>
+            </nav>
+        </div>
+        <nav class="nav-right">
+            <ul>
+                <li><a href="#" class="login">Login</a></li>
+                <li><a href="#" class="signin">Signin</a></li>
+            </ul>
+        </nav>
+    </header>
+    <!-- Main Forum Content -->
+    <main class="forum-container">
+        <h1>Bienvenue sur le Forum</h1>
+
+        <!-- Question Bar -->
+        <div class="question-bar">
+            <input type="text" id="questionInput" placeholder="Posez votre question ici...">
+            <button onclick="addQuestion()">Poser</button>
+        </div>
+
+        <!-- Questions List -->
+        <div class="questions-list" id="questionsList">
+            <p>Aucune question pour l'instant. Soyez le premier à poser une question !</p>
+        </div>
+    </main>
+
+    <!-- Script -->
+    <script>
+        function addQuestion() {
+            let input = document.getElementById("questionInput");
+            let questionText = input.value.trim();
+
+            if (questionText !== "") {
+                let questionList = document.getElementById("questionsList");
+                let newQuestion = document.createElement("div");
+                newQuestion.classList.add("question");
+                newQuestion.innerHTML = `<p>${questionText}</p>`;
+
+                // Animation d'ajout de question
+                newQuestion.style.animation = "fadeIn 0.5s ease-out";
+                questionList.appendChild(newQuestion);
+                input.value = "";
+            }
+        }
+    </script>
+
+</body>
+</html>

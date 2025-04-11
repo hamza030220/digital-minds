@@ -1,0 +1,95 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: #2e7d32;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.admin-container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.admin-container h2 {
+    margin-bottom: 20px;
+    color: #2e7d32;
+    font-size: 22px;
+}
+
+.question-admin {
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.question-admin p {
+    margin: 5px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.admin-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+.admin-actions button {
+    padding: 6px 12px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+button.reply {
+    background-color: #3498db;
+    color: white;
+}
+
+button.delete {
+    background-color: #e74c3c;
+    color: white;
+}
+
+button.report {
+    background-color: #f39c12;
+    color: white;
+}
+
+.admin-actions button:hover {
+    opacity: 0.9;
+    transform: scale(1.03);
+}
+
+.back-to-forum {
+    display: inline-block;
+    margin-top: 10px;
+    color: #fff;
+    background-color: #3498db;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.back-to-forum:hover {
+    background-color: #2980b9;
+}

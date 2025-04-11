@@ -1,0 +1,373 @@
+/* Body & Font */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #60BA97;
+    margin: 0;
+    padding: 0;
+}
+
+/* Header */
+
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    background: linear-gradient(135deg, #F9F5E8 0%, #e0dccf 100%);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 40px;
+    border-bottom: 3px solid #2e7d32;
+    transition: all 0.3s ease;
+    margin-bottom: 30px;
+}
+
+.logo-nav-container {
+    display: flex;
+    align-items: center;
+    width: 75%; /* Control the width of the logo and left navigation */
+}
+
+.logo img {
+    width: 200px;
+    height: auto;
+    margin-right: 30px;
+    transition: transform 0.3s ease;
+    transform: scale(1.1);
+}
+
+.logo img:hover {
+    transform: scale(1.15);
+}
+
+.nav-left ul {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-left ul li a {
+    text-decoration: none;
+    color: #2e7d32;
+    font-weight: 600;
+    font-family: "Bauhaus 93", Arial, sans-serif;
+    position: relative;
+    padding: 8px 0;
+    transition: color 0.3s ease;
+    font-size: 18px;
+}
+
+.nav-left ul li a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: #2e7d32;
+    transition: width 0.3s ease;
+}
+
+.nav-left ul li a:hover::after {
+    width: 100%;
+}
+
+.nav-left ul li a.active {
+    font-weight: 700;
+}
+
+.nav-left ul li a.active::after {
+    width: 100%;
+}
+
+.nav-right {
+    width: 25%; /* Control the width of the right navigation */
+    display: flex;
+    justify-content: flex-end; /* Position the nav-right container content to the right */
+    margin-left: auto; /* This ensures it stays at the far right */
+}
+
+.nav-right ul {
+    list-style: none;
+    display: flex; /* Affiche les éléments en ligne */
+    align-items: center; /* Aligne verticalement */
+    justify-content: flex-end; /* Aligne les éléments à droite */
+    gap: 15px; /* Ajoute un espacement uniforme entre les boutons */
+    margin: 0;
+    padding: 0;
+}
+
+nav ul li a.admin-link,
+nav ul li a.login,
+nav ul li a.signin {
+    color: #fff; /* Texte blanc */
+    background: linear-gradient(to right, #2e7d32, #219150);
+    border: 1px solid #2e7d32; /* Bordure assortie */
+    padding: 8px 16px; /* Increased padding */
+    border-radius: 8px; /* Coins arrondis */
+    font-family: "Arial", sans-serif; /* Police moderne */
+    font-size: 16px; /* Taille de police */
+    font-weight: bold; /* Texte en gras */
+    text-decoration: none; /* Supprime le soulignement */
+    transition: all 0.3s ease; /* Animation fluide */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    letter-spacing: 0.5px;
+    display: inline-block; /* Ensures consistent button sizing */
+    min-width: 65px; /* Added back with larger value */
+    text-align: center; /* Center text in buttons */
+    margin: 0 5px; /* Consistent margin */
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+nav ul li a.admin-link:hover,
+nav ul li a.login:hover,
+nav ul li a.signin:hover {
+    background-color: #219150; /* Couleur plus claire au survol */
+    transform: translateY(-2px); /* Effet d'élévation au survol */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Ombre plus prononcée au survol */
+}
+
+/* Main Forum Content */
+.forum-container {
+    padding: 40px;
+    max-width: 1200px;
+    margin: 120px auto 40px auto;
+    background: linear-gradient(135deg, #F9F5E8 0%, #ffffff 100%);
+    border-radius: 15px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(46, 125, 50, 0.2);
+}
+
+/* Forum Title */
+.forum-container h1 {
+    font-size: 32px;
+    color: #2e7d32;
+    margin-bottom: 30px;
+    text-align: center;
+    font-family: "Bauhaus 93", Arial, sans-serif;
+    position: relative;
+    padding-bottom: 15px;
+}
+
+.forum-container h1::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 3px;
+    background: linear-gradient(to right, #2e7d32, #219150);
+    border-radius: 2px;
+}
+
+/* Question Bar */
+.question-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+    border: 1px solid rgba(46, 125, 50, 0.1);
+}
+
+#questionInput {
+    width: 85%;
+    padding: 15px;
+    font-size: 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    color: #2c3e50;
+    background-color: #f8f9fa;
+}
+
+#questionInput:focus {
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+    outline: none;
+    background-color: #ffffff;
+}
+
+#questionInput::placeholder {
+    color: #95a5a6;
+}
+
+/* Post Button */
+.question-bar button {
+    padding: 15px 30px;
+    background: linear-gradient(to right, #2e7d32, #219150);
+    color: white;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.question-bar button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(to right, #219150, #2e7d32);
+}
+
+/* Questions List */
+.questions-list {
+    margin-top: 30px;
+    padding: 25px;  /* Increased padding */
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.questions-list p {
+    text-align: center;
+    font-size: 18px;
+    color: #7f8c8d;
+}
+
+.question {
+    background: #f8f9fa;
+    padding: 25px;  /* Increased padding */
+    margin-bottom: 25px;  /* Increased margin */
+    border-radius: 12px;  /* Increased border radius */
+    border-left: 5px solid #2e7d32;
+    transition: all 0.3s ease;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.question:hover {
+    transform: translateX(5px);
+    background: #ffffff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.question:last-child {
+    margin-bottom: 0;
+}
+
+.question p {
+    font-size: 16px;
+    color: #2c3e50;
+    line-height: 1.8;  /* Increased line height */
+    margin: 0;
+    font-weight: 500;  /* Slightly bolder text */
+}
+
+.question .metadata {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;  /* Increased margin */
+    padding-top: 20px;  /* Increased padding */
+    border-top: 2px solid #e0e0e0;  /* Thicker border */
+    font-size: 14px;
+    color: #5a6c7d;  /* Darker color for better visibility */
+}
+
+.question .actions {
+    display: flex;
+    gap: 15px;
+}
+
+.question .actions button {
+    padding: 10px 20px;  /* Larger buttons */
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 600;  /* Bolder text */
+    color: white;
+    text-transform: uppercase;  /* Uppercase text */
+    letter-spacing: 0.5px;
+}
+
+.question .actions .reply {
+    background: linear-gradient(to right, #2e7d32, #219150);
+    box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2);
+}
+
+.question .actions .share {
+    background: linear-gradient(to right, #1E88E5, #1565C0);
+    box-shadow: 0 2px 4px rgba(30, 136, 229, 0.2);
+}
+
+.question .actions button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    filter: brightness(110%);
+}
+
+/* Empty State */
+.questions-list p.empty-state {
+    text-align: center;
+    color: #7f8c8d;
+    font-size: 18px;
+    padding: 50px 0;  /* More vertical padding */
+    font-style: italic;
+    background: #f8f9fa;  /* Light background */
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.question {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Admin Link */
+.admin-link {
+    color: #fff;
+    background-color: #2e7d32;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.admin-link:hover {
+    background-color: #219150;
+}
+
+/* Media queries for responsive header */
+@media (max-width: 768px) {
+    header {
+        padding: 15px 20px;
+    }
+    
+    .logo-nav-container {
+        width: 100%;
+    }
+    
+    .nav-right {
+        width: 100%;
+        justify-content: center;
+    }
+}

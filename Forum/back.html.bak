@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Forum</title>
+    <link rel="stylesheet" href="back.css"> <!-- Link to back.css -->
+</head>
+<body>
+
+    <header>
+        <h1>Interface Admin - Forum Green.tn</h1>
+        <nav>
+            <a href="forum.html" class="back-to-forum">Retour au Forum uniquement</a> <!-- Lien vers Forum uniquement -->
+        </nav>
+    </header>
+
+    <main class="admin-container">
+        <h2>Questions récentes</h2>
+
+        <div class="question-admin">
+            <p><strong>Utilisateur:</strong> Jean</p>
+            <p><strong>Question:</strong> Quels types de vélos proposez-vous pour la montagne ?</p>
+            <div class="admin-actions">
+                <button class="reply">Répondre</button>
+                <button class="delete">Supprimer</button>
+                <button class="report">Signaler</button>
+            </div>
+        </div>
+
+        <div class="question-admin">
+            <p><strong>Utilisateur:</strong> Amira</p>
+            <p><strong>Question:</strong> Est-ce qu’on peut louer un vélo à l’heure ?</p>
+            <div class="admin-actions">
+                <button class="reply">Répondre</button>
+                <button class="delete">Supprimer</button>
+                <button class="report">Signaler</button>
+            </div>
+        </div>
+
+        <!-- Add more questions here -->
+    </main>
+
+</body>
+</html>
