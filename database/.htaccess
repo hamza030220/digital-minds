@@ -1,0 +1,63 @@
+# Protect database directory from direct access
+# Blocks all SQL files from being accessed directly
+
+# Disable directory listing
+Options -Indexes
+
+# Block access to all SQL files
+<FilesMatch "\.sql$">
+    # Apache 2.4 syntax
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    
+    # Apache 2.2 syntax (for backward compatibility)
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Protect against common security threats
+<IfModule mod_headers.c>
+    # Prevent MIME type sniffing
+    Header set X-Content-Type-Options "nosniff"
+    
+    # Protect against XSS attacks
+    Header set X-XSS-Protection "1; mode=block"
+    
+    # Prevent iframe embedding (clickjacking protection)
+    Header set X-Frame-Options "DENY"
+    
+    # Set content security policy
+    Header set Content-Security-Policy "default-src 'none'; script-src 'none'; style-src 'none'; img-src 'none'; connect-src 'none'; font-src 'none'; object-src 'none'; media-src 'none'; frame-src 'none';"
+</IfModule>
+
+# Deny access to hidden files (starting with dot)
+<FilesMatch "^\.">
+    # Apache 2.4 syntax
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    
+    # Apache 2.2 syntax (for backward compatibility)
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Deny access to this .htaccess file
+<Files .htaccess>
+    # Apache 2.4 syntax
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    
+    # Apache 2.2 syntax (for backward compatibility)
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</Files>
+
