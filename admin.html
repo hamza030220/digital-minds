@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green.tn - Admin Dashboard</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo">
+            <img src="image/ve.png" alt="Green.tn Logo">
+        </div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="#dashboard"><span class="icon">📊</span> Dashboard</a></li>
+                <li><a href="#bikes"><span class="icon">🚲</span> Gestion des Vélos</a></li>
+                <li><a href="#repairs" class="active"><span class="icon">🔧</span> Réparations</a></li>
+                <li><a href="#users"><span class="icon">👥</span> Utilisateurs</a></li>
+                <li><a href="#settings"><span class="icon">⚙️</span> Paramètres</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="admin-header">
+            <h1>Admin Dashboard</h1>
+            <div class="user-profile">
+                <img src="image/face.jpg" alt="User Avatar" class="avatar">
+                <span>Aziz miaoui</span>
+            </div>
+        </header>
+
+        
+        <section class="dashboard" id="dashboard">
+            <h2>Vue d'ensemble</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>10</h3>
+                    <p>Vélos en Réparation</p>
+                </div>
+                <div class="stat-card">
+                    <h3>5</h3>
+                    <p>Réparations en Cours</p>
+                </div>
+                <div class="stat-card">
+                    <h3>3</h3>
+                    <p>Réparations en Attente</p>
+                </div>
+                <div class="stat-card">
+                    <h3>15</h3>
+                    <p>Réparations Terminées</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bike Management Section (Hidden by default since Réparations is active) -->
+        <section class="management" id="bikes">
+            <h2>Gestion des Vélos</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Type</th>
+                            <th>Problème</th>
+                            <th>Statut</th>
+                            <th>Progression</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>001</td>
+                            <td>Vélo de Ville</td>
+                            <td>Pneu crevé</td>
+                            <td><span class="status en-cours">En cours</span></td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 50%;"></div>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="#" class="btn edit">Modifier</a>
+                                <a href="#" class="btn delete">Supprimer</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <a href="#" class="btn add">Ajouter un Vélo</a>
+        </section>
+
+        <!-- Repairs Section (Visible since Réparations is active) -->
+        <section class="management" id="repairs">
+            <h2>Réparations</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Type</th>
+                            <th>Problème</th>
+                            <th>Statut</th>
+                            <th>Progression</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>001</td>
+                            <td>Vélo de Ville</td>
+                            <td>Pneu crevé</td>
+                            <td><span class="status en-cours">En cours</span></td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 50%;"></div>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="#" class="btn edit">Modifier</a>
+                                <a href="#" class="btn delete">Supprimer</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>012</td>
+                            <td>Vélo de Course</td>
+                            <td>Freins usés</td>
+                            <td><span class="status en-attente">En attente</span></td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 20%;"></div>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="#" class="btn edit">Modifier</a>
+                                <a href="#" class="btn delete">Supprimer</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>005</td>
+                            <td>Vélo de Montagne</td>
+                            <td>Chaîne cassée</td>
+                            <td><span class="status termine">Terminé</span></td>
+                            <td>
+                                <div class="progress-bar">
+                                    <div class="progress" style="width: 100%;"></div>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="#" class="btn edit">Modifier</a>
+                                <a href="#" class="btn delete">Supprimer</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <a href="#" class="btn add">Ajouter une Réparation</a>
+        </section>
+    </main>
+</body>
+</html>

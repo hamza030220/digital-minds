@@ -1,0 +1,294 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #f4f4f4;
+    color: #333;
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    background-color: #2e7d32;
+    padding: 20px;
+    position: fixed;
+    height: 100%;
+    top: 0;
+    left: 0;
+}
+
+.sidebar .logo img {
+    width: 200px;
+    height: auto;
+    margin-bottom: 30px;
+}
+
+.sidebar-nav ul {
+    list-style: none;
+}
+
+.sidebar-nav ul li {
+    margin-bottom: 20px;
+}
+
+.sidebar-nav ul li a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 16px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.sidebar-nav ul li a:hover,
+.sidebar-nav ul li a.active {
+    background-color: #4CAF50;
+}
+
+.sidebar-nav ul li a .icon {
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+/* Main Content */
+.main-content {
+    margin-left: 250px;
+    flex: 1;
+    padding: 20px;
+}
+
+/* Admin Header */
+.admin-header {
+    background-color: #fff;
+    padding: 15px 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.admin-header h1 {
+    font-size: 24px;
+    color: #2e7d32;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-profile .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.user-profile span {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Sections */
+section {
+    display: none;
+}
+
+section:target {
+    display: block;
+}
+
+/* Default to showing the repairs section since Réparations is active */
+#repairs {
+    display: block;
+}
+
+/* Dashboard Section */
+.dashboard {
+    margin-bottom: 40px;
+}
+
+.dashboard h2 {
+    color: #2e7d32;
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.stat-card h3 {
+    font-size: 32px;
+    color: #2e7d32;
+    margin-bottom: 10px;
+}
+
+.stat-card p {
+    font-size: 16px;
+    color: #555;
+}
+
+/* Management Section */
+.management {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.management h2 {
+    color: #2e7d32;
+    margin-bottom: 20px;
+}
+
+.table-container {
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #2e7d32;
+    color: #fff;
+}
+
+tr:hover {
+    background-color: #f9f5e8;
+}
+
+/* Vertically Center Table Content */
+td {
+    vertical-align: middle; /* Vertically center all table cell content */
+}
+
+/* Status Buttons */
+.status {
+    padding: 5px 10px;
+    border-radius: 5px;
+    display: inline-block;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.status.en-cours {
+    background-color: #FFD700; /* Gold */
+    color: #333;
+}
+
+.status.en-attente {
+    background-color: #FF4500; /* OrangeRed */
+    color: #fff;
+}
+
+.status.termine {
+    background-color:  #2e7d32; /* LimeGreen */
+    color: #fff;
+}
+
+/* Progress Bar */
+.progress-bar {
+    width: 100px;
+    height: 10px;
+    background-color: #ddd;
+    border-radius: 5px;
+   
+    display: inline-block;
+    vertical-align: middle; /* Align progress bar with text */
+}
+
+.progress {
+    height: 100%;
+    background-color: #4CAF50;
+}
+
+/* Action Buttons */
+.btn {
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 5px;
+    display: inline-block;
+    font-size: 14px;
+    margin-right: 5px;
+}
+
+.btn.edit {
+    background-color: #1E90FF; /* Blue */
+    color: #fff;
+}
+
+.btn.delete {
+    background-color: #FF4500; /* OrangeRed */
+    color: #fff;
+}
+
+.btn.add {
+    background-color: #2e7d32; /* LimeGreen */
+    color: #fff;
+    padding: 10px 20px;
+    display: inline-block;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    th, td {
+        padding: 8px;
+    }
+
+    .progress-bar {
+        width: 80px;
+    }
+
+    .btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+}

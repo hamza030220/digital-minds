@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green.tn - Réparation État</title>
+    <link rel="stylesheet" href="green.css">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo-nav-container">
+            <div class="logo">
+                <img src="image/ve.png" alt="Green.tn Logo">
+            </div>
+            <nav class="nav-left">
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="index.html#a-nos-velos">Nos vélos</a></li>
+                    <li><a href="index.html#a-propos-de-nous">À propos de nous</a></li>
+                    <li><a href="index.html#pricing">Tarifs</a></li>
+                    <li><a href="index.html#contact">Contact</a></li>
+                    <li><a href="reparation-etat.html">Réparation État</a></li>
+                </ul>
+            </nav>
+        </div>
+        <nav class="nav-right">
+            <ul>
+                <li><a href="#" class="login">Login</a></li>
+                <li><a href="#" class="signin">Signin</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <!-- Main Content -->
+<main>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-box">
+            <h1>Réparation État</h1>
+            <p>Suivez l'état des réparations de nos vélos en temps réel.</p>
+        </div>
+        <div class="hero-image">
+            <img src="image/hero.png" alt="Réparation État Image">
+        </div>
+    </section>
+
+    <!-- Réparation État Section -->
+    <section class="reparation-section" id="reparation-etat">
+        <h2>Vélos en Réparation</h2>
+        
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <input type="text" placeholder="Rechercher un vélo par ID ou type..." id="search-input">
+            <button onclick="searchBikes()">Rechercher</button>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="filter-buttons">
+            <button class="filter-btn" data-filter="all">Tous</button>
+            <button class="filter-btn" data-filter="en-cours">En cours</button>
+            <button class="filter-btn" data-filter="en-attente">En attente</button>
+            <button class="filter-btn" data-filter="termine">Terminé</button>
+        </div>
+
+        <!-- Reparation Grid -->
+        <div class="reparation-grid">
+            <!-- Bike 1 -->
+            <div class="reparation-card" data-status="en-cours">
+                <img src="image/vv.jpg" alt="Vélo de Ville" class="bike-image">
+                <h3>Vélo de Ville #001</h3>
+                <p>Problème: Pneu crevé</p>
+                <p class="status en-cours">État: En cours</p>
+                <div class="progress-bar">
+                    <div class="progress" style="width: 50%;"></div>
+                </div>
+                <p>Date estimée: 15/04/2025</p>
+                <button class="detail">Voir Détails</button>
+                <a href="mailto:mechanic@green.com?subject=Vélo #001" class="contact-mechanic">Contacter le mécanicien</a>
+            </div>
+            <!-- Bike 2 -->
+            <div class="reparation-card" data-status="en-attente">
+                <img src="image/co.jpg" alt="Vélo de Course" class="bike-image">
+                <h3>Vélo de Course #012</h3>
+                <p>Problème: Freins usés</p>
+                <p class="status en-attente">État: En attente de pièces</p>
+                <div class="progress-bar">
+                    <div class="progress" style="width: 20%;"></div>
+                </div>
+                <p>Date estimée: 25/04/2025</p>
+                <button class="detail">Voir Détails</button>
+                <a href="mailto:mechanic@green.com?subject=Vélo #012" class="contact-mechanic">Contacter le mécanicien</a>
+            </div>
+            <!-- Bike 3 -->
+            <div class="reparation-card" data-status="termine">
+                <img src="image/mm.jpg" alt="Vélo de Montagne" class="bike-image">
+                <h3>Vélo de Montagne #005</h3>
+                <p>Problème: Chaîne cassée</p>
+                <p class="status termine">État: Terminé</p>
+                <div class="progress-bar">
+                    <div class="progress" style="width: 100%;"></div>
+                </div>
+                <p>Date estimée: 05/04/2025</p>
+                <button class="detail">Voir Détails</button>
+                <a href="mailto:mechanic@green.com?subject=Vélo #005" class="contact-mechanic">Contacter le mécanicien</a>
+            </div>
+        </div>
+    </section>
+</main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-left">
+                <div class="footer-logo">
+                    <img src="image/ho.png" alt="Green.tn Logo">
+                </div>
+                <div class="social-icons">
+                    <a href="https://instagram.com"><img src="image/insta.png" alt="Instagram"></a>
+                    <a href="https://facebook.com"><img src="image/fb.png" alt="Facebook"></a>
+                    <a href="https://twitter.com"><img src="image/x.png" alt="Twitter"></a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Navigation</h3>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="index.html#a-nos-velos">Nos vélos</a></li>
+                    <li><a href="index.html#a-propos-de-nous">À propos de nous</a></li>
+                    <li><a href="index.html#pricing">Tarifs</a></li>
+                    <li><a href="index.html#contact">Contact</a></li>
+                    <li><a href="reparation-etat.html">Réparation État</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <p><img src="image/location.png" alt="Location Icon"> Eprit technopole</p>
+                <p><img src="image/telephone.png" alt="Phone Icon"> +216245678</p>
+                <p><img src="image/mail.png" alt="Email Icon"> <a href="mailto:Green@green.com">Green@green.com</a></p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
