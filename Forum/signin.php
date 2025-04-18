@@ -54,7 +54,12 @@ if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_me_token'])) {
             $_SESSION['is_admin'] = $user['is_admin'];
             if (!isset($_POST['username'])) {
                 // Only redirect if not currently submitting the form
-                header("Location: back.php");
+                // Redirect based on user role
+                if ($user['is_admin']) {
+                    header("Location: back.php");
+                } else {
+                    header("Location: forum.php");
+                }
                 exit();
             }
         }
@@ -97,51 +102,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             $debug_info .= "</div>";
             
-            // Verify credentials
+            // Validate password
             if ($user && password_verify($password, $user['password'])) {
-                // Login successful
+                // Set session variables
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['is_admin'] = $user['is_admin'];
                 
-                // Additional admin validation - Only allow users with is_admin=1
-                if (!$user['is_admin']) {
-                    $error = "You do not have admin privileges. This portal is for administrators only.";
-                    error_log("Non-admin user attempted to access admin area: " . $username);
-                    // Clear any partially set session data
-                    unset($_SESSION['user_id']);
-                    unset($_SESSION['username']);
-                    unset($_SESSION['is_admin']);
-                } else {
-                    // Handle "Remember Me" functionality
-                    if ($remember) {
-                        // Delete any existing remember tokens for this user
-                        $deleteStmt = $conn->prepare("DELETE FROM remember_tokens WHERE user_id = :user_id");
-                        $deleteStmt->bindParam(':user_id', $user['id']);
-                        $deleteStmt->execute();
-                        
-                        // Generate token
-                        $token = bin2hex(random_bytes(32));
-                        $expires_at = date('Y-m-d H:i:s', strtotime('+30 days'));
-                        
-                        // Store token in database
-                        $stmt = $conn->prepare("INSERT INTO remember_tokens (user_id, token, expires_at) 
-                                              VALUES (:user_id, :token, :expires_at)");
-                        $stmt->bindParam(':user_id', $user['id']);
-                        $stmt->bindParam(':token', $token);
-                        $stmt->bindParam(':expires_at', $expires_at);
-                        $stmt->execute();
-                        
-                        // Set cookie with token
-                        setcookie('remember_me_token', $token, time() + (86400 * 30), "/"); // 30 days
-                    }
+                // Handle "Remember Me" functionality
+                if ($remember) {
+                    // Delete any existing remember tokens for this user
+                    $deleteStmt = $conn->prepare("DELETE FROM remember_tokens WHERE user_id = :user_id");
+                    $deleteStmt->bindParam(':user_id', $user['id']);
+                    $deleteStmt->execute();
                     
-                    // Redirect to dashboard only when authentication is successful
-                    header("Location: back.php");
-                    exit();
+                    // Generate token
+                    $token = bin2hex(random_bytes(32));
+                    $expires_at = date('Y-m-d H:i:s', strtotime('+30 days'));
+                    
+                    // Store token in database
+                    $stmt = $conn->prepare("INSERT INTO remember_tokens (user_id, token, expires_at) 
+                                          VALUES (:user_id, :token, :expires_at)");
+                    $stmt->bindParam(':user_id', $user['id']);
+                    $stmt->bindParam(':token', $token);
+                    $stmt->bindParam(':expires_at', $expires_at);
+                    $stmt->execute();
+                    
+                    // Set cookie with token
+                    setcookie('remember_me_token', $token, time() + (86400 * 30), "/"); // 30 days
                 }
+                
+                // Redirect based on user role
+                if ($user['is_admin']) {
+                    header("Location: back.php");
+                } else {
+                    header("Location: forum.php");
+                }
+                exit();
             } else {
-                $error = "Invalid username or password";
+                $error = "Nom d'utilisateur ou mot de passe invalide";
             }
         } catch(PDOException $e) {
             $error = "Database error: " . $e->getMessage();
@@ -156,7 +155,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Sign In</title>
+    <title>Connexion - Green.tn</title>
     <link rel="stylesheet" href="signin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -166,7 +165,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="logo">
                 <img src="../image/ve.png" alt="Website Logo">
             </div>
-            <h2>Admin Sign In</h2>
+            <h2>Connexion</h2>
         </div>
         
         <?php if (isset($error)): ?>
@@ -177,7 +176,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         <?php if (isset($_GET['logout']) && $_GET['logout'] == '1'): ?>
         <div class="success-alert">
-            You have been successfully logged out.
+            Vous avez été déconnecté avec succès.
         </div>
         <?php endif; ?>
         
@@ -185,7 +184,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="login-info">
             <?php if (isset($_SESSION['user_id'])): ?>
             <div class="success-alert">
-                You are already logged in as: <?php echo htmlspecialchars($_SESSION['username']); ?>
+                Vous êtes déjà connecté en tant que: <?php echo htmlspecialchars($_SESSION['username']); ?>
                 <?php if ($_SESSION['is_admin']): ?>
                 <span class="admin-badge">Admin</span>
                 <?php endif; ?>
@@ -194,14 +193,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
         <form class="login-form" method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                <label for="username">Nom d'utilisateur</label>
+                <input type="text" id="username" name="username" placeholder="Entrez votre nom d'utilisateur" required>
                 <i class="fas fa-user"></i>
             </div>
             
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" name="password" placeholder="Entrez votre mot de passe" required>
                 <i class="fas fa-lock"></i>
                 <span class="password-toggle" onclick="togglePassword()">
                     <i class="fas fa-eye"></i>
@@ -211,14 +210,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="remember-forgot">
                 <div class="remember-me">
                     <input type="checkbox" id="remember" name="remember">
-                    <label for="remember">Remember me</label>
+                    <label for="remember">Se souvenir de moi</label>
                 </div>
                 <div class="forgot-password">
-                    <a href="#">Forgot Password?</a>
+                    <a href="#">Mot de passe oublié?</a>
                 </div>
             </div>
 
-            <button type="submit" class="login-button">Sign In</button>
+            <button type="submit" class="login-button">Connexion</button>
+            
+            <div class="login-footer">
+                <p>Pas encore de compte? <a href="signup.php">Inscrivez-vous ici</a></p>
+            </div>
         </form>
     </div>
 

@@ -2,6 +2,12 @@
 // Start the session
 session_start();
 
+// Set the current page for the sidebar
+$currentPage = 'forum';
+
+// Base path for the project
+$basePath = '/old/Forum/'; // Adjust this path to match your project structure
+
 // Function to check if user is admin
 function isAdminLoggedIn() {
     return isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1;
@@ -67,28 +73,15 @@ $username = htmlspecialchars($_SESSION['username']);
         /* Admin specific styles */
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #60BA97;
+            background-color: #ffffff; /* Changed to white */
             margin: 0;
             padding: 0;
         }
 
-        .admin-badge {
-            background-color: #2e7d32;
-            color: white;
-            padding: 4px 10px;
-            border-radius: 8px;
-            margin-left: 10px;
-            font-size: 0.8em;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
         .admin-container {
+            margin-left: var(--sidebar-width); /* Adjust content to account for sidebar width */
             padding: 40px;
-            max-width: 1200px;
-            margin: 120px auto 40px auto;
+            max-width: calc(100% - var(--sidebar-width));
             background: linear-gradient(135deg, #F9F5E8 0%, #ffffff 100%);
             border-radius: 15px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
@@ -162,6 +155,49 @@ $username = htmlspecialchars($_SESSION['username']);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         
+        .comment-admin {
+            background: #f0f0f0;
+            padding: 15px;
+            margin: 10px 0 10px 20px;
+            border-radius: 8px;
+            border-left: 3px solid #f57c00;
+            position: relative;
+        }
+        
+        .comments-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed #ccc;
+        }
+        
+        .timestamp {
+            font-size: 0.8em;
+            color: #666;
+            margin-left: 10px;
+        }
+        
+        .post-header, .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .no-comments {
+            font-style: italic;
+            color: #666;
+            margin-left: 15px;
+        }
+        
+        .error {
+            color: #c62828;
+            font-weight: bold;
+            padding: 10px;
+            background-color: #ffebee;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
         .admin-actions button {
             padding: 10px 20px;
             border: none;
@@ -173,11 +209,6 @@ $username = htmlspecialchars($_SESSION['username']);
             color: white;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-        }
-        
-        .admin-actions .reply {
-            background: linear-gradient(to right, #2e7d32, #219150);
-            box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2);
         }
         
         .admin-actions .delete {
@@ -220,31 +251,8 @@ $username = htmlspecialchars($_SESSION['username']);
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header>
-        <div class="logo-nav-container">
-            <div class="logo">
-                <img src="../image/ve.png" alt="Green.tn Logo">
-            </div>
-            <nav class="nav-left">
-                <ul>
-                    <li><a href="dashboard.php">Dashboard</a></li>
-                    <li><a href="back.php" class="active">Forum</a></li>
-                </ul>
-            </nav>
-        </div>
-        <nav class="nav-right">
-            <ul>
-                <li>
-                    <div class="admin-user-info">
-                        <span><?php echo $username; ?></span>
-                        <span class="admin-badge">Admin</span>
-                    </div>
-                </li>
-                <li><a href="back.php?logout=1" class="logout-btn">Déconnexion</a></li>
-            </ul>
-        </nav>
-    </header>
+    <!-- Include Sidebar -->
+    <?php include 'sidebar.php'; ?>
 
     <!-- Admin Main Content -->
     <main class="admin-container">
@@ -254,35 +262,169 @@ $username = htmlspecialchars($_SESSION['username']);
                 <p>Bienvenue dans l'interface d'administration du forum Green.tn</p>
             </div>
             <div class="admin-actions">
-                <a href="dashboard.php" class="logout-btn">Retour au Dashboard</a>
+                <a href="<?php echo $basePath; ?>back.php" class="logout-btn">Retour au Dashboard</a>
             </div>
         </div>
+        <h2>Forum Content</h2>
+
+        <?php
+        // Include database connection
+        require_once 'db_connect.php';
         
-        <h2>Questions récentes</h2>
-
-        <div class="question-admin">
-            <p><strong>Utilisateur:</strong> Jean</p>
-            <p><strong>Question:</strong> Quels types de vélos proposez-vous pour la montagne ?</p>
-            <div class="admin-actions">
-                <button class="reply">Répondre</button>
-                <button class="delete">Supprimer</button>
-                <button class="report">Signaler</button>
-            </div>
-        </div>
-
-        <div class="question-admin">
-            <p><strong>Utilisateur:</strong> Amira</p>
-            <p><strong>Question:</strong> Est-ce qu'on peut louer un vélo à l'heure ?</p>
-            <div class="admin-actions">
-                <button class="reply">Répondre</button>
-                <button class="delete">Supprimer</button>
-                <button class="report">Signaler</button>
-            </div>
-        </div>
-
+        try {
+            // Fetch all posts
+            $postQuery = "SELECT p.*, u.username 
+                         FROM post p 
+                         JOIN users u ON p.user_id = u.id 
+                         WHERE p.is_deleted = 0 
+                         ORDER BY p.created_at DESC";
+            $postStmt = $conn->prepare($postQuery);
+            $postStmt->execute();
+            
+            if ($postStmt->rowCount() > 0) {
+                while ($post = $postStmt->fetch(PDO::FETCH_ASSOC)) {
+                    ?>
+                    <div class="question-admin">
+                        <div class="post-header">
+                            <p><strong>Utilisateur:</strong> <?php echo htmlspecialchars($post['username']); ?></p>
+                            <span class="timestamp">Posté le: <?php echo date('d/m/Y H:i', strtotime($post['created_at'])); ?></span>
+                        </div>
+                        <h3><?php echo htmlspecialchars($post['title']); ?></h3>
+                        <div class="post-content">
+                            <p><?php echo htmlspecialchars($post['content']); ?></p>
+                        </div>
+                        <div class="admin-actions">
+                            <button class="delete" data-id="<?php echo $post['post_id']; ?>" data-type="post">Supprimer</button>
+                            <button class="report" data-id="<?php echo $post['post_id']; ?>" data-type="post" 
+                                    data-reported="<?php echo $post['is_reported'] ? '1' : '0'; ?>">
+                                <?php echo $post['is_reported'] ? 'Déjà signalé' : 'Signaler'; ?>
+                            </button>
+                        </div>
+                        
+                        <!-- Comments for this post -->
+                        <div class="comments-section">
+                            <h4>Commentaires:</h4>
+                            <?php
+                            // Fetch comments for this post
+                            $commentQuery = "SELECT c.*, u.username 
+                                           FROM commentaire c 
+                                           JOIN users u ON c.user_id = u.id 
+                                           WHERE c.post_id = :post_id AND c.is_deleted = 0 
+                                           ORDER BY c.created_at ASC";
+                            $commentStmt = $conn->prepare($commentQuery);
+                            $commentStmt->bindParam(':post_id', $post['post_id']);
+                            $commentStmt->execute();
+                            
+                            if ($commentStmt->rowCount() > 0) {
+                                while ($comment = $commentStmt->fetch(PDO::FETCH_ASSOC)) {
+                                    ?>
+                                    <div class="comment-admin">
+                                        <div class="comment-header">
+                                            <p><strong><?php echo htmlspecialchars($comment['username']); ?></strong> 
+                                            <span class="timestamp">le <?php echo date('d/m/Y H:i', strtotime($comment['created_at'])); ?></span></p>
+                                        </div>
+                                        <div class="comment-content">
+                                            <p><?php echo htmlspecialchars($comment['content']); ?></p>
+                                        </div>
+                                        <div class="admin-actions">
+                                            <button class="delete" data-id="<?php echo $comment['comment_id']; ?>" data-type="comment">Supprimer</button>
+                                            <button class="report" data-id="<?php echo $comment['comment_id']; ?>" data-type="comment"
+                                                    data-reported="<?php echo $comment['is_reported'] ? '1' : '0'; ?>">
+                                                <?php echo $comment['is_reported'] ? 'Déjà signalé' : 'Signaler'; ?>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <?php
+                                }
+                            } else {
+                                echo '<p class="no-comments">Aucun commentaire pour ce post.</p>';
+                            }
+                            ?>
+                        </div>
+                    </div>
+                    <?php
+                }
+            } else {
+                echo '<p>Aucun post dans le forum pour le moment.</p>';
+            }
+        } catch(PDOException $e) {
+            echo '<p class="error">Erreur de base de données: ' . $e->getMessage() . '</p>';
+        }
+        ?>
+<script src="../Forum/sidebar.js"></script>
+        <!-- JavaScript for admin actions -->
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle delete buttons
+            document.querySelectorAll('.delete').forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const type = this.getAttribute('data-type');
+                    if (confirm(`Êtes-vous sûr de vouloir supprimer cet élément ?`)) {
+                        // Send delete request to server
+                        fetch(`admin_actions.php?action=delete&type=${type}&id=${id}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Remove element from DOM or refresh page
+                                window.location.reload();
+                            } else {
+                                alert('Erreur: ' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Une erreur est survenue lors de la suppression.');
+                        });
+                    }
+                });
+            });
+            
+            // Handle report buttons
+            document.querySelectorAll('.report').forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const type = this.getAttribute('data-type');
+                    const isReported = this.getAttribute('data-reported') === '1';
+                    
+                    if (isReported) {
+                        alert('Cet élément a déjà été signalé.');
+                        return;
+                    }
+                    
+                    if (confirm(`Voulez-vous signaler cet élément ?`)) {
+                        // Send report request to server
+                        fetch(`admin_actions.php?action=report&type=${type}&id=${id}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                this.textContent = 'Déjà signalé';
+                                this.setAttribute('data-reported', '1');
+                            } else {
+                                alert('Erreur: ' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Une erreur est survenue lors du signalement.');
+                        });
+                    }
+                });
+            });
+        });
+        </script>
         <!-- Add more questions here -->
     </main>
-
 </body>
 </html>
 

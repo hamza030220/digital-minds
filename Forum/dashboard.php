@@ -2,6 +2,12 @@
 // Start the session
 session_start();
 
+// Set the current page for the sidebar
+$currentPage = 'dashboard';
+
+// Base path for the project
+$basePath = '/old/Forum/'; // Adjust this path to match your project structure
+
 // Function to check if user is admin
 function isAdminLoggedIn() {
     return isset($_SESSION['user_id']) && isset($_SESSION['is_admin']) && $_SESSION['is_admin'] == 1;
@@ -67,34 +73,21 @@ $username = htmlspecialchars($_SESSION['username']);
         /* Admin specific styles */
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #60BA97;
+            background-color: #ffffff; /* Changed to white */
             margin: 0;
             padding: 0;
         }
 
-        .admin-badge {
-            background-color: #2e7d32;
-            color: white;
-            padding: 4px 10px;
-            border-radius: 8px;
-            margin-left: 10px;
-            font-size: 0.8em;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
         .admin-container {
+            margin-left: var(--sidebar-width); /* Adjust content to account for sidebar width */
             padding: 40px;
-            max-width: 1200px;
-            margin: 120px auto 40px auto;
+            max-width: calc(100% - var(--sidebar-width));
             background: linear-gradient(135deg, #F9F5E8 0%, #ffffff 100%);
             border-radius: 15px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(46, 125, 50, 0.2);
         }
-        
+
         .admin-user-section {
             display: flex;
             justify-content: space-between;
@@ -106,19 +99,14 @@ $username = htmlspecialchars($_SESSION['username']);
             margin-bottom: 30px;
             border: 1px solid rgba(46, 125, 50, 0.1);
         }
-        
+
         .admin-user-info {
             display: flex;
             align-items: center;
             font-size: 16px;
             color: #2c3e50;
         }
-        
-        .admin-actions {
-            display: flex;
-            gap: 15px;
-        }
-        
+
         .logout-btn {
             color: #fff;
             background: linear-gradient(to right, #2e7d32, #219150);
@@ -138,13 +126,13 @@ $username = htmlspecialchars($_SESSION['username']);
             margin: 0 5px;
             white-space: nowrap;
         }
-        
+
         .logout-btn:hover {
             background-color: #219150;
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(0,0,0,0.2);
         }
-        
+
         h2 {
             font-size: 28px;
             color: #2e7d32;
@@ -154,7 +142,7 @@ $username = htmlspecialchars($_SESSION['username']);
             position: relative;
             padding-bottom: 15px;
         }
-        
+
         h2::after {
             content: '';
             position: absolute;
@@ -166,42 +154,11 @@ $username = htmlspecialchars($_SESSION['username']);
             background: linear-gradient(to right, #2e7d32, #219150);
             border-radius: 2px;
         }
-        
-        .nav-left ul li a.active {
-            font-weight: 700;
-        }
-        
-        .nav-left ul li a.active::after {
-            width: 100%;
-        }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header>
-        <div class="logo-nav-container">
-            <div class="logo">
-                <img src="../image/ve.png" alt="Green.tn Logo">
-            </div>
-            <nav class="nav-left">
-                <ul>
-                    <li><a href="dashboard.php" class="active">Dashboard</a></li>
-                    <li><a href="back.php">Forum</a></li>
-                </ul>
-            </nav>
-        </div>
-        <nav class="nav-right">
-            <ul>
-                <li>
-                    <div class="admin-user-info">
-                        <span><?php echo $username; ?></span>
-                        <span class="admin-badge">Admin</span>
-                    </div>
-                </li>
-                <li><a href="dashboard.php?logout=1" class="logout-btn">Déconnexion</a></li>
-            </ul>
-        </nav>
-    </header>
+    <!-- Include Sidebar -->
+    <?php include 'sidebar.php'; ?>
 
     <!-- Admin Main Content -->
     <main class="admin-container">
@@ -216,7 +173,10 @@ $username = htmlspecialchars($_SESSION['username']);
         <div style="text-align: center; padding: 50px; color: #2c3e50;">
             <p>Zone de contenu disponible pour futurs développements.</p>
         </div>
+        <a href="<?php echo $basePath; ?>dashboard.php">Go to Dashboard</a>
     </main>
 </body>
+<script src="../Forum/sidebar.js"></script>
+
 </html>
 

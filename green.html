@@ -1,18 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green.tn - Bike Rental</title>
+    <title>Green.tn</title>
     <link rel="stylesheet" href="green.css">
 </head>
 <body>
-    <!-- Header -->
     <header>
-        <div class="logo-nav-container">
-            <div class="logo">
+        <section class="logo-nav-container">
+            <section class="logo">
                 <img src="image/ve.png" alt="Green.tn Logo">
-            </div>
+            </section>
             <nav class="nav-left">
                 <ul>
                     <li><a href="#">Home</a></li>
@@ -20,17 +19,18 @@
                     <li><a href="#a-propos-de-nous">À propos de nous</a></li>
                     <li><a href="#pricing">Tarifs</a></li>
                     <li><a href="#contact">Contact</a></li>
-                    <li><a href="Forum/forum.html">Forum</a></li> 
+                    <li><a href="Forum/forum.php">Forum</a></li>
                 </ul>
             </nav>
-        </div>
+        </section>
         <nav class="nav-right">
             <ul>
                 <li><a href="#" class="login">Login</a></li>
-                <li><a href="#" class="signin">Signin</a></li>
+                <li><a href="#" class="signin">Sign in</a></li>
             </ul>
         </nav>
     </header>
+    <!-- Garder le reste du contenu inchangé -->
 
     <!-- Main Content -->
     <main>
@@ -45,183 +45,190 @@
             </div>
         </section>
 
-        <!-- Bike Section -->
-        <section id="a-nos-velos" class="bike-section">
-            <h2>NOS VÉLOS</h2>
-            
-            <!-- Mountain Bikes -->
-            <div id="velo-de-montagne">
-                <h3>VÉLO DE MONTAGNE</h3>
-                <div class="bike-grid">
-                    <div class="bike-card">
-                        <img src="image/bike.png" alt="Mountain Bike 1">
-                        <div class="buttons">
-                            <button class="detail">Détail</button>
-                            <button class="reserve">Réserver</button>
+        <!-- À nos vélos Section -->
+        <section id="a-nos-velos">
+            <h2>Nos vélos</h2> <!-- Optional heading -->
+            <div>
+                <!-- Vélo de ville Section -->
+                <section class="bike-section" id="velo-de-ville">
+                    <h3>Vélo de ville</h3>
+                    <div class="bike-grid">
+                        <div class="bike-card">
+                            <img src="image/velo-de-ville.png" alt="Vélo de ville 1">
+                            <div class="buttons">
+                                <button class="detail">Détail</button>
+                                <button class="reserve">Réserver</button>
+                            </div>
+                        </div>
+                        <div class="bike-card">
+                            <img src="image/velo-de-ville.png" alt="Vélo de ville 2">
+                            <div class="buttons">
+                                <button class="detail">Détail</button>
+                                <button class="reserve">Réserver</button>
+                            </div>
+                        </div>
+                        <div class="bike-card">
+                            <img src="image/velo-de-ville.png" alt="Vélo de ville 3">
+                            <div class="buttons">
+                                <button class="detail">Détail</button>
+                                <button class="reserve">Réserver</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="bike-card">
-                        <img src="image/bike.png" alt="Mountain Bike 2">
-                        <div class="buttons">
-                            <button class="detail">Détail</button>
-                            <button class="reserve">Réserver</button>
-                        </div>
-                    </div>
-                    <div class="bike-card">
-                        <img src="image/bike.png" alt="Mountain Bike 3">
-                        <div class="buttons">
-                            <button class="detail">Détail</button>
-                            <button class="reserve">Réserver</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                </section>
 
-            <!-- City Bikes -->
-            <div id="velo-de-ville">
-                <h3>VÉLO DE VILLE</h3>
-                <div class="bike-grid">
-                    <div class="bike-card">
-                        <img src="image/velo-de-ville.png" alt="City Bike 1">
-                        <div class="buttons">
-                            <button class="detail">Détail</button>
-                            <button class="reserve">Réserver</button>
+                <!-- Vélo de course Section -->
+                <section class="bike-section" id="velo-de-course">
+                    <h3>Vélo de course</h3>
+                    <div class="bike-grid">
+                        <div class="bike-card">
+                            <img src="image/bike.png" alt="Vélo de course 1">
+                            <div class="buttons">
+                                <button class="detail">Détail</button>
+                                <button class="reserve">Réserver</button>
+                            </div>
+                        </div>
+                        <div class="bike-card">
+                            <img src="image/bike.png" alt="Vélo de course 2">
+                            <div class="buttons">
+                                <button class="detail">Détail</button>
+                                <button class="reserve">Réserver</button>
+                            </div>
+                        </div>
+                        <div class="bike-card">
+                            <img src="image/bike.png" alt="Vélo de course 3">
+                            <div class="buttons">
+                                <button class="detail">Détail</button>
+                                <button class="reserve">Réserver</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="bike-card">
-                        <img src="image/velo-de-ville.png" alt="City Bike 2">
-                        <div class="buttons">
-                            <button class="detail">Détail</button>
-                            <button class="reserve">Réserver</button>
-                        </div>
-                    </div>
-                    <div class="bike-card">
-                        <img src="image/velo-de-ville.png" alt="City Bike 3">
-                        <div class="buttons">
-                            <button class="detail">Détail</button>
-                            <button class="reserve">Réserver</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                </section>
 
-            <!-- Racing Bikes -->
-            <div id="velo-de-course">
-                <h3>VÉLO DE COURSE</h3>
-                <div class="bike-grid">
-                    <div class="bike-card">
-                        <img src="image/bike.png" alt="Racing Bike 1">
-                        <div class="buttons">
-                            <button class="detail">Détail</button>
-                            <button class="reserve">Réserver</button>
+                <!-- Vélo de montagne Section -->
+                <section class="bike-section" id="velo-de-montagne">
+                    <h3>Vélo de montagne</h3>
+                    <div class="bike-grid">
+                        <div class="bike-card">
+                            <img src="image/bike.png" alt="Vélo de montagne 1">
+                            <div class="buttons">
+                                <button class="detail">Détail</button>
+                                <button class="reserve">Réserver</button>
+                            </div>
+                        </div>
+                        <div class="bike-card">
+                            <img src="image/bike.png" alt="Vélo de montagne 2">
+                            <div class="buttons">
+                                <button class="detail">Détail</button>
+                                <button class="reserve">Réserver</button>
+                            </div>
+                        </div>
+                        <div class="bike-card">
+                            <img src="image/bike.png" alt="Vélo de montagne 3">
+                            <div class="buttons">
+                                <button class="detail">Détail</button>
+                                <button class="reserve">Réserver</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="bike-card">
-                        <img src="image/bike.png" alt="Racing Bike 2">
-                        <div class="buttons">
-                            <button class="detail">Détail</button>
-                            <button class="reserve">Réserver</button>
-                        </div>
-                    </div>
-                    <div class="bike-card">
-                        <img src="image/bike.png" alt="Racing Bike 3">
-                        <div class="buttons">
-                            <button class="detail">Détail</button>
-                            <button class="reserve">Réserver</button>
-                        </div>
-                    </div>
-                </div>
+                </section>
             </div>
         </section>
 
-        <!-- About Section -->
-        <section id="a-propos-de-nous" class="about">
-            <div class="hero-box">
-                <h2>À PROPOS DE NOUS</h2>
-                <p>Green.tn est votre partenaire de confiance pour la location de vélos en Tunisie. Notre mission est de promouvoir un mode de transport écologique et sain tout en offrant une expérience client exceptionnelle.</p>
-            </div>
-            <div class="hero-image">
-                <img src="image/about.png" alt="About Us Image">
-            </div>
-        </section>
+        <!-- À propos de nous Section -->
+<section class="hero about" id="a-propos-de-nous">
+    <div class="hero-box">
+        <h1>À propos de nous</h1>
+        <p>Green.tn est votre partenaire de confiance pour la location de vélos en Tunisie. Notre mission est de promouvoir un mode de transport écologique et sain tout en offrant une expérience client exceptionnelle.</p>
+    </div>
+    <div class="hero-image">
+        <img src="image/about.png" alt="About Us Bike Image">
+    </div>
+</section>
 
-        <!-- Pricing Section -->
-        <section id="pricing" class="pricing">
-            <h2>TARIFS</h2>
+        <!-- Tarifs Section -->
+        <section class="pricing" id="pricing">
+            <h2>Tarifs</h2>
             <div class="pricing-grid">
                 <div class="pricing-card">
-                    <h3>1 Heure</h3>
-                    <div class="price">5 DT</div>
-                    <p class="description">Idéal pour une balade courte</p>
+                    <h3>Jour</h3>
+                    <p class="price">30DT</p>
+                    <p class="price">hot description ya zeus</p>
                 </div>
                 <div class="pricing-card">
-                    <h3>4 Heures</h3>
-                    <div class="price">15 DT</div>
-                    <p class="description">Parfait pour une demi-journée</p>
+                    <h3>Semaine</h3>
+                    <p class="price">160DT</p>
+                    <p class="price">hot description ya zeus</p>
                 </div>
                 <div class="pricing-card">
-                    <h3>1 Jour</h3>
-                    <div class="price">25 DT</div>
-                    <p class="description">Pour une journée complète</p>
-                </div>
-                <div class="pricing-card">
-                    <h3>1 Semaine</h3>
-                    <div class="price">120 DT</div>
-                    <p class="description">Location longue durée</p>
+                    <h3>Mois</h3>
+                    <p class="price">630DT</p>
+                    <p class="price">hot description ya zeus</p>
                 </div>
             </div>
         </section>
 
         <!-- Contact Section -->
-        <section id="contact" class="contact">
-            <h2>CONTACT</h2>
+        <section class="contact" id="contact">
+            <h2>Contact</h2>
             <form>
                 <div class="name-row">
                     <div class="name-field">
                         <label for="nom">Nom</label>
-                        <input type="text" id="nom" name="nom" required>
+                        <input type="text" id="nom" placeholder="Nom" required>
                     </div>
                     <div class="name-field">
                         <label for="prenom">Prénom</label>
-                        <input type="text" id="prenom" name="prenom" required>
+                        <input type="text" id="prenom" placeholder="Prénom" required>
                     </div>
                 </div>
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
+                <label for="mail">Mail</label>
+                <input type="email" id="mail" placeholder="Mail" required>
+                <label for="telephone">Numéro téléphone</label>
+                <input type="tel" id="telephone" placeholder="Numéro téléphone" required>
                 <label for="message">Message</label>
-                <textarea id="message" name="message" required></textarea>
+                <textarea id="message" placeholder="Message" required></textarea>
                 <button type="submit">Envoyer</button>
             </form>
         </section>
-    </main>
 
-    <!-- Footer -->
     <footer>
         <div class="footer-content">
             <div class="footer-left">
                 <div class="footer-logo">
-                    <img src="image/ve.png" alt="Green.tn Logo">
+                    <img src="image/ho.png" alt="Green.tn Logo">
                 </div>
                 <div class="social-icons">
-                    <a href="#"><img src="image/fb.png" alt="Facebook"></a>
-                    <a href="#"><img src="image/insta.png" alt="Instagram"></a>
-                    <a href="#"><img src="image/x.png" alt="Twitter"></a>
+                    <a href="https://instagram.com"><img src="image/insta.png" alt="Instagram"></a>
+                    <a href="https://facebook.com"><img src="image/fb.png" alt="Facebook"></a>
+                    <a href="https://twitter.com"><img src="image/x.png" alt="Twitter"></a>
                 </div>
             </div>
             <div class="footer-section">
-                <h3>Contactez-nous</h3>
-                <p><span class="icon"><img src="image/location.png" alt="Location"></span> Rue de la République, Tunis</p>
-                <p><span class="icon"><img src="image/telephone.png" alt="Phone"></span> +216 71 234 567</p>
-                <p><span class="icon"><img src="image/mail.png" alt="Email"></span> <a href="mailto:contact@green.tn">contact@green.tn</a></p>
-            </div>
-            <div class="footer-section">
-                <h3>Liens rapides</h3>
+                <h3>Navigation</h3>
                 <ul>
+                    <li><a href="#">Home</a></li>  
                     <li><a href="#a-nos-velos">Nos vélos</a></li>
+                    <li><a href="#a-propos-de-nous">À propos de nous</a></li>
                     <li><a href="#pricing">Tarifs</a></li>
                     <li><a href="#contact">Contact</a></li>
-                    <li><a href="Forum/forum.html">Forum</a></li>
+                    <li><a href="Forum/forum.php">Forum</a></li>
                 </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <p>
+                    <img src="image/location.png" alt="Location Icon" > 
+                    Eprit technopole
+                </p>
+                <p>
+                    <img src="image/telephone.png" alt="Phone Icon" > 
+                    +216245678
+                </p>
+                <p>
+                    <img src="image/mail.png" alt="Email Icon" > 
+                    <a href="mailto:Green@green.com">Green@green.com</a>
+                </p>
             </div>
         </div>
     </footer>
