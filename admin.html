@@ -34,7 +34,7 @@
             </div>
         </header>
 
-        
+        <!-- Dashboard Section -->
         <section class="dashboard" id="dashboard">
             <h2>Vue d'ensemble</h2>
             <div class="stats-grid">
@@ -57,7 +57,7 @@
             </div>
         </section>
 
-        <!-- Bike Management Section (Hidden by default since Réparations is active) -->
+        <!-- Bike Management Section -->
         <section class="management" id="bikes">
             <h2>Gestion des Vélos</h2>
             <div class="table-container">
@@ -94,7 +94,7 @@
             <a href="#" class="btn add">Ajouter un Vélo</a>
         </section>
 
-        <!-- Repairs Section (Visible since Réparations is active) -->
+        <!-- Repairs Section -->
         <section class="management" id="repairs">
             <h2>Réparations</h2>
             <div class="table-container">
@@ -103,63 +103,381 @@
                         <tr>
                             <th>ID</th>
                             <th>Type</th>
-                            <th>Problème</th>
+                            <th>Pièce Utilisée</th>
                             <th>Statut</th>
                             <th>Progression</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>001</td>
-                            <td>Vélo de Ville</td>
-                            <td>Pneu crevé</td>
-                            <td><span class="status en-cours">En cours</span></td>
-                            <td>
-                                <div class="progress-bar">
-                                    <div class="progress" style="width: 50%;"></div>
-                                </div>
-                            </td>
-                            <td>
-                                <a href="#" class="btn edit">Modifier</a>
-                                <a href="#" class="btn delete">Supprimer</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>012</td>
-                            <td>Vélo de Course</td>
-                            <td>Freins usés</td>
-                            <td><span class="status en-attente">En attente</span></td>
-                            <td>
-                                <div class="progress-bar">
-                                    <div class="progress" style="width: 20%;"></div>
-                                </div>
-                            </td>
-                            <td>
-                                <a href="#" class="btn edit">Modifier</a>
-                                <a href="#" class="btn delete">Supprimer</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>005</td>
-                            <td>Vélo de Montagne</td>
-                            <td>Chaîne cassée</td>
-                            <td><span class="status termine">Terminé</span></td>
-                            <td>
-                                <div class="progress-bar">
-                                    <div class="progress" style="width: 100%;"></div>
-                                </div>
-                            </td>
-                            <td>
-                                <a href="#" class="btn edit">Modifier</a>
-                                <a href="#" class="btn delete">Supprimer</a>
-                            </td>
-                        </tr>
-                    </tbody>
+                    <tbody id="repairs-table-body"></tbody>
                 </table>
             </div>
-            <a href="#" class="btn add">Ajouter une Réparation</a>
+            <a href="#" class="btn add" onclick="addRepair()">Ajouter une Réparation</a>
+            <div id="add-form-container"></div>
         </section>
     </main>
+
+    <script>
+    let currentEditRow = null;
+    let currentAddForm = null;
+    let stockItems = [];
+
+    // Function to escape HTML characters
+    function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // Fetch stock items
+    function fetchStock(callback) {
+        fetch('api/get_stock.php')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                stockItems = data;
+                callback();
+            })
+            .catch(error => {
+                console.error('Error fetching stock:', error);
+                alert('Erreur lors du chargement des stocks');
+            });
+    }
+
+    function fetchRepairs() {
+        fetch('api/get_repairs.php')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                if (!Array.isArray(data)) throw new Error('Expected an array of repairs');
+                const tbody = document.getElementById('repairs-table-body');
+                tbody.innerHTML = '';
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">Aucune réparation trouvée</td></tr>';
+                    return;
+                }
+                data.forEach(repair => {
+                    const row = document.createElement('tr');
+                    const statusClass = repair.status.toLowerCase().replace(' ', '-') || 'en-cours';
+                    const stockClass = repair.stock_quantity <= 0 ? 'low-stock' : '';
+                    row.innerHTML = `
+                        <td>${escapeHTML(repair.bike_id)}</td>
+                        <td>${escapeHTML(repair.bike_type)}</td>
+                        <td class="${stockClass}">${escapeHTML(repair.stock_item_name || 'Aucune')}</td>
+                        <td><span class="status ${statusClass}">${escapeHTML(repair.status)}</span></td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress" style="width: ${repair.progression}%;"></div>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="#" class="btn edit" onclick="editRepair(${repair.id}, '${escapeHTML(repair.bike_id)}', '${escapeHTML(repair.bike_type)}', ${repair.stock_id || 0}, '${escapeHTML(repair.status)}', ${repair.progression}, this)">Modifier</a>
+                            <a href="#" class="btn delete" onclick="deleteRepair(${repair.id})">Supprimer</a>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching repairs:', error);
+                alert(`Erreur lors du chargement des réparations: ${error.message}`);
+                const tbody = document.getElementById('repairs-table-body');
+                tbody.innerHTML = '<tr><td colspan="6">Erreur lors du chargement des données</td></tr>';
+            });
+    }
+
+    function addRepair() {
+        if (currentAddForm) {
+            currentAddForm.remove();
+            currentAddForm = null;
+        }
+        if (currentEditRow) {
+            currentEditRow.remove();
+            currentEditRow = null;
+        }
+
+        fetchStock(() => {
+            const addFormContainer = document.getElementById('add-form-container');
+            const addForm = document.createElement('div');
+            addForm.className = 'add-form';
+            addForm.innerHTML = `
+                <div class="form-header">
+                    <h3>Ajouter une Réparation</h3>
+                </div>
+                <div class="form-body">
+                    <label>ID Vélo: <input type="text" id="addBikeId" placeholder="Ex: 001"></label>
+                    <label>Type: <input type="text" id="addBikeType" placeholder="Ex: Vélo de Ville"></label>
+                    <label>Pièce Utilisée: 
+                        <select id="addStockId" class="stock-select" onchange="updateAddStatus()">
+                            <option value="0" disabled selected>Sélectionner une pièce</option>
+                            ${stockItems.map(item => `<option value="${item.id}" data-quantity="${item.quantity}">${escapeHTML(item.item_name)} (${item.category}, Stock: ${item.quantity})</option>`).join('')}
+                        </select>
+                    </label>
+                    <label>Statut: 
+                        <select id="addStatus">
+                            <option value="En attente">En attente</option>
+                        </select>
+                    </label>
+                    <label>Progression (%): <input type="number" id="addProgression" value="0" min="0" max="100"></label>
+                </div>
+                <div class="form-footer">
+                    <button onclick="saveNewRepair()">Enregistrer</button>
+                    <button onclick="cancelAdd()">Annuler</button>
+                </div>
+            `;
+            addFormContainer.appendChild(addForm);
+            currentAddForm = addForm;
+        });
+    }
+
+    function updateAddStatus() {
+        const stockSelect = document.getElementById('addStockId');
+        const statusSelect = document.getElementById('addStatus');
+        const selectedOption = stockSelect.options[stockSelect.selectedIndex];
+        const quantity = selectedOption ? parseInt(selectedOption.getAttribute('data-quantity')) : 0;
+
+        statusSelect.innerHTML = quantity > 0
+            ? `
+                <option value="En cours">En cours</option>
+                <option value="Terminé">Terminé</option>
+            `
+            : `<option value="En attente">En attente</option>`;
+    }
+
+    function saveNewRepair() {
+        const bikeId = document.getElementById('addBikeId').value.trim();
+        const bikeType = document.getElementById('addBikeType').value.trim();
+        const stockId = parseInt(document.getElementById('addStockId').value);
+        const status = document.getElementById('addStatus').value;
+        const progression = parseInt(document.getElementById('addProgression').value);
+
+        if (!bikeId.match(/^[a-zA-Z0-9-]+$/)) {
+            alert('L\'ID du vélo doit être alphanumérique');
+            return;
+        }
+        if (!bikeType || bikeType.length > 100) {
+            alert('Le type de vélo est requis et doit être inférieur à 100 caractères');
+            return;
+        }
+        if (stockId === 0) {
+            alert('Veuillez sélectionner une pièce');
+            return;
+        }
+        if (!['En cours', 'En attente', 'Terminé'].includes(status)) {
+            alert('Statut invalide');
+            return;
+        }
+        if (isNaN(progression) || progression < 0 || progression > 100) {
+            alert('La progression doit être un nombre entre 0 et 100');
+            return;
+        }
+
+        const data = { bike_id: bikeId, bike_type: bikeType, status, progression, stock_id: stockId };
+
+        fetch('api/add_repair.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    currentAddForm.remove();
+                    currentAddForm = null;
+                    fetchRepairs();
+                } else {
+                    alert('Erreur: ' + (data.error || 'Ajout échoué'));
+                }
+            })
+            .catch(error => {
+                console.error('Error adding repair:', error);
+                alert(`Erreur lors de l'ajout: ${error.message}`);
+            });
+    }
+
+    function cancelAdd() {
+        if (currentAddForm) {
+            currentAddForm.remove();
+            currentAddForm = null;
+        }
+    }
+
+    function editRepair(id, bikeId, bikeType, stockId, status, progression, button) {
+        if (currentEditRow) {
+            currentEditRow.remove();
+            currentEditRow = null;
+        }
+        if (currentAddForm) {
+            currentAddForm.remove();
+            currentAddForm = null;
+        }
+
+        const parentRow = button.closest('tr');
+        if (!parentRow) {
+            console.error('Parent row not found');
+            alert('Erreur: impossible de trouver la ligne parente');
+            return;
+        }
+
+        fetchStock(() => {
+            const editRow = document.createElement('tr');
+            editRow.className = 'edit-tab';
+            const selectedStock = stockItems.find(item => item.id == stockId) || { quantity: 0 };
+            editRow.innerHTML = `
+                <td colspan="6">
+                    <div class="edit-form">
+                        <div class="form-header">
+                            <h3>Modifier la Réparation</h3>
+                        </div>
+                        <div class="form-body">
+                            <input type="hidden" id="editId" value="${id}">
+                            <label>ID Vélo: <input type="text" id="editBikeId" value="${escapeHTML(bikeId)}"></label>
+                            <label>Type: <input type="text" id="editBikeType" value="${escapeHTML(bikeType)}"></label>
+                            <label>Pièce Utilisée: 
+                                <select id="editStockId" class="stock-select" onchange="updateEditStatus()">
+                                    <option value="0" disabled>Sélectionner une pièce</option>
+                                    ${stockItems.map(item => `
+                                        <option value="${item.id}" data-quantity="${item.quantity}" ${item.id == stockId ? 'selected' : ''}>
+                                            ${escapeHTML(item.item_name)} (${item.category}, Stock: ${item.quantity})
+                                        </option>
+                                    `).join('')}
+                                </select>
+                            </label>
+                            <label>Statut: 
+                                <select id="editStatus">
+                                    ${selectedStock.quantity > 0
+                                        ? `
+                                            <option value="En cours" ${status === 'En cours' ? 'selected' : ''}>En cours</option>
+                                            <option value="Terminé" ${status === 'Terminé' ? 'selected' : ''}>Terminé</option>
+                                        `
+                                        : `<option value="En attente" selected>En attente</option>`}
+                                </select>
+                            </label>
+                            <label>Progression (%): <input type="number" id="editProgression" value="${progression}" min="0" max="100"></label>
+                        </div>
+                        <div class="form-footer">
+                            <button onclick="saveRepair()">Enregistrer</button>
+                            <button onclick="cancelEdit()">Annuler</button>
+                        </div>
+                    </div>
+                </td>
+            `;
+            parentRow.after(editRow);
+            currentEditRow = editRow;
+        });
+    }
+
+    function updateEditStatus() {
+        const stockSelect = document.getElementById('editStockId');
+        const statusSelect = document.getElementById('editStatus');
+        const selectedOption = stockSelect.options[stockSelect.selectedIndex];
+        const quantity = selectedOption ? parseInt(selectedOption.getAttribute('data-quantity')) : 0;
+
+        statusSelect.innerHTML = quantity > 0
+            ? `
+                <option value="En cours">En cours</option>
+                <option value="Terminé">Terminé</option>
+            `
+            : `<option value="En attente">En attente</option>`;
+    }
+
+    function saveRepair() {
+        const id = document.getElementById('editId').value;
+        const bikeId = document.getElementById('editBikeId').value.trim();
+        const bikeType = document.getElementById('editBikeType').value.trim();
+        const stockId = parseInt(document.getElementById('editStockId').value);
+        const status = document.getElementById('editStatus').value;
+        const progression = parseInt(document.getElementById('editProgression').value);
+
+        if (!bikeId.match(/^[a-zA-Z0-9-]+$/)) {
+            alert('L\'ID du vélo doit être alphanumérique');
+            return;
+        }
+        if (!bikeType || bikeType.length > 100) {
+            alert('Le type de vélo est requis et doit être inférieur à 100 caractères');
+            return;
+        }
+        if (stockId === 0) {
+            alert('Veuillez sélectionner une pièce');
+            return;
+        }
+        if (!['En cours', 'En attente', 'Terminé'].includes(status)) {
+            alert('Statut invalide');
+            return;
+        }
+        if (isNaN(progression) || progression < 0 || progression > 100) {
+            alert('La progression doit être un nombre entre 0 et 100');
+            return;
+        }
+
+        const data = { id, bike_id: bikeId, bike_type: bikeType, status, progression, stock_id: stockId };
+
+        fetch('api/update_repair.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    currentEditRow.remove();
+                    currentEditRow = null;
+                    fetchRepairs();
+                } else {
+                    alert('Erreur: ' + (data.error || 'Modification échouée'));
+                }
+            })
+            .catch(error => {
+                console.error('Error updating repair:', error);
+                alert(`Erreur lors de la modification: ${error.message}`);
+            });
+    }
+
+    function cancelEdit() {
+        if (currentEditRow) {
+            currentEditRow.remove();
+            currentEditRow = null;
+        }
+    }
+
+    function deleteRepair(id) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette réparation ?')) {
+            fetch('api/delete_repair.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        fetchRepairs();
+                    } else {
+                        alert('Erreur: ' + (data.error || 'Suppression échouée'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting repair:', error);
+                    alert(`Erreur lors de la suppression: ${error.message}`);
+                });
+        }
+    }
+
+    // Load repairs on page load
+    fetchRepairs();
+    </script>
 </body>
 </html>

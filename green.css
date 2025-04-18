@@ -194,7 +194,7 @@ nav ul li a.signin {
 }
 
 .reserve {
-    background-color:  #2e7d32;
+    background-color: #2e7d32;
 }
 
 #a-nos-velos h2 {
@@ -397,6 +397,7 @@ nav ul li a.signin {
     display: flex;
     justify-content: center;
     gap: 20px;
+    flex-wrap: wrap;
 }
 
 .reparation-card {
@@ -449,20 +450,14 @@ nav ul li a.signin {
     color: #333;
 }
 
-.reparation-card p.status.en-attente {
+.reparation-card p.status.en-attente-de-pièces {
     background-color: #FF4500; /* OrangeRed */
     color: #fff;
 }
 
-.reparation-card p.status.termine {
-    background-color: #2e7d32; /* LimeGreen */
-    color: #fff;
-}
-
-.reparation-card button.detail {
+.reparation-card button.detail,
+.reparation-card button.stock-btn {
     padding: 8px 16px;
-    background-color: #1E90FF;
-    color: #fff;
     border: none;
     border-radius: 5px;
     cursor: pointer;
@@ -471,8 +466,152 @@ nav ul li a.signin {
     transition: background-color 0.3s ease;
 }
 
+.reparation-card button.detail {
+    background-color: #1E90FF;
+    color: #fff;
+}
+
 .reparation-card button.detail:hover {
     background-color: #4169E1; /* RoyalBlue */
+}
+
+.reparation-card button.stock-btn {
+    background-color: #2e7d32;
+    color: #fff;
+    margin-top: 10px;
+}
+
+.reparation-card button.stock-btn:hover {
+    background-color: #4CAF50;
+}
+
+/* Search Bar */
+.search-bar {
+    margin: 20px auto;
+    max-width: 500px;
+    display: flex;
+    gap: 10px;
+}
+
+.search-bar input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #4CAF50;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.search-bar button {
+    padding: 10px 20px;
+    background-color: #2e7d32;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.search-bar button:hover {
+    background-color: #4CAF50;
+}
+
+/* Filter Buttons */
+.filter-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    background-color: #F9F5E8;
+    color: #2e7d32;
+    border: 1px solid #2e7d32;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.filter-btn:hover,
+.filter-btn.active {
+    background-color: #2e7d32;
+    color: #fff;
+}
+
+/* Progress Bar */
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background-color: #ddd;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.progress {
+    height: 100%;
+    background-color: #4CAF50;
+    transition: width 0.3s ease;
+}
+
+/* Modal for Stock Details */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: #F9F5E8;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #4CAF50;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content h3 {
+    font-family: "Bauhaus 93", Arial, sans-serif;
+    font-size: 20px;
+    color: #2e7d32;
+    margin-bottom: 15px;
+}
+
+.modal-content p {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.modal-content .close-btn {
+    padding: 10px 20px;
+    background-color: #FF4500;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 15px;
+    transition: background-color 0.3s ease;
+}
+
+.modal-content .close-btn:hover {
+    background-color: #FF6347;
 }
 
 footer {
@@ -561,9 +700,10 @@ footer {
     align-items: center;
 }
 
-.footer-section p .icon {
+.footer-section p img {
+    width: 20px;
+    height: 20px;
     margin-right: 8px;
-    font-size: 16px;
 }
 
 .footer-section p a {
@@ -616,9 +756,28 @@ footer {
         gap: 10px;
     }
 
+    .hero {
+        flex-direction: column;
+        height: auto;
+        padding: 100px 20px;
+    }
+
     .hero-image img {
+        position: static;
+        max-width: 100%;
+        left: 0;
+        top: 0;
+        margin: 20px auto;
+    }
+
+    .hero-box {
+        position: static;
         width: 100%;
         height: auto;
+        right: 0;
+        top: 0;
+        margin: 20px auto;
+        animation: none;
     }
 
     .bike-grid {
@@ -660,6 +819,20 @@ footer {
         max-width: 500px;
         margin: 20px auto;
     }
+
+    .search-bar {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .search-bar input {
+        width: 100%;
+    }
+
+    .filter-buttons {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
 }
 
 @keyframes slide-from-behind {
@@ -674,95 +847,4 @@ footer {
         transform: translateX(0);
         opacity: 1;
     }
-}
-/* Search Bar */
-.search-bar {
-    margin: 20px auto;
-    max-width: 500px;
-    display: flex;
-    gap: 10px;
-}
-
-.search-bar input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #4CAF50;
-    border-radius: 5px;
-    font-size: 16px;
-}
-
-.search-bar button {
-    padding: 10px 20px;
-    background-color: #2e7d32;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
-}
-
-.search-bar button:hover {
-    background-color: #4CAF50;
-}
-
-/* Filter Buttons */
-.filter-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-bottom: 30px;
-}
-
-.filter-btn {
-    padding: 8px 16px;
-    background-color: #F9F5E8;
-    color: #2e7d32;
-    border: 1px solid #2e7d32;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.filter-btn:hover,
-.filter-btn:focus {
-    background-color: #2e7d32;
-    color: #fff;
-}
-
-/* Progress Bar */
-.progress-bar {
-    width: 100%;
-    height: 10px;
-    background-color: #ddd;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    overflow: hidden;
-}
-
-.progress {
-    height: 100%;
-    background-color: #4CAF50;
-    transition: width 0.3s ease;
-}
-
-/* Contact Mechanic Link */
-.contact-mechanic {
-    display: inline-block;
-    margin-top: 10px;
-    padding: 8px 16px;
-    background-color: #FFD700;
-    color: #333;
-    text-decoration: none;
-    border-radius: 5px;
-    font-size: 14px;
-    font-weight: 500;
-    transition: background-color 0.3s ease;
-}
-
-.contact-mechanic:hover {
-    background-color: #FFC107;
 }

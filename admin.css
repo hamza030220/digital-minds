@@ -210,7 +210,7 @@ td {
 }
 
 .status.termine {
-    background-color:  #2e7d32; /* LimeGreen */
+    background-color: #2e7d32; /* LimeGreen */
     color: #fff;
 }
 
@@ -220,7 +220,6 @@ td {
     height: 10px;
     background-color: #ddd;
     border-radius: 5px;
-   
     display: inline-block;
     vertical-align: middle; /* Align progress bar with text */
 }
@@ -257,6 +256,141 @@ td {
     display: inline-block;
 }
 
+/* Shared styles for both edit and add forms */
+.edit-tab .edit-form,
+.add-form {
+    background-color: #f9f5e8;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin: 10px 0;
+}
+
+.edit-tab .edit-form .form-header,
+.add-form .form-header {
+    margin-bottom: 15px;
+}
+
+.edit-tab .edit-form .form-header h3,
+.add-form .form-header h3 {
+    color: #2e7d32;
+    font-size: 18px;
+    margin: 0;
+}
+
+.edit-tab .edit-form .form-body,
+.add-form .form-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.edit-tab .edit-form .form-body label,
+.add-form .form-body label {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    color: #333;
+    flex: 1;
+    min-width: 200px;
+}
+
+.edit-tab .edit-form .form-body input,
+.edit-tab .edit-form .form-body textarea,
+.edit-tab .edit-form .form-body select,
+.add-form .form-body input,
+.add-form .form-body textarea,
+.add-form .form-body select {
+    margin-top: 5px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.edit-tab .edit-form .form-body input:focus,
+.edit-tab .edit-form .form-body textarea:focus,
+.edit-tab .edit-form .form-body select:focus,
+.add-form .form-body input:focus,
+.add-form .form-body textarea:focus,
+.add-form .form-body select:focus {
+    border-color: #2e7d32;
+    outline: none;
+}
+
+.edit-tab .edit-form .form-body textarea,
+.add-form .form-body textarea {
+    height: 60px;
+    resize: vertical;
+}
+
+.edit-tab .edit-form .form-footer,
+.add-form .form-footer {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.edit-tab .edit-form .form-footer button,
+.add-form .form-footer button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.edit-tab .edit-form .form-footer button:first-of-type,
+.add-form .form-footer button:first-of-type {
+    background-color: #2e7d32;
+    color: #fff;
+}
+
+.edit-tab .edit-form .form-footer button:first-of-type:hover,
+.add-form .form-footer button:first-of-type:hover {
+    background-color: #4CAF50;
+}
+
+.edit-tab .edit-form .form-footer button:last-of-type,
+.add-form .form-footer button:last-of-type {
+    background-color: #FF4500;
+    color: #fff;
+}
+
+.edit-tab .edit-form .form-footer button:last-of-type:hover,
+.add-form .form-footer button:last-of-type:hover {
+    background-color: #FF6347;
+}
+
+/* Stock Dropdown */
+.form-body select.stock-select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    background-color: #fff;
+    transition: border-color 0.3s ease;
+}
+
+.form-body select.stock-select:focus {
+    border-color: #2e7d32;
+    outline: none;
+}
+
+.form-body select.stock-select option[disabled] {
+    color: #999;
+}
+
+/* Low Stock Indicator in Table */
+.low-stock {
+    color: #FF4500;
+    font-weight: bold;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .sidebar {
@@ -290,5 +424,15 @@ td {
     .btn {
         padding: 6px 12px;
         font-size: 12px;
+    }
+
+    .edit-tab .edit-form .form-body,
+    .add-form .form-body {
+        flex-direction: column;
+    }
+
+    .edit-tab .edit-form .form-body label,
+    .add-form .form-body label {
+        min-width: 100%;
     }
 }

@@ -33,81 +33,59 @@
     </header>
 
     <!-- Main Content -->
-    <!-- Main Content -->
-<main>
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-box">
-            <h1>Réparation État</h1>
-            <p>Suivez l'état des réparations de nos vélos en temps réel.</p>
-        </div>
-        <div class="hero-image">
-            <img src="image/hero.png" alt="Réparation État Image">
-        </div>
-    </section>
-
-    <!-- Réparation État Section -->
-    <section class="reparation-section" id="reparation-etat">
-        <h2>Vélos en Réparation</h2>
-        
-        <!-- Search Bar -->
-        <div class="search-bar">
-            <input type="text" placeholder="Rechercher un vélo par ID ou type..." id="search-input">
-            <button onclick="searchBikes()">Rechercher</button>
-        </div>
-
-        <!-- Filter Buttons -->
-        <div class="filter-buttons">
-            <button class="filter-btn" data-filter="all">Tous</button>
-            <button class="filter-btn" data-filter="en-cours">En cours</button>
-            <button class="filter-btn" data-filter="en-attente">En attente</button>
-            <button class="filter-btn" data-filter="termine">Terminé</button>
-        </div>
-
-        <!-- Reparation Grid -->
-        <div class="reparation-grid">
-            <!-- Bike 1 -->
-            <div class="reparation-card" data-status="en-cours">
-                <img src="image/vv.jpg" alt="Vélo de Ville" class="bike-image">
-                <h3>Vélo de Ville #001</h3>
-                <p>Problème: Pneu crevé</p>
-                <p class="status en-cours">État: En cours</p>
-                <div class="progress-bar">
-                    <div class="progress" style="width: 50%;"></div>
-                </div>
-                <p>Date estimée: 15/04/2025</p>
-                <button class="detail">Voir Détails</button>
-                <a href="mailto:mechanic@green.com?subject=Vélo #001" class="contact-mechanic">Contacter le mécanicien</a>
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-box">
+                <h1>Réparation État</h1>
+                <p>Suivez l'état des réparations de nos vélos en temps réel.</p>
             </div>
-            <!-- Bike 2 -->
-            <div class="reparation-card" data-status="en-attente">
-                <img src="image/co.jpg" alt="Vélo de Course" class="bike-image">
-                <h3>Vélo de Course #012</h3>
-                <p>Problème: Freins usés</p>
-                <p class="status en-attente">État: En attente de pièces</p>
-                <div class="progress-bar">
-                    <div class="progress" style="width: 20%;"></div>
-                </div>
-                <p>Date estimée: 25/04/2025</p>
-                <button class="detail">Voir Détails</button>
-                <a href="mailto:mechanic@green.com?subject=Vélo #012" class="contact-mechanic">Contacter le mécanicien</a>
+            <div class="hero-image">
+                <img src="image/hero.png" alt="Réparation État Image">
             </div>
-            <!-- Bike 3 -->
-            <div class="reparation-card" data-status="termine">
-                <img src="image/mm.jpg" alt="Vélo de Montagne" class="bike-image">
-                <h3>Vélo de Montagne #005</h3>
-                <p>Problème: Chaîne cassée</p>
-                <p class="status termine">État: Terminé</p>
-                <div class="progress-bar">
-                    <div class="progress" style="width: 100%;"></div>
-                </div>
-                <p>Date estimée: 05/04/2025</p>
-                <button class="detail">Voir Détails</button>
-                <a href="mailto:mechanic@green.com?subject=Vélo #005" class="contact-mechanic">Contacter le mécanicien</a>
+        </section>
+
+        <!-- Réparation État Section -->
+        <section class="reparation-section" id="reparation-etat">
+            <h2>Vélos en Réparation</h2>
+            
+            <!-- Search Bar -->
+            <div class="search-bar">
+                <input type="text" placeholder="Rechercher un vélo par ID, type ou pièce..." id="search-input" oninput="searchBikes()">
+                <button onclick="searchBikes()">Rechercher</button>
             </div>
+
+            <!-- Filter Buttons -->
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">Tous</button>
+                <button class="filter-btn" data-filter="en-cours">En cours</button>
+                <button class="filter-btn" data-filter="en-attente-de-pièces">En attente de pièces</button>
+            </div>
+
+            <!-- Reparation Grid -->
+            <div class="reparation-grid" id="reparation-grid">
+                <!-- Repairs will be loaded dynamically -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal for Stock Details -->
+    <div class="modal" id="stock-modal">
+        <div class="modal-content">
+            <h3>Détails du Stock</h3>
+            <div id="stock-details"></div>
+            <button class="close-btn" onclick="closeModal('stock-modal')">Fermer</button>
         </div>
-    </section>
-</main>
+    </div>
+
+    <!-- Modal for Repair Details -->
+    <div class="details-modal" id="details-modal">
+        <div class="details-modal-content">
+            <h3>Détails de la Réparation</h3>
+            <div id="repair-details"></div>
+            <button class="close-btn" onclick="closeModal('details-modal')">Fermer</button>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer>
@@ -141,5 +119,179 @@
             </div>
         </div>
     </footer>
+
+    <script>
+    let allRepairs = [];
+
+    function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function fetchRepairs() {
+        fetch('api/get_repairs.php')
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                allRepairs = data;
+                renderRepairs(allRepairs);
+            })
+            .catch(error => {
+                console.error('Error fetching repairs:', error);
+                alert('Erreur lors du chargement des réparations: ' + error.message);
+            });
+    }
+
+    function renderRepairs(repairs) {
+        const grid = document.getElementById('reparation-grid');
+        grid.innerHTML = '';
+
+        const bikeImages = {
+            'Vélo de Ville': 'image/vv.jpg',
+            'Vélo de Course': 'image/co.jpg',
+            'Vélo de Montagne': 'image/mm.jpg'
+        };
+
+        repairs.forEach(repair => {
+            const statusClass = repair.status.toLowerCase().replace(' ', '-') || 'en-cours';
+            const bikeImage = bikeImages[repair.bike_type] || 'image/vv.jpg';
+            const estimatedDate = calculateEstimatedDate(repair.status, repair.progression);
+
+            const card = document.createElement('div');
+            card.className = `reparation-card`;
+            card.setAttribute('data-status', statusClass);
+            card.innerHTML = `
+                <img src="${bikeImage}" alt="${escapeHTML(repair.bike_type)}" class="bike-image">
+                <h3>${escapeHTML(repair.bike_type)} #${escapeHTML(repair.bike_id)}</h3>
+                <p>Pièce: ${escapeHTML(repair.stock_item_name || 'Aucune')}</p>
+                <p class="status ${statusClass}">État: ${escapeHTML(repair.status)}</p>
+                <div class="progress-bar">
+                    <div class="progress" style="width: ${repair.progression}%;"></div>
+                </div>
+                <p>Date estimée: ${estimatedDate}</p>
+                <button class="detail" onclick='showRepairDetails(${JSON.stringify(repair)})'>Voir Détails</button>
+                <button class="stock-btn" onclick="showStockDetails(${repair.stock_id || 0})" ${!repair.stock_id ? 'disabled' : ''}>
+                    Voir le stock
+                </button>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function calculateEstimatedDate(status, progression) {
+        const baseDate = new Date('2025-04-17');
+        let daysToAdd;
+
+        if (status === 'En cours') {
+            daysToAdd = Math.round((100 - progression) / 10);
+        } else {
+            daysToAdd = 11;
+        }
+
+        baseDate.setDate(baseDate.getDate() + daysToAdd);
+        return baseDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function showStockDetails(stockId) {
+        console.log('Stock ID:', stockId);
+        if (!stockId || stockId === 0) {
+            alert('Aucune pièce associée à cette réparation');
+            return;
+        }
+        fetch('api/get_stock.php')
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Stock Data:', data);
+                const stockItem = data.find(item => item.id == stockId);
+                console.log('Found Stock Item:', stockItem);
+                if (!stockItem) {
+                    alert('Pièce non trouvée dans le stock');
+                    return;
+                }
+                // Ensure price is a number before calling toFixed
+                const price = parseFloat(stockItem.price);
+                if (isNaN(price)) {
+                    throw new Error('Price is not a valid number');
+                }
+                const modal = document.getElementById('stock-modal');
+                const stockDetails = document.getElementById('stock-details');
+                stockDetails.innerHTML = `
+                    <p><strong>Pièce:</strong> ${escapeHTML(stockItem.item_name)}</p>
+                    <p><strong>Catégorie:</strong> ${escapeHTML(stockItem.category)}</p>
+                    <p><strong>Quantité en stock:</strong> ${stockItem.quantity}</p>
+                    <p><strong>Prix:</strong> ${price.toFixed(2)} TND</p>
+                `;
+                modal.style.display = 'flex';
+            })
+            .catch(error => {
+                console.error('Error fetching stock details:', error);
+                alert('Erreur lors du chargement des détails du stock: ' + error.message);
+            });
+    }
+
+    function showRepairDetails(repair) {
+        const modal = document.getElementById('details-modal');
+        const repairDetails = document.getElementById('repair-details');
+        const estimatedDate = calculateEstimatedDate(repair.status, repair.progression);
+        repairDetails.innerHTML = `
+            <p><strong>ID du Vélo:</strong> ${escapeHTML(repair.bike_id)}</p>
+            <p><strong>Type de Vélo:</strong> ${escapeHTML(repair.bike_type)}</p>
+            <p><strong>Pièce:</strong> ${escapeHTML(repair.stock_item_name || 'Aucune')}</p>
+            <p><strong>État:</strong> ${escapeHTML(repair.status)}</p>
+            <p><strong>Progression:</strong> ${repair.progression}%</p>
+            <p><strong>Date Estimée:</strong> ${estimatedDate}</p>
+        `;
+        modal.style.display = 'flex';
+    }
+
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.style.display = 'none';
+    }
+
+    // Close modals when clicking outside the modal content
+    document.querySelectorAll('.modal, .details-modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    });
+
+    function searchBikes() {
+        const searchInput = document.getElementById('search-input').value.toLowerCase();
+        const filteredRepairs = allRepairs.filter(repair => 
+            repair.bike_id.toLowerCase().includes(searchInput) || 
+            repair.bike_type.toLowerCase().includes(searchInput) ||
+            (repair.stock_item_name && repair.stock_item_name.toLowerCase().includes(searchInput))
+        );
+        renderRepairs(filteredRepairs);
+    }
+
+    document.querySelectorAll('.filter-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            const filter = button.getAttribute('data-filter');
+            let filteredRepairs = allRepairs;
+
+            if (filter !== 'all') {
+                const statusFilter = filter === 'en-cours' ? 'En cours' : 'En attente de pièces';
+                filteredRepairs = allRepairs.filter(repair => repair.status === statusFilter);
+            }
+
+            renderRepairs(filteredRepairs);
+        });
+    });
+
+    fetchRepairs();
+    </script>
 </body>
 </html>
