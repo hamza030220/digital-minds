@@ -298,19 +298,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="alert alert-success d-flex align-items-center"><i class="bi bi-check-circle me-2"></i><?php echo htmlspecialchars($success); ?></div>
                         <?php endif; ?>
 
-                        <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" id="trajetForm">
+                        <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" id="trajetForm" novalidate>
                             <div class="section-title"><i class="bi bi-info-circle"></i> Informations générales</div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label for="description" class="form-label">Titre du trajet</label>
                                     <input type="text" class="form-control" id="description" name="description" 
-                                           value="<?php echo htmlspecialchars($description); ?>" required>
+                                           value="<?php echo htmlspecialchars($description); ?>">
                                     <div class="form-text">Exemple: "Trajet Plage - Centre-ville"</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="distance" class="form-label">Distance (km)</label>
-                                    <input type="number" step="0.01" min="0.1" class="form-control" id="distance" name="distance" 
-                                           value="<?php echo htmlspecialchars($distance); ?>" required>
+                                    <input type="number" class="form-control" id="distance" name="distance" 
+                                           value="<?php echo htmlspecialchars($distance); ?>">
                                 </div>
                             </div>
                             <div class="row mb-3">

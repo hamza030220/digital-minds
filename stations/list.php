@@ -8,8 +8,8 @@ $success = '';
 try {
     $pdo = getDBConnection();
     
-    // Simple query to get all stations
-    $stmt = $pdo->query("SELECT id, name, location, status FROM stations ORDER BY id DESC");
+    // Fetch city as well
+    $stmt = $pdo->query("SELECT id, name, city, location, status FROM stations ORDER BY id DESC");
     $stations = $stmt->fetchAll();
 
 } catch (PDOException $e) {
@@ -37,10 +37,192 @@ try {
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Liste des Stations</h1>
-            <a href="add.php" class="btn btn-success">
-                <i class="bi bi-plus-circle"></i> Nouvelle Station
-            </a>
+            <div class="d-flex flex-column align-items-end">
+                <a href="add.php" class="btn btn-success mb-2">
+                    <i class="bi bi-plus-circle"></i> Nouvelle Station
+                </a>
+                <button id="showStationsTableModalBtn" class="btn btn-success">
+                    <i class="bi bi-table"></i> Afficher le tableau complet
+                </button>
+            </div>
         </div>
+        <!-- Modal for full stations table -->
+        <div class="modal fade" id="stationsTableModal" tabindex="-1" aria-labelledby="stationsTableModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="w-100">
+                            <h5 class="modal-title" id="stationsTableModalLabel">
+                                <i class="bi bi-table"></i> Tableau complet des stations
+                            </h5>
+                            <button id="exportPdfBtn" class="btn btn-outline-danger btn-sm mt-2">
+                                <i class="bi bi-file-earmark-pdf"></i> Exporter PDF
+                            </button>
+                        </div>
+                        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    </div>
+                    <div class="modal-body" style="max-height:70vh; overflow:auto;">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered mb-0" id="stationsFullTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width:40px;">
+                                            <input type="checkbox" id="checkAllRows" />
+                                        </th>
+                                        <th>ID</th>
+                                        <th>Nom</th>
+                                        <th>Localisation</th>
+                                        <th>Statut</th>
+                                        <th style="display:none;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (!empty($stations)): ?>
+                                        <?php foreach ($stations as $station): ?>
+                                            <tr>
+                                                <td>
+                                                    <input type="checkbox" class="row-checkbox" />
+                                                </td>
+                                                <td><?php echo htmlspecialchars($station['id']); ?></td>
+                                                <td><?php echo htmlspecialchars($station['name']); ?></td>
+                                                <!-- Show city instead of coordinates -->
+                                                <td data-city="<?php echo htmlspecialchars($station['city']); ?>">
+                                                    <?php echo htmlspecialchars($station['city']); ?>
+                                                </td>
+                                                <td><?php echo htmlspecialchars($station['status']); ?></td>
+                                                <td style="display:none;">
+                                                    <a href="edit.php?id=<?php echo $station['id']; ?>" class="btn btn-sm btn-primary">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <a href="delete.php?id=<?php echo $station['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette station ?');">
+                                                        <i class="bi bi-trash"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="6" class="text-center">Aucune station trouvée</td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- jsPDF & autotable CDN -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('showStationsTableModalBtn').addEventListener('click', function() {
+                    var modal = new bootstrap.Modal(document.getElementById('stationsTableModal'));
+                    modal.show();
+                });
+
+                // Check all rows logic
+                const checkAllRows = document.getElementById('checkAllRows');
+                const getRowCheckboxes = () => document.querySelectorAll('#stationsFullTable .row-checkbox');
+                checkAllRows.addEventListener('change', function() {
+                    getRowCheckboxes().forEach(cb => cb.checked = checkAllRows.checked);
+                });
+                document.querySelector('#stationsFullTable tbody').addEventListener('change', function(e) {
+                    if (e.target.classList.contains('row-checkbox')) {
+                        if (!e.target.checked) checkAllRows.checked = false;
+                        else if ([...getRowCheckboxes()].every(cb => cb.checked)) checkAllRows.checked = true;
+                    }
+                });
+
+                // PDF Export logic
+                document.getElementById('exportPdfBtn').addEventListener('click', function() {
+                    const table = document.getElementById('stationsFullTable');
+                    // Only get headers except the first (checkbox) and last (Actions)
+                    const headers = Array.from(table.querySelectorAll('thead th'))
+                        .slice(1, -1)
+                        .map(th => th.textContent.trim());
+                    const selectedRows = [];
+                    table.querySelectorAll('tbody tr').forEach(tr => {
+                        const cb = tr.querySelector('.row-checkbox');
+                        if (cb && cb.checked) {
+                            // Only get tds except the first (checkbox) and last (Actions)
+                            const tds = Array.from(tr.children).slice(1, -1);
+                            // Use city name from data attribute for the location column
+                            const rowData = tds.map((td, idx) => {
+                                if (idx === 2) {
+                                    return td.getAttribute('data-city') || td.textContent.trim();
+                                }
+                                return td.textContent.trim();
+                            });
+                            selectedRows.push(rowData);
+                        }
+                    });
+                    if (selectedRows.length === 0) {
+                        alert('Veuillez sélectionner au moins une ligne à exporter.');
+                        return;
+                    }
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    
+                    // Add logo centered at the top
+                    const img = new Image();
+                    img.src = '../public/image/logobackend.png';
+                    img.onload = function() {
+                        const pageWidth = doc.internal.pageSize.getWidth();
+                        const imgWidth = 40;
+                        const aspectRatio = img.naturalWidth / img.naturalHeight;
+                        const imgHeight = imgWidth / aspectRatio;
+                        const x = (pageWidth - imgWidth) / 2;
+                        doc.addImage(img, 'PNG', x, 10, imgWidth, imgHeight);
+
+                        // Title
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(18);
+                        doc.text('Liste des Stations', pageWidth / 2, imgHeight + 25, { align: 'center' });
+
+                        // Subtitle (date)
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(12);
+                        doc.text('Exporté le : ' + new Date().toLocaleDateString(), pageWidth / 2, imgHeight + 33, { align: 'center' });
+
+                        // Table
+                        doc.autoTable({
+                            head: [headers],
+                            body: selectedRows,
+                            startY: imgHeight + 40,
+                            theme: 'grid',
+                            styles: { fontSize: 11, cellPadding: 3 },
+                            headStyles: { fillColor: [96,186,151], textColor: 255, fontStyle: 'bold' },
+                            alternateRowStyles: { fillColor: [240, 250, 245] },
+                            margin: { left: 10, right: 10 },
+                            tableWidth: 'auto',
+                        });
+
+                        // Footer line
+                        const pageHeight = doc.internal.pageSize.getHeight();
+                        doc.setDrawColor(96,186,151);
+                        doc.setLineWidth(0.5);
+                        doc.line(10, pageHeight - 35, pageWidth - 10, pageHeight - 35);
+
+                        // Signature and date, right-aligned
+                        doc.setFontSize(12);
+                        doc.text("Signature:", pageWidth - 60, pageHeight - 25);
+                        doc.text("Date: " + new Date().toLocaleDateString(), pageWidth - 60, pageHeight - 15);
+
+                        // Footer text
+                        doc.setFontSize(10);
+                        doc.setTextColor(150);
+                        doc.text('Green Admin - Export PDF', pageWidth / 2, pageHeight - 5, { align: 'center' });
+
+                        doc.save('stations.pdf');
+                    };
+                    img.onerror = function() {
+                        alert("Logo introuvable ou erreur de chargement.");
+                    };
+                });
+            });
+        </script>
         <?php if (!empty($success)): ?>
             <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
         <?php endif; ?>
@@ -50,8 +232,8 @@ try {
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover mb-0" style="width:100%;">
+                        <thead style="display: table; width: 100%; table-layout: fixed;">
                             <tr>
                                 <th>ID</th>
                                 <th>Nom</th>
@@ -60,13 +242,14 @@ try {
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="stationsTableBody" style="display: block; max-height: 320px; overflow-y: auto; width: 100%;">
                             <?php if (!empty($stations)): ?>
                                 <?php foreach ($stations as $station): ?>
-                                    <tr>
+                                    <tr style="display: table; width: 100%; table-layout: fixed;">
                                         <td><?php echo htmlspecialchars($station['id']); ?></td>
                                         <td><?php echo htmlspecialchars($station['name']); ?></td>
-                                        <td><?php echo htmlspecialchars($station['location']); ?></td>
+                                        <!-- Show city instead of coordinates -->
+                                        <td><?php echo htmlspecialchars($station['city']); ?></td>
                                         <td><?php echo htmlspecialchars($station['status']); ?></td>
                                         <td>
                                             <a href="edit.php?id=<?php echo $station['id']; ?>" class="btn btn-sm btn-primary">
@@ -79,13 +262,28 @@ try {
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr>
+                                <tr style="display: table; width: 100%;">
                                     <td colspan="5" class="text-center">Aucune station trouvée</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
+                <style>
+                    #stationsTableBody {
+                        max-height: 320px;
+                        overflow-y: auto;
+                        scroll-behavior: smooth;
+                    }
+                    #stationsTableBody::-webkit-scrollbar {
+                        width: 8px;
+                        background: #f1f1f1;
+                    }
+                    #stationsTableBody::-webkit-scrollbar-thumb {
+                        background: #60BA97;
+                        border-radius: 4px;
+                    }
+                </style>
             </div>
         </div>
         <div class="card mb-4">

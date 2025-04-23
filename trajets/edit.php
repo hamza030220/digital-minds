@@ -223,7 +223,7 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                             <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
                         <?php endif; ?>
                         
-                        <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" id="trajetForm">
+                        <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" id="trajetForm" novalidate>
                             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                             <input type="hidden" name="id" value="<?php echo htmlspecialchars($id); ?>">
                             <input type="hidden" name="route_coordinates" id="route_coordinates" value="<?php echo htmlspecialchars(json_encode($route_coordinates)); ?>">
@@ -234,13 +234,13 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                                 <div class="col-md-6">
                                     <label for="description" class="form-label">Titre du trajet</label>
                                     <input type="text" class="form-control" id="description" name="description" 
-                                           value="<?php echo htmlspecialchars($description); ?>" required>
+                                           value="<?php echo htmlspecialchars($description); ?>">
                                     <div class="form-text">Exemple: "Trajet Plage - Centre-ville"</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="distance" class="form-label">Distance (km)</label>
-                                    <input type="number" step="0.01" min="0.1" class="form-control" id="distance" name="distance" 
-                                           value="<?php echo htmlspecialchars($distance); ?>" required>
+                                    <input type="number" class="form-control" id="distance" name="distance" 
+                                           value="<?php echo htmlspecialchars($distance); ?>">
                                 </div>
                             </div>
                             <!-- Add this block for the calculated fields -->

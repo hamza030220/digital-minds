@@ -1,75 +1,74 @@
--- phpMyAdmin SQL Dump
--- version 5.2.1
--- https://www.phpmyadmin.net/
---
--- Hôte : 127.0.0.1
--- Généré le : jeu. 17 avr. 2025 à 22:06
--- Version du serveur : 10.4.32-MariaDB
--- Version de PHP : 8.0.30
+# Green Admin
 
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
+Green Admin is a web application for managing eco-friendly routes ("trajets") and charging stations ("stations"). It allows administrators to add, edit, and visualize routes and stations on an interactive map, calculate environmental savings, and manage user access.
 
+## Features
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
+- Add, edit, and delete routes with interactive map drawing (Leaflet.js)
+- Add, edit, and delete charging stations with geolocation
+- Calculate distance, CO₂ savings, battery energy, and fuel saved for each route
+- Secure admin authentication
+- Responsive Bootstrap-based UI
+- Data stored in a MariaDB/MySQL database
 
---
--- Base de données : `green_db`
---
+## Technologies Used
 
--- --------------------------------------------------------
+- PHP (backend)
+- MySQL/MariaDB (database)
+- JavaScript (frontend logic)
+- [Leaflet.js](https://leafletjs.com/) for interactive maps
+- [Leaflet Draw](https://github.com/Leaflet/Leaflet.draw) for route drawing
+- [Bootstrap 5](https://getbootstrap.com/) for UI
+- [Axios](https://axios-http.com/) for HTTP requests
 
---
--- Structure de la table `admins`
---
+## Setup Instructions
 
-CREATE TABLE `admins` (
-  `id` int(11) NOT NULL,
-  `username` varchar(50) NOT NULL,
-  `email` varchar(100) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `role` enum('admin','user') NOT NULL DEFAULT 'user',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `last_login` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+1. **Clone the repository**  
+   Download or clone this project to your local machine.
 
---
--- Déchargement des données de la table `admins`
---
+2. **Database Setup**  
+   - Import the provided SQL file (`database/green_db.sql`) into your MySQL/MariaDB server.
+   - Update the database credentials in `includes/config.php` to match your environment.
 
-INSERT INTO `admins` (`id`, `username`, `email`, `password`, `role`, `created_at`, `last_login`) VALUES
-(1, 'admin', 'admin@example.com', '$2y$10$OOfwryf7/n6j14aFnvIblOC1l5fRy3vTUxOacSGmAUVw7Zq7t1/2C', 'admin', '2025-04-11 11:06:40', '2025-04-11 13:07:08');
+3. **Configure XAMPP**  
+   - Place the project folder in your XAMPP `htdocs` directory.
+   - Start Apache and MySQL from the XAMPP control panel.
 
---
--- Index pour les tables déchargées
---
+4. **Access the Application**  
+   - Open your browser and go to:  
+     `http://localhost/just in case/`
 
---
--- Index pour la table `admins`
---
-ALTER TABLE `admins`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `username` (`username`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `idx_username` (`username`),
-  ADD KEY `idx_email` (`email`),
-  ADD KEY `idx_role` (`role`);
+5. **Default Admin Login**  
+   - Username: `admin`
+   - Password: (see the `admins` table in your database; you may need to reset it manually)
 
---
--- AUTO_INCREMENT pour les tables déchargées
---
+## Folder Structure
 
---
--- AUTO_INCREMENT pour la table `admins`
---
-ALTER TABLE `admins`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-COMMIT;
+- `assets/` — JavaScript, CSS, and images
+- `trajets/` — Route management (add, edit, list, delete)
+- `stations/` — Station management (add, edit, list, delete)
+- `includes/` — Shared PHP includes (config, sidebar)
+- `public/` — Public assets (CSS, images, etc.)
+- `database/` — Database SQL dump
 
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+## Customization
+
+- To change the map’s default location, edit the coordinates in the JavaScript initialization in `trajets/add.php` and `trajets/edit.php`.
+- To add new admin users, insert them into the `admins` table in the database.
+
+## Security
+
+- CSRF protection is implemented on all forms.
+- Passwords are hashed using PHP’s `password_hash`.
+
+## Contributing
+
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+
+## License
+
+This project is for educational and demonstration purposes.
+
+---
+
+*Made with ❤️ HAMZA LE Z 😝

@@ -1,6 +1,36 @@
 <?php
 require_once '../includes/config.php';
 
+// Add this function before your form processing logic
+function getCityNameFromCoordsOSM($coords) {
+    list($lat, $lng) = explode(',', $coords);
+    $lat = trim($lat);
+    $lng = trim($lng);
+
+    $url = "https://nominatim.openstreetmap.org/reverse?format=json&lat={$lat}&lon={$lng}&zoom=10&addressdetails=1&accept-language=fr";
+    $opts = [
+        "http" => [
+            "header" => "User-Agent: GreenAdmin/1.0\r\n"
+        ]
+    ];
+    $context = stream_context_create($opts);
+
+    $json = @file_get_contents($url, false, $context);
+    if ($json === false) {
+        return 'Inconnu';
+    }
+    $data = json_decode($json, true);
+    // Return the governorate (state) if available
+    if (isset($data['address']['state'])) {
+        return $data['address']['state'];
+    }
+    // Fallbacks if state is not available
+    if (isset($data['address']['county'])) {
+        return $data['address']['county'];
+    }
+    return 'Inconnu';
+}
+
 // Require login
 requireLogin();
 
@@ -23,6 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $location = trim($_POST['location']);
     $status = isset($_POST['status']) ? $_POST['status'] : 'active';
 
+    // Get city name from coordinates
+    $city = getCityNameFromCoordsOSM($location);
+
     // Validate input
     if (empty($name)) {
         $error = "Le nom de la station est requis.";
@@ -40,9 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->fetch()) {
                 $error = "Une station avec ce nom existe déjà.";
             } else {
-                // Insert new station
-                $stmt = $pdo->prepare("INSERT INTO stations (name, location, status) VALUES (?, ?, ?)");
-                $stmt->execute([$name, $location, $status]);
+                // Insert new station with city
+                $stmt = $pdo->prepare("INSERT INTO stations (name, location, city, status) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$name, $location, $city, $status]);
                 
                 $success = "Station ajoutée avec succès.";
                 // Reset form
@@ -99,20 +132,20 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                             <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
                         <?php endif; ?>
                         
-                        <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
+                        <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" novalidate>
                             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                             
                             <div class="mb-3">
                                 <label for="name" class="form-label">Nom de la station</label>
                                 <input type="text" class="form-control" id="name" name="name" 
-                                       value="<?php echo htmlspecialchars($name); ?>" required>
+                                       value="<?php echo htmlspecialchars($name); ?>">
                             </div>
                             
                             <div class="mb-3">
                                 <label for="location" class="form-label">Emplacement</label>
                                 <div id="map" style="height: 300px; margin-bottom: 10px;"></div>
                                 <input type="text" class="form-control" id="location" name="location" 
-                                       value="<?php echo htmlspecialchars($location); ?>" required readonly>
+                                       value="<?php echo htmlspecialchars($location); ?>" readonly>
                                 <small class="text-muted">Cliquez sur la carte pour sélectionner l'emplacement</small>
                             </div>
                             

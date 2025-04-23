@@ -81,18 +81,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                         <?php endif; ?>
                         
-                        <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
+                        <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" novalidate>
                             
                             
                             <div class="mb-3">
                                 <label for="username" class="form-label">Nom d'utilisateur</label>
                                 <input type="text" class="form-control" id="username" name="username" 
-                                       value="<?php echo htmlspecialchars($username); ?>" required>
+                                       value="<?php echo htmlspecialchars($username); ?>">
                             </div>
                             
                             <div class="mb-3">
                                 <label for="password" class="form-label">Mot de passe</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
+                                <input type="password" class="form-control" id="password" name="password">
                             </div>
                             
                             <button type="submit" class="btn btn-primary w-100">Se connecter</button>
