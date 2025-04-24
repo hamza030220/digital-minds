@@ -6,17 +6,17 @@ error_reporting(E_ALL);
 
 try {
     $pdo = getDBConnection();
-    
+
     // Vérifier si la table trajets existe
     $tables = $pdo->query("SHOW TABLES LIKE 'trajets'")->fetchAll();
     if (empty($tables)) {
         throw new PDOException("La table 'trajets' n'existe pas dans la base de données.");
     }
-    
+
     // Fetch active stations
     $stmt = $pdo->query("SELECT * FROM stations WHERE status = 'active' ORDER BY name");
     $stations = $stmt->fetchAll();
-    
+
     // Fetch trajets with start and end station details
     $trajetsStmt = $pdo->query("
         SELECT 
@@ -223,6 +223,60 @@ try {
             border-top: 1px solid #eee;
         }
     </style>
+            <style>
+        .stations-pagination-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            margin: 0 4px;
+            border-radius: 50%;
+            border: none;
+            background: #fff;
+            color: #3a9856;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 2px 6px rgba(58,152,86,0.08);
+            cursor: pointer;
+            transition: 
+                background 0.3s, 
+                color 0.3s, 
+                transform 0.2s cubic-bezier(.4,2,.6,1);
+            outline: none;
+        }
+        .stations-pagination-btn.active,
+        .stations-pagination-btn:focus {
+            background: #3a9856;
+            color: #fff;
+        }
+        .stations-pagination-btn:hover:not(:disabled) {
+            background: #3a9856;
+            color: #fff;
+            transform: scale(1.18) rotate(-6deg);
+            box-shadow: 0 4px 16px rgba(58,152,86,0.18);
+        }
+        .stations-pagination-btn:disabled {
+            background: #e0e0e0;
+            color: #bdbdbd;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .station-locate-btn {
+          display: inline-flex;
+          align-items: center;
+           justify-content: center;
+           margin-left: 10px;
+          cursor: pointer;
+          border-radius: 50%;
+          transition: background 0.2s, transform 0.2s;
+           padding: 2px;
+          }
+        .station-locate-btn:hover {
+         background: #e6f7ec;
+         transform: scale(1.15);
+         }
+        </style>
 </head>
     <!-- Header -->
     <header>
@@ -256,91 +310,104 @@ try {
             <section class="illustration">
                 <img src="/just in case/public/image/lost.png" alt="Illustration">
             </section>
-            
             <section class="stations-section">
-                <h2 class="section-title">Nos stations</h2>
-                <section class="stations">
+                <h2 class="section-title" style="display:inline-block;">Nos stations</h2>
+                <!-- Remove this button from the stations section -->
+                <!--
+                <button id="find-nearest-btn" class="station-locate-btn" title="Trouver la station la plus proche" style="vertical-align:middle; margin-left:10px;">
+                    <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="8" stroke="#3a9856" stroke-width="2"/>
+                        <circle cx="10" cy="10" r="3" fill="#3a9856"/>
+                    </svg>
+                </button>
+                -->
+                <section class="stations" id="stations-list">
                     <?php if (isset($error)): ?>
                         <div class="error-message">
                             Une erreur est survenue lors du chargement des stations.
                         </div>
                     <?php else: ?>
-                        <?php foreach ($stations as $station): ?>
-                            <button class="station-btn" data-location="<?php echo htmlspecialchars($station['location']); ?>">
+                        <?php foreach ($stations as $i => $station): ?>
+                            <button class="station-btn"
+                                    data-location="<?php echo htmlspecialchars($station['location']); ?>"
+                                    data-index="<?php echo $i; ?>"
+                                    style="display: none;">
                                 <?php echo htmlspecialchars($station['name']); ?>
                             </button>
                         <?php endforeach; ?>
-                        
                         <?php if (empty($stations)): ?>
                             <p class="no-stations">Aucune station n'est disponible pour le moment.</p>
                         <?php endif; ?>
                     <?php endif; ?>
                 </section>
+                <div id="stations-pagination" style="text-align:center; margin-top:15px;"></div>
             </section>
         </section>
+
         <!-- Trajet Section -->
-<section class="trajet-section">
-    <h2 class="section-title">Nos trajets</h2>
-    <section class="trajet-container">
-        <?php if (isset($trajets) && !empty($trajets)): ?>
-            <?php foreach ($trajets as $trajet): ?>
-                <section class="trajet-card improved-trajet-card">
-                    <div class="trajet-card-header">
-                        <h3>
-                            <span class="trajet-icon">🚲</span>
-                            <?php echo htmlspecialchars($trajet['description']); ?>
-                        </h3>
-                    </div>
-                    <div class="trajet-info improved-trajet-info">
-                        <div class="trajet-stations">
-                            <span class="trajet-station-label"><strong>De:</strong></span>
-                            <span class="trajet-station-value"><?php echo htmlspecialchars($trajet['start_station_name']); ?></span>
-                            <span class="trajet-arrow">→</span>
-                            <span class="trajet-station-label"><strong>À:</strong></span>
-                            <span class="trajet-station-value"><?php echo htmlspecialchars($trajet['end_station_name']); ?></span>
-                        </div>
-                        <div class="trajet-metrics">
-                            <div class="trajet-metric">
-                                <span class="trajet-metric-icon">📏</span>
-                                <span><?php echo htmlspecialchars($trajet['distance']); ?> km</span>
+        <section class="trajet-section">
+            <h2 class="section-title">Nos trajets</h2>
+            <section class="trajet-container" id="trajets-list">
+                <?php if (isset($trajets) && !empty($trajets)): ?>
+                    <?php foreach ($trajets as $i => $trajet): ?>
+                        <section class="trajet-card improved-trajet-card" data-index="<?php echo $i; ?>" style="display: none;">
+                            <div class="trajet-card-header">
+                                <h3>
+                                    <span class="trajet-icon">🚲</span>
+                                    <?php echo htmlspecialchars($trajet['description']); ?>
+                                </h3>
                             </div>
-                            <div class="trajet-metric">
-                                <span class="trajet-metric-icon">🌱</span>
-                                <span><?php echo htmlspecialchars($trajet['co2_saved']); ?> g CO₂</span>
+                            <div class="trajet-info improved-trajet-info">
+                                <div class="trajet-stations">
+                                    <span class="trajet-station-label"><strong>De:</strong></span>
+                                    <span class="trajet-station-value"><?php echo htmlspecialchars($trajet['start_station_name']); ?></span>
+                                    <span class="trajet-arrow">→</span>
+                                    <span class="trajet-station-label"><strong>À:</strong></span>
+                                    <span class="trajet-station-value"><?php echo htmlspecialchars($trajet['end_station_name']); ?></span>
+                                </div>
+                                <div class="trajet-metrics">
+                                    <div class="trajet-metric">
+                                        <span class="trajet-metric-icon">📏</span>
+                                        <span><?php echo htmlspecialchars($trajet['distance']); ?> km</span>
+                                    </div>
+                                    <div class="trajet-metric">
+                                        <span class="trajet-metric-icon">🌱</span>
+                                        <span><?php echo htmlspecialchars($trajet['co2_saved']); ?> g CO₂</span>
+                                    </div>
+                                    <div class="trajet-metric">
+                                        <span class="trajet-metric-icon">🔋</span>
+                                        <span><?php echo htmlspecialchars($trajet['battery_energy']); ?> Wh</span>
+                                    </div>
+                                    <div class="trajet-metric">
+                                        <span class="trajet-metric-icon">⛽</span>
+                                        <span><?php echo htmlspecialchars($trajet['fuel_saved']); ?> L</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="trajet-metric">
-                                <span class="trajet-metric-icon">🔋</span>
-                                <span><?php echo htmlspecialchars($trajet['battery_energy']); ?> Wh</span>
+                            <div class="route-description improved-route-description">
+                                <?php echo nl2br(htmlspecialchars($trajet['route_description'])); ?>
                             </div>
-                            <div class="trajet-metric">
-                                <span class="trajet-metric-icon">⛽</span>
-                                <span><?php echo htmlspecialchars($trajet['fuel_saved']); ?> L</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="route-description improved-route-description">
-                        <?php echo nl2br(htmlspecialchars($trajet['route_description'])); ?>
-                    </div>
-                    <button class="maps-btn improved-maps-btn"
-                            data-id="<?php echo $trajet['id']; ?>"
-                            data-start="<?php echo htmlspecialchars($trajet['start_station_location']); ?>"
-                            data-end="<?php echo htmlspecialchars($trajet['end_station_location']); ?>"
-                            data-start-name="<?php echo htmlspecialchars($trajet['start_station_name']); ?>"
-                            data-end-name="<?php echo htmlspecialchars($trajet['end_station_name']); ?>"
-                            data-route='<?php echo htmlspecialchars($trajet['route_coordinates']); ?>'
-                            data-distance="<?php echo htmlspecialchars($trajet['distance']); ?>"
-                            data-description="<?php echo htmlspecialchars($trajet['description']); ?>"
-                            onclick="openRouteInMaps(this)">
-                        Voir sur Maps
-                    </button>
-                </section>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <p class="no-trajets">Aucun trajet n'est disponible pour le moment.</p>
-        <?php endif; ?>
-    </section>
-</section>
-        
+                            <button class="maps-btn improved-maps-btn"
+                                    data-id="<?php echo $trajet['id']; ?>"
+                                    data-start="<?php echo htmlspecialchars($trajet['start_station_location']); ?>"
+                                    data-end="<?php echo htmlspecialchars($trajet['end_station_location']); ?>"
+                                    data-start-name="<?php echo htmlspecialchars($trajet['start_station_name']); ?>"
+                                    data-end-name="<?php echo htmlspecialchars($trajet['end_station_name']); ?>"
+                                    data-route='<?php echo htmlspecialchars($trajet['route_coordinates']); ?>'
+                                    data-distance="<?php echo htmlspecialchars($trajet['distance']); ?>"
+                                    data-description="<?php echo htmlspecialchars($trajet['description']); ?>"
+                                    onclick="openRouteInMaps(this)">
+                                Voir sur Maps
+                            </button>
+                        </section>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p class="no-trajets">Aucun trajet n'est disponible pour le moment.</p>
+                <?php endif; ?>
+            </section>
+            <div id="trajets-pagination" style="text-align:center; margin-top:15px;"></div>
+        </section>
+
         <!-- Map Modal -->
         <div id="mapModal" class="modal">
             <div class="modal-content">
@@ -354,83 +421,50 @@ try {
                     <button id="open-osm" class="maps-btn">Ouvrir dans OpenStreetMap</button>
                 </div>
             </div>
+        <!-- Remove the Nearest Station Modal -->
+        <!--
+        <div id="nearestStationModal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal" onclick="closeNearestModal()">&times;</span>
+                <div class="modal-header">
+                    <h3 id="nearest-modal-title">Station la plus proche</h3>
+                </div>
+                <div id="nearest-map-container" class="map-container"></div>
+                <div id="nearest-route-details"></div>
+            </div>
         </div>
+        -->
     </main>
     <script>
-    // Function to open station location in Google Maps
-    // Replace the current openInMaps function with this enhanced version
+    // --- Station Modal, Pagination, and Trajet Map Logic ---
     function openInMaps(location, stationName) {
         try {
-            // Validate input
-            if (!location) {
-                throw new Error("Location data is missing for station");
-            }
-            
-            // Check if Leaflet is loaded
-            if (typeof L === 'undefined') {
-                throw new Error("Map library not loaded");
-            }
-            
-            // Strict coordinate validation
+            if (!location) throw new Error("Location data is missing for station");
+            if (typeof L === 'undefined') throw new Error("Map library not loaded");
             const coordPattern = /^-?\d{1,3}\.\d+,\s*-?\d{1,3}\.\d+$/;
-            if (!coordPattern.test(location)) {
-                throw new Error(`Invalid location format: ${location}. Expected 'lat,lng'`);
-            }
-            
+            if (!coordPattern.test(location)) throw new Error(`Invalid location format: ${location}. Expected 'lat,lng'`);
             const [lat, lng] = location.split(',').map(coord => parseFloat(coord.trim()));
-            
-            // Validate coordinate ranges
-            if (Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-                throw new Error(`Coordinates out of range (${lat},${lng})`);
+            if (Math.abs(lat) > 90 || Math.abs(lng) > 180) throw new Error(`Coordinates out of range (${lat},${lng})`);
+            if (!map || !map.setView) {
+                initMap();
+                if (!map) throw new Error("Map initialization failed");
             }
-            
-            // Initialize map with error handling
-            try {
-                if (!map || !map.setView) {
-                    initMap();
-                    if (!map) throw new Error("Map initialization failed");
-                }
-            } catch (initError) {
-                throw new Error(`Map initialization error: ${initError.message}`);
-            }
-            
-            // Clear existing layers
             if (routeLayer && routeLayer.clearLayers) {
                 routeLayer.clearLayers();
             } else {
                 routeLayer = L.layerGroup().addTo(map);
             }
-            
-            // Set view with error handling
-            try {
-                map.setView([lat, lng], 15);
-            } catch (viewError) {
-                throw new Error(`Failed to set map view: ${viewError.message}`);
-            }
-            
-            // Add marker with error handling
-            try {
-                L.marker([lat, lng], {
-                    title: stationName || "Station",
-                    alt: stationName || "Station Location"
-                })
-                .addTo(map)
-                .bindPopup(stationName || "Station Location")
-                .openPopup();
-                
-                return true; // Success
-            } catch (markerError) {
-                throw new Error(`Failed to add marker: ${markerError.message}`);
-            }
-            
+            map.setView([lat, lng], 15);
+            L.marker([lat, lng], {
+                title: stationName || "Station",
+                alt: stationName || "Station Location"
+            })
+            .addTo(routeLayer)
+            .bindPopup(stationName || "Station Location")
+            .openPopup();
+            return true;
         } catch (error) {
-            console.error("Station Map Error:", {
-                error: error.message,
-                location: location,
-                station: stationName
-            });
-            
-            // Show user-friendly error
+            console.error("Station Map Error:", { error: error.message, location: location, station: stationName });
             const errorMsg = `Cannot display station: ${error.message.replace(/^Error:\s*/i, '')}`;
             document.getElementById('route-details').innerHTML = `
                 <div class="error-message">
@@ -438,143 +472,21 @@ try {
                     Location: ${location || 'N/A'}
                 </div>
             `;
-            
-            return false; // Failure
+            return false;
         }
     }
-    
-    // Variables for modal and map
-    let map;
-    let routeLayer = L.layerGroup();
-    let currentTrajet = null;
-    const modal = document.getElementById('mapModal');
-    
-    // Initialize map when modal is opened
-    function initMap() {
-           if (!map) {
-            // Create Leaflet map instance
-            map = L.map('map-container').setView([36.8065, 10.1815], 10); // Tunisia center
-            
-            // Add OpenStreetMap tiles
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-            
-            // Initialize route layer
-            routeLayer = L.layerGroup().addTo(map);
-        }
-    }
-    function closeModal() {
-    modal.style.display = 'none';
-}
-    // Function to display the route on a modal map
-    function openRouteInMaps(element) {
-        try {
-            // Store current trajet data
-            currentTrajet = {
-                id: element.dataset.id,
-                startLocation: element.dataset.start,
-                endLocation: element.dataset.end,
-                startName: element.dataset.startName,
-                endName: element.dataset.endName,
-                routeCoordinates: element.dataset.route,
-                distance: element.dataset.distance,
-                description: element.dataset.description
-            };
-            
-            // Update modal title
-            document.getElementById('modal-title').textContent = currentTrajet.description;
-            
-            // Show route details
-            document.getElementById('route-details').innerHTML = `
-                <p><strong>De:</strong> ${currentTrajet.startName} à <strong>${currentTrajet.endName}</strong></p>
-                <p><strong>Distance:</strong> ${currentTrajet.distance} km</p>
-            `;
-            
-            // Setup OpenStreetMap open button
-            document.getElementById('open-osm').onclick = function() {
-                openInOSM(currentTrajet);
-            };
-            
-            // Open modal
-            modal.style.display = 'block';
-            
-            // Initialize map and display route
-            initMap();
-            displayRoute(currentTrajet);
-        } catch (error) {
-            console.error("Error opening route:", error);
-            document.getElementById('route-details').innerHTML = `
-                <div class="error-message">
-                    Could not display route: ${error.message}
-                </div>
-            `;
-        }
-    }
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize station buttons
-        const stationButtons = document.querySelectorAll('.station-btn');
-        stationButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const location = this.getAttribute('data-location');
-                const stationName = this.textContent.trim();
-                
-                // Open modal first
-                modal.style.display = 'block';
-                
-                // Then show location
-                if (location) {
-                    openInMaps(location, stationName);
-                }
-                
-                // Update modal title
-                document.getElementById('modal-title').textContent = stationName;
-                
-                // Hide route details in station view
-                document.getElementById('route-details').innerHTML = `
-                    <p><strong>Station:</strong> ${stationName}</p>
-                    <p><strong>Location:</strong> ${location}</p>
-                `;
-                
-                // Change button text for stations
-                document.getElementById('open-osm').textContent = 'Ouvrir dans OpenStreetMap';
-                document.getElementById('open-osm').onclick = function() {
-                    window.open(`https://www.openstreetmap.org/search?query=${encodeURIComponent(location)}`, '_blank');
-                };
-            });
-        });
-        
-        // Close modal when clicking outside the content
-        window.addEventListener('click', function(event) {
-            if (event.target === modal) {
-                closeModal();
-            }
-        });
-    });
-    </script>
-     <script>
-    // Function to display route on map
+
     function displayRoute(trajet) {
         try {
-            // Clear existing route
             routeLayer.clearLayers();
-            
-            // Parse route coordinates
             const routeCoords = JSON.parse(trajet.routeCoordinates);
-            
-            // Convert coordinates to Leaflet LatLng objects
             const latLngs = routeCoords.map(coord => L.latLng(coord.lat, coord.lng));
-            
-            // Draw the route on the map
             L.polyline(latLngs, {
                 color: '#3a9856',
                 weight: 5,
                 opacity: 0.7,
                 smoothFactor: 1
             }).addTo(routeLayer);
-            
-            // Add start and end markers
             if (trajet.startLocation) {
                 const [startLat, startLng] = trajet.startLocation.split(',').map(Number);
                 L.marker([startLat, startLng], {
@@ -583,7 +495,6 @@ try {
                 .addTo(routeLayer)
                 .bindPopup(`<b>Start:</b> ${trajet.startName}`);
             }
-            
             if (trajet.endLocation) {
                 const [endLat, endLng] = trajet.endLocation.split(',').map(Number);
                 L.marker([endLat, endLng], {
@@ -592,8 +503,6 @@ try {
                 .addTo(routeLayer)
                 .bindPopup(`<b>End:</b> ${trajet.endName}`);
             }
-            
-            // Fit map to route bounds
             if (latLngs.length > 0) {
                 map.fitBounds(latLngs);
             }
@@ -607,22 +516,178 @@ try {
         }
     }
 
-function openInOSM(trajet) {
-    try {
-        if (!trajet.startLocation || !trajet.endLocation) {
-            throw new Error("Start or end location missing");
+    function openInOSM(trajet) {
+        try {
+            if (!trajet.startLocation || !trajet.endLocation) {
+                throw new Error("Start or end location missing");
+            }
+            const startCoords = trajet.startLocation.split(',');
+            const endCoords = trajet.endLocation.split(',');
+            const url = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${startCoords[0]}%2C${startCoords[1]}%3B${endCoords[0]}%2C${endCoords[1]}`;
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error("Error opening in OSM:", error);
+            alert("Could not open in OpenStreetMap: " + error.message);
         }
-        
-        const startCoords = trajet.startLocation.split(',');
-        const endCoords = trajet.endLocation.split(',');
-        
-        const url = `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${startCoords[0]}%2C${startCoords[1]}%3B${endCoords[0]}%2C${endCoords[1]}`;
-        window.open(url, '_blank');
-    } catch (error) {
-        console.error("Error opening in OSM:", error);
-        alert("Could not open in OpenStreetMap: " + error.message);
     }
-}
-</script>
-</body>
-</html>
+
+    let map;
+    let routeLayer;
+    let currentTrajet = null;
+    const modal = document.getElementById('mapModal');
+
+    function initMap() {
+        if (!map) {
+            map = L.map('map-container').setView([36.8065, 10.1815], 10);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            routeLayer = L.layerGroup().addTo(map);
+        }
+    }
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Pagination for stations ---
+        const stationsPerPage = 5;
+        const stationButtons = document.querySelectorAll('.station-btn');
+        const paginationDiv = document.getElementById('stations-pagination');
+        let currentPage = 1;
+        const totalStations = stationButtons.length;
+        const totalPages = Math.ceil(totalStations / stationsPerPage);
+
+        // Make the function global BEFORE rendering pagination
+        window.changeStationsPage = function(page) {
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            showStationsPage(page);
+        };
+
+        function showStationsPage(page) {
+            stationButtons.forEach(btn => btn.style.display = 'none');
+            const start = (page - 1) * stationsPerPage;
+            const end = start + stationsPerPage;
+            for (let i = start; i < end && i < totalStations; i++) {
+                stationButtons[i].style.display = '';
+            }
+            renderPagination(page);
+        }
+
+        function renderPagination(page) {
+            if (totalStations === 0) {
+                paginationDiv.innerHTML = '';
+                return;
+            }
+            let html = '';
+            html += `<button class="stations-pagination-btn" ${page === 1 ? 'disabled' : ''} onclick="changeStationsPage(${page-1})">&laquo;</button>`;
+            for (let i = 1; i <= totalPages; i++) {
+                html += `<button class="stations-pagination-btn${i === page ? ' active' : ''}" onclick="changeStationsPage(${i})">${i}</button>`;
+            }
+            html += `<button class="stations-pagination-btn" ${page === totalPages ? 'disabled' : ''} onclick="changeStationsPage(${page+1})">&raquo;</button>`;
+            paginationDiv.innerHTML = html;
+        }
+
+        // Initial display (after global assignment)
+        showStationsPage(currentPage);
+
+        // --- Station modal logic ---
+        stationButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const location = this.getAttribute('data-location');
+                const stationName = this.textContent.trim();
+                modal.style.display = 'block';
+                if (location) {
+                    openInMaps(location, stationName);
+                }
+                document.getElementById('modal-title').textContent = stationName;
+                document.getElementById('route-details').innerHTML = `
+                    <p><strong>Station:</strong> ${stationName}</p>
+                    <p><strong>Location:</strong> ${location}</p>
+                `;
+                document.getElementById('open-osm').textContent = 'Ouvrir dans OpenStreetMap';
+                document.getElementById('open-osm').onclick = function() {
+                    window.open(`https://www.openstreetmap.org/search?query=${encodeURIComponent(location)}`, '_blank');
+                };
+            });
+        });
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+    });
+
+
+        // --- Pagination for stations ---
+        const stationsPerPage = 5;
+        const stationButtons = document.querySelectorAll('.station-btn');
+        const paginationDiv = document.getElementById('stations-pagination');
+        let currentPage = 1;
+        const totalStations = stationButtons.length;
+        const totalPages = Math.ceil(totalStations / stationsPerPage);
+
+        // ... existing station pagination code ...
+
+        // --- Pagination for trajets ---
+        const trajetsPerPage = 3;
+        const trajetCards = document.querySelectorAll('.trajet-card');
+        const trajetsPaginationDiv = document.getElementById('trajets-pagination');
+        let currentTrajetPage = 1;
+        const totalTrajets = trajetCards.length;
+        const totalTrajetPages = Math.ceil(totalTrajets / trajetsPerPage);
+
+        window.changeTrajetsPage = function(page) {
+            if (page < 1 || page > totalTrajetPages) return;
+            currentTrajetPage = page;
+            showTrajetsPage(page);
+        };
+
+        function showTrajetsPage(page) {
+            trajetCards.forEach(card => card.style.display = 'none');
+            const start = (page - 1) * trajetsPerPage;
+            const end = start + trajetsPerPage;
+            for (let i = start; i < end && i < totalTrajets; i++) {
+                trajetCards[i].style.display = '';
+            }
+            renderTrajetsPagination(page);
+        }
+
+        function renderTrajetsPagination(page) {
+            if (totalTrajets === 0) {
+                trajetsPaginationDiv.innerHTML = '';
+                return;
+            }
+            let html = '';
+            html += `<button class="stations-pagination-btn" ${page === 1 ? 'disabled' : ''} onclick="changeTrajetsPage(${page-1})">&laquo;</button>`;
+            for (let i = 1; i <= totalTrajetPages; i++) {
+                html += `<button class="stations-pagination-btn${i === page ? ' active' : ''}" onclick="changeTrajetsPage(${i})">${i}</button>`;
+            }
+            html += `<button class="stations-pagination-btn" ${page === totalTrajetPages ? 'disabled' : ''} onclick="changeTrajetsPage(${page+1})">&raquo;</button>`;
+            trajetsPaginationDiv.innerHTML = html;
+        }
+
+        // Initial display for trajets
+        showTrajetsPage(currentTrajetPage);
+
+        // Remove this block: Attach event listener to the single location icon after DOMContentLoaded
+        /*
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('find-nearest-btn').addEventListener('click', function(e) {
+                e.stopPropagation();
+                openNearestStationModal();
+            });
+            window.closeNearestModal = closeNearestModal;
+            window.addEventListener('click', function(event) {
+                if (event.target === nearestModal) {
+                    closeNearestModal();
+                }
+            });
+        });
+        */
+            
+            </script>
+        </body>
+        </html>
+
