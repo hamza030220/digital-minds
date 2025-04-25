@@ -92,7 +92,7 @@ if ($reclamation_id) {
 $role = $_SESSION['user_role'] ?? 'utilisateur'; // Assuming 'role' is the session key
 
 // Set page title
-
+$pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur - Green.tn';
 ?>
 
 <!DOCTYPE html>
@@ -100,31 +100,88 @@ $role = $_SESSION['user_role'] ?? 'utilisateur'; // Assuming 'role' is the sessi
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $pageTitle; ?></title>
+    <title><?php echo htmlspecialchars($pageTitle); ?></title>
+    <link rel="icon" href="image/ve.png" type="image/png">
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f7fa;
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #60BA97;
             color: #333;
         }
 
+        .sidebar {
+            width: 200px;
+            background-color: #2e7d32;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            padding-top: 20px;
+            color: #fff;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar .logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .sidebar .logo img {
+            width: 150px;
+            height: auto;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar ul li {
+            margin: 10px 0;
+        }
+
+        .sidebar ul li a {
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 20px;
+            display: block;
+            font-size: 1em;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar ul li a:hover {
+            background-color: #1b5e20;
+            border-radius: 0 20px 20px 0;
+        }
+
         .container {
+            margin-left: 220px;
+            width: calc(90% - 220px);
             max-width: 900px;
-            margin: 40px auto;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            background-color: #F9F5E8;
             padding: 20px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            border: 1px solid #4CAF50;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         header h1 {
-            color: #2c3e50;
+            color: #2e7d32;
             font-size: 24px;
             margin-bottom: 20px;
-            border-bottom: 2px solid #3498db;
+            border-bottom: 2px solid #4CAF50;
             padding-bottom: 10px;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
 
         .feedback-message {
@@ -153,9 +210,10 @@ $role = $_SESSION['user_role'] ?? 'utilisateur'; // Assuming 'role' is the sessi
         }
 
         .reclamation-details h2 {
-            color: #34495e;
+            color: #2e7d32;
             font-size: 20px;
             margin-bottom: 15px;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
 
         .reclamation-details p {
@@ -175,49 +233,52 @@ $role = $_SESSION['user_role'] ?? 'utilisateur'; // Assuming 'role' is the sessi
 
         .changer-statut label {
             font-weight: bold;
-            color: #2c3e50;
+            color: #2e7d32;
         }
 
         .changer-statut select {
             padding: 8px;
-            border: 1px solid #dcdcdc;
+            border: 1px solid #4CAF50;
             border-radius: 4px;
             font-size: 14px;
             transition: border-color 0.2s;
         }
 
         .changer-statut select:focus {
-            border-color: #3498db;
+            border-color: #2e7d32;
             outline: none;
         }
 
         button {
-            background-color: #3498db;
+            background-color: #2e7d32;
             color: #fff;
             padding: 8px 15px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            font-family: "Bauhaus 93", Arial, sans-serif;
             transition: background-color 0.2s;
         }
 
         button:hover {
-            background-color: #2980b9;
+            background-color: #1b5e20;
         }
 
         .reponses h3 {
-            color: #34495e;
+            color: #2e7d32;
             font-size: 18px;
             margin-top: 20px;
             margin-bottom: 15px;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
 
         .reponse {
-            background-color: #f9f9f9;
+            background-color: #fff;
             padding: 15px;
             border-radius: 4px;
             margin-bottom: 15px;
+            border: 1px solid #4CAF50;
         }
 
         .reponse p {
@@ -233,17 +294,18 @@ $role = $_SESSION['user_role'] ?? 'utilisateur'; // Assuming 'role' is the sessi
         }
 
         .formulaire-reponse h3 {
-            color: #34495e;
+            color: #2e7d32;
             font-size: 18px;
             margin-top: 20px;
             margin-bottom: 15px;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
 
         .formulaire-reponse textarea {
             width: 100%;
             min-height: 120px;
             padding: 10px;
-            border: 1px solid #dcdcdc;
+            border: 1px solid #4CAF50;
             border-radius: 4px;
             resize: vertical;
             font-size: 14px;
@@ -251,7 +313,7 @@ $role = $_SESSION['user_role'] ?? 'utilisateur'; // Assuming 'role' is the sessi
         }
 
         .formulaire-reponse textarea:focus {
-            border-color: #3498db;
+            border-color: #2e7d32;
             outline: none;
         }
 
@@ -260,30 +322,144 @@ $role = $_SESSION['user_role'] ?? 'utilisateur'; // Assuming 'role' is the sessi
         }
 
         a {
-            color: #3498db;
+            color: #2e7d32;
             text-decoration: none;
             transition: color 0.2s;
         }
 
         a:hover {
-            color: #2980b9;
+            color: #1b5e20;
             text-decoration: underline;
         }
 
         footer {
-            text-align: center;
-            padding: 20px;
-            background-color: #2c3e50;
-            color: #fff;
-            position: relative;
-            bottom: 0;
-            width: 100%;
+            background-color: #F9F5E8;
+            padding: 20px 0;
+            font-family: "Berlin Sans FB", Arial, sans-serif;
         }
 
-        @media (max-width: 600px) {
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .footer-left {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .footer-logo img {
+            width: 200px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .social-icons a img {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            transition: opacity 0.3s ease;
+        }
+
+        .social-icons a img:hover {
+            opacity: 0.8;
+        }
+
+        .footer-section {
+            margin-left: 40px;
+        }
+
+        .footer-section h3 {
+            font-size: 18px;
+            color: #333;
+            margin-top: 20px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .footer-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 8px;
+        }
+
+        .footer-section ul li a {
+            text-decoration: none;
+            color: #555;
+            font-size: 20px;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section ul li a:hover {
+            color: #4CAF50;
+        }
+
+        .footer-section p {
+            margin: 5px 0;
+            color: #555;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .footer-section p img {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+        }
+
+        .footer-section p a {
+            color: #555;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section p a:hover {
+            color: #4CAF50;
+        }
+
+        .error-message {
+            color: #721c24;
+            font-size: 0.85em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .input-error {
+            border-color: #721c24;
+        }
+
+        .input-valid {
+            border-color: #155724;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+                padding-bottom: 20px;
+            }
+
             .container {
-                margin: 20px;
-                padding: 15px;
+                margin-left: 0;
+                width: 90%;
+                margin: 20px auto;
             }
 
             header h1 {
@@ -302,10 +478,39 @@ $role = $_SESSION['user_role'] ?? 'utilisateur'; // Assuming 'role' is the sessi
                 flex-direction: column;
                 align-items: flex-start;
             }
+
+            .footer-content {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .footer-left {
+                margin-bottom: 20px;
+            }
+
+            .footer-section {
+                margin-left: 0;
+                margin-bottom: 20px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            <img src="image/ve.png" alt="Green.tn Logo">
+        </div>
+        <ul>
+            <li><a href="">🏠 Accueil</a></li>
+            <li><a href="">🚲 Reservation</a></li>
+            <li><a href="reclamations_utilisateur.php">📋 Reclamation</a></li>
+            <li><a href="stats.php">📊 Statistique</a></li>
+            <li><a href="logout.php">🔓 Déconnexion</a></li>
+        </ul>
+    </div>
+
     <div class="container">
         <header>
             <h1>Détails de la réclamation</h1>
@@ -320,7 +525,6 @@ $role = $_SESSION['user_role'] ?? 'utilisateur'; // Assuming 'role' is the sessi
 
         <!-- Check if reclamation data was loaded -->
         <?php if ($reclamation): ?>
-
             <section class="reclamation-details">
                 <h2><?php echo htmlspecialchars($reclamation['titre']); ?></h2>
                 <p><strong>Description :</strong> <?php echo nl2br(htmlspecialchars($reclamation['description'])); ?></p>
@@ -370,21 +574,77 @@ $role = $_SESSION['user_role'] ?? 'utilisateur'; // Assuming 'role' is the sessi
             <!-- Formulaire pour répondre -->
             <section class="formulaire-reponse">
                 <h3>Ajouter une réponse :</h3>
-                <form method="post" action="ajouter_reponse.php">
+                <form method="post" action="ajouter_reponse.php" id="responseForm" novalidate>
                     <input type="hidden" name="reclamation_id" value="<?php echo htmlspecialchars($reclamation['id']); ?>">
-                    <textarea name="contenu" rows="4" required placeholder="Votre réponse ici..."></textarea><br>
+                    <textarea name="contenu" id="contenu" rows="4" placeholder="Votre réponse ici..."></textarea>
+                    <div class="error-message" id="contenu-error"></div>
                     <input type="hidden" name="role" value="<?php echo htmlspecialchars($role); ?>">
                     <button type="submit">Répondre</button>
                 </form>
             </section>
 
             <p>
-                <?php if ($role === 'admin'): ?>
-                    <a href="reclamations_utilisateur.php">← Retour au tableau de bord</a>
-                <?php else: ?>
-                    <a href="liste_reclamations.php">← Retour à mes réclamations</a>
-                <?php endif; ?>
+                <a href="reclamations_utilisateur.php">← Retour au tableau de bord</a>
             </p>
+
+            <script>
+                document.getElementById('responseForm').addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    let isValid = true;
+                    const errors = {};
+
+                    const contenu = document.getElementById('contenu').value.trim();
+                    if (!contenu) {
+                        errors.contenu = 'La réponse est requise.';
+                        isValid = false;
+                    } else if (contenu.length < 10 || contenu.length > 1000) {
+                        errors.contenu = 'La réponse doit contenir entre 10 et 1000 caractères.';
+                        isValid = false;
+                    }
+
+                    const errorElement = document.getElementById('contenu-error');
+                    const inputElement = document.getElementById('contenu');
+                    if (errors.contenu) {
+                        errorElement.textContent = errors.contenu;
+                        errorElement.style.display = 'block';
+                        inputElement.classList.add('input-error');
+                        inputElement.classList.remove('input-valid');
+                    } else {
+                        errorElement.textContent = '';
+                        errorElement.style.display = 'none';
+                        inputElement.classList.remove('input-error');
+                        inputElement.classList.add('input-valid');
+                    }
+
+                    if (isValid) {
+                        this.submit();
+                    } else {
+                        inputElement.focus();
+                        inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+
+                document.getElementById('contenu').addEventListener('input', function() {
+                    const errorElement = document.getElementById('contenu-error');
+                    let error = '';
+
+                    const value = this.value.trim();
+                    if (!value) error = 'La réponse est requise.';
+                    else if (value.length < 10 || value.length > 1000) error = 'La réponse doit contenir entre 10 et 1000 caractères.';
+
+                    if (error) {
+                        errorElement.textContent = error;
+                        errorElement.style.display = 'block';
+                        this.classList.add('input-error');
+                        this.classList.remove('input-valid');
+                    } else {
+                        errorElement.textContent = '';
+                        errorElement.style.display = 'none';
+                        this.classList.remove('input-error');
+                        this.classList.add('input-valid');
+                    }
+                });
+            </script>
 
         <?php elseif (!$feedback_message): ?>
             <p>Les détails de cette réclamation ne sont pas disponibles.</p>
@@ -392,5 +652,6 @@ $role = $_SESSION['user_role'] ?? 'utilisateur'; // Assuming 'role' is the sessi
         <?php endif; ?>
     </div>
 
+  
 </body>
 </html>

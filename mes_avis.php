@@ -1,22 +1,81 @@
 <?php
-// index.php
-// Home page for Green.tn
+// mes_avis.php
 
 session_start();
-
-// Include translation helper
+require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/translate.php';
 
-// Connexion à la base de données using Database class
-require_once 'config/database.php';
-
+// Connexion à la base de données
 $database = new Database();
 $pdo = $database->getConnection();
 
-// Check if connection failed - Exit cleanly if it does
 if (!$pdo) {
-    die(t('error_database'));
+    die("Erreur de connexion à la base de données.");
 }
+
+// Vérifier si l'utilisateur est connecté
+$isLoggedIn = isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+$isAdmin = false;
+if ($isLoggedIn) {
+    $query = "SELECT role FROM utilisateurs WHERE id = :user_id";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    $isAdmin = $user && $user['role'] === 'admin';
+}
+
+// Gestion de la suppression d'un avis
+$message = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_avis_id'])) {
+    $avis_id = (int)$_POST['delete_avis_id'];
+
+    // Vérifier que l'avis appartient à l'utilisateur
+    $query = "SELECT user_id FROM avis WHERE id = :avis_id";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':avis_id', $avis_id, PDO::PARAM_INT);
+    $stmt->execute();
+    $avis = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($avis && $avis['user_id'] == $_SESSION['user_id']) {
+        $query = "DELETE FROM avis WHERE id = :avis_id";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(':avis_id', $avis_id, PDO::PARAM_INT);
+        if ($stmt->execute()) {
+            $message = t('review_deleted');
+        } else {
+            $message = t('delete_error');
+        }
+    } else {
+        $message = t('not_authorized');
+    }
+}
+
+// Récupérer les avis de l'utilisateur connecté
+$avis = [];
+$average_rating = 0;
+if ($isLoggedIn) {
+    $query = "
+        SELECT a.*, u.nom 
+        FROM avis a 
+        JOIN utilisateurs u ON a.user_id = u.id 
+        WHERE a.user_id = :user_id 
+        ORDER BY a.date_creation DESC
+    ";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
+    $stmt->execute();
+    $avis = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Calculer la note moyenne
+    if (!empty($avis)) {
+        $total_rating = array_sum(array_column($avis, 'note'));
+        $average_rating = $total_rating / count($avis);
+    }
+}
+
+// Définir le titre de la page
+$pageTitle = t('my_reviews');
 ?>
 
 <!DOCTYPE html>
@@ -24,7 +83,7 @@ if (!$pdo) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo t('home'); ?> - Green.tn</title>
+    <title><?php echo htmlspecialchars($pageTitle); ?> - Green.tn</title>
     <link rel="icon" href="image/ve.png" type="image/png">
     <style>
         * {
@@ -90,8 +149,7 @@ if (!$pdo) {
             padding: 0;
         }
 
-        .nav-right ul li a.login,
-        .nav-right ul li button.lang-toggle {
+        .nav-right ul li a.login {
             color: #fff;
             background-color: #2e7d32;
             border: 1px solid #2e7d32;
@@ -102,20 +160,25 @@ if (!$pdo) {
         }
 
         .nav-right ul li button.lang-toggle {
-            background-color: #4CAF50;
-            border-color: #4CAF50;
+            color: #fff;
+            background-color: #4CAF50 !important;
+            border: 1px solid #4CAF50 !important;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            cursor: pointer;
         }
 
         .nav-right ul li button.lang-toggle:hover {
-            background-color: #1b5e20;
-            border-color: #1b5e20;
+            background-color: #1b5e20 !important;
+            border-color: #1b5e20 !important;
         }
 
         main {
             padding: 50px;
             text-align: center;
             background-color: #60BA97;
-            margin-top: 100px; /* Account for fixed header */
+            margin-top: 100px;
         }
 
         main h2 {
@@ -130,22 +193,110 @@ if (!$pdo) {
             border-radius: 5px;
         }
 
-        .content-container {
-            max-width: 1200px;
+        .container {
+            max-width: 600px;
             margin: 0 auto;
             background-color: #F9F5E8;
             border: 1px solid #4CAF50;
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+
+        .average-rating {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+
+        .average-rating .stars {
+            color: #FFD700;
+            font-size: 20px;
+        }
+
+        .message {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            border: 1px solid transparent;
             text-align: center;
         }
 
-        p {
-            line-height: 1.6;
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .message.error a {
+            color: #2e7d32;
+            text-decoration: none;
+        }
+
+        .message.error a:hover {
+            text-decoration: underline;
+        }
+
+        .avis {
             margin-bottom: 20px;
-            color: #333;
+            padding: 15px;
+            border: 1px solid #4CAF50;
+            border-radius: 5px;
+            background-color: #fff;
+            position: relative;
+        }
+
+        .avis h3 {
+            font-size: 18px;
+            color: #2e7d32;
+            margin-bottom: 5px;
+        }
+
+        .avis .meta {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .avis .stars {
+            color: #FFD700;
             font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .avis p {
+            font-size: 16px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .avis .delete-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: #e74c3c;
+            color: #fff;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .avis .delete-btn:hover {
+            background-color: #c0392b;
         }
 
         footer {
@@ -279,7 +430,7 @@ if (!$pdo) {
                 margin-top: 150px;
             }
 
-            .content-container {
+            .container {
                 padding: 15px;
             }
 
@@ -313,27 +464,76 @@ if (!$pdo) {
                     <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
                     <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-
+                    <?php if ($isAdmin): ?>
+                        <li><a href="liste_avis.php"><?php echo t('view_reviews'); ?></a></li>
+                    <?php endif; ?>
                 </ul>
             </nav>
         </div>
         <nav class="nav-right">
             <ul>
+                <?php if ($isLoggedIn): ?>
+                    <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
+                <?php else: ?>
+                    <li><a href="login.php" class="login"><?php echo t('login'); ?></a></li>
+                <?php endif; ?>
                 <li>
                     <form action="" method="POST">
                         <input type="hidden" name="lang" value="<?php echo $_SESSION['lang'] === 'fr' ? 'en' : 'fr'; ?>">
                         <button type="submit" class="lang-toggle"><?php echo t($_SESSION['lang'] === 'fr' ? 'toggle_language' : 'toggle_language_en'); ?></button>
                     </form>
                 </li>
-                <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
             </ul>
         </nav>
     </header>
 
     <main>
-        <h2><?php echo t('welcome'); ?></h2>
-        <div class="content-container">
-            <p><?php echo t('welcome_message'); ?></p>
+        <div class="container">
+            <h2><?php echo htmlspecialchars($pageTitle); ?></h2>
+            <?php if (!$isLoggedIn): ?>
+                <p class="message error"><?php echo t('login_required'); ?> <a href="login.php"><?php echo t('login'); ?></a>.</p>
+            <?php else: ?>
+                <?php if ($message): ?>
+                    <p class="message <?php echo strpos($message, t('review_deleted')) !== false ? 'success' : 'error'; ?>">
+                        <?php echo htmlspecialchars($message); ?>
+                    </p>
+                <?php endif; ?>
+                <div class="average-rating">
+                    <?php echo t('average_rating'); ?>: 
+                    <?php
+                    $rounded_average = round($average_rating, 1);
+                    echo $rounded_average . '/5 ';
+                    for ($i = 1; $i <= 5; $i++) {
+                        echo $i <= round($average_rating) ? '★' : '☆';
+                    }
+                    ?>
+                </div>
+                <?php if (empty($avis)): ?>
+                    <p class="message"><?php echo t('no_reviews'); ?></p>
+                <?php else: ?>
+                    <?php foreach ($avis as $avi): ?>
+                        <div class="avis">
+                            <h3><?php echo htmlspecialchars($avi['titre']); ?></h3>
+                            <div class="meta">
+                                <?php echo t('submitted_by'); ?> <?php echo htmlspecialchars($avi['nom']); ?> 
+                                <?php echo t('on'); ?> <?php echo date('d/m/Y H:i', strtotime($avi['date_creation'])); ?>
+                            </div>
+                            <div class="stars">
+                                <?php
+                                for ($i = 1; $i <= 5; $i++) {
+                                    echo $i <= $avi['note'] ? '★' : '☆';
+                                }
+                                ?>
+                            </div>
+                            <p><?php echo htmlspecialchars($avi['description']); ?></p>
+                            <form method="POST" action="" style="display:inline;">
+                                <input type="hidden" name="delete_avis_id" value="<?php echo $avi['id']; ?>">
+                                <button type="submit" class="delete-btn"><?php echo t('delete'); ?></button>
+                            </form>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            <?php endif; ?>
         </div>
     </main>
 
@@ -354,10 +554,12 @@ if (!$pdo) {
                 <ul>
                     <li><a href="index.php"><?php echo t('home'); ?></a></li>
                     <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="#a-propos-de-nous"><?php echo t('about_us'); ?></a></li>
-                    <li><a href="#contact"><?php echo t('contact'); ?></a></li>
+                    <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
                     <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <?php if ($isAdmin): ?>
+                        <li><a href="liste_avis.php"><?php echo t('view_reviews'); ?></a></li>
+                    <?php endif; ?>
                 </ul>
             </div>
             <div class="footer-section">

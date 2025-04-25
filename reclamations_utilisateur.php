@@ -40,9 +40,9 @@ if ($stmt) {
     $stmt->execute($params);
     $reclamations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    error_log("Failed to prepare reclamation query in liste_reclamations.php. SQL: " . $sql);
+    error_log("Failed to prepare reclamation query in reclamations_utilisateur.php. SQL: " . $sql);
     $reclamations = [];
-    echo "<p style='color:red; text-align:center;'>Erreur lors de la préparation de la liste des réclamations.</p>";
+    $error_message = "Erreur lors de la préparation de la liste des réclamations.";
 }
 ?>
 
@@ -50,11 +50,12 @@ if ($stmt) {
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Admin - Tableau de bord Réclamations</title>
+    <title>Voir les réclamations - Green.tn</title>
+    <link rel="icon" href="image/ve.png" type="image/png">
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color: #60BA97;
             margin: 0;
             padding: 0;
         }
@@ -62,13 +63,13 @@ if ($stmt) {
         /* Sidebar Styles */
         .sidebar {
             width: 200px;
-            background-color: rgb(10, 73, 15);
+            background-color: #2e7d32;
             position: fixed;
             top: 0;
             left: 0;
             height: 100%;
             padding-top: 20px;
-            color: white;
+            color: #fff;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
         }
 
@@ -77,16 +78,9 @@ if ($stmt) {
             margin-bottom: 20px;
         }
 
-        .sidebar .logo h1 {
-            margin: 0;
-            font-size: 1.8em;
-            color: #28a745;
-        }
-
-        .sidebar .logo p {
-            margin: 0;
-            font-size: 0.8em;
-            color: #adb5bd;
+        .sidebar .logo img {
+            width: 150px;
+            height: auto;
         }
 
         .sidebar ul {
@@ -100,15 +94,17 @@ if ($stmt) {
         }
 
         .sidebar ul li a {
-            color: white;
+            color: #fff;
             text-decoration: none;
             padding: 10px 20px;
             display: block;
             font-size: 1em;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            transition: background-color 0.3s ease;
         }
 
         .sidebar ul li a:hover {
-            background-color: #28a745;
+            background-color: #1b5e20;
             border-radius: 0 20px 20px 0;
         }
 
@@ -119,54 +115,27 @@ if ($stmt) {
             max-width: 1200px;
             margin-top: 20px;
             margin-bottom: 20px;
-            background-color: white;
+            background-color: #F9F5E8;
             padding: 20px;
             border-radius: 5px;
-            box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid #4CAF50;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         h1, h2 {
-            color: #2C3E50;
+            color: #2e7d32;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
 
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 10px 0;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-        button:hover {
-            background-color: #2980b9;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-
-        th, td {
+        .error-message {
             padding: 10px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-
-        input, select {
-            padding: 5px;
-            margin: 10px 0;
-            margin-right: 5px;
-            min-width: 150px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            border: 1px solid #f5c6cb;
+            background-color: #f8d7da;
+            color: #721c24;
+            text-align: center;
         }
 
         .stats {
@@ -176,17 +145,21 @@ if ($stmt) {
             justify-content: space-around;
             margin-bottom: 20px;
             padding: 15px;
-            background-color: #f8f9fa;
+            background-color: #fff;
+            border: 1px solid #4CAF50;
             border-radius: 5px;
         }
 
         .stat {
-            background-color: #ecf0f1;
+            background-color: #F9F5E8;
             padding: 10px 15px;
             border-radius: 5px;
             text-align: center;
             flex-grow: 1;
             min-width: 100px;
+            border: 1px solid #4CAF50;
+            color: #2e7d32;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
 
         .search-form {
@@ -196,32 +169,102 @@ if ($stmt) {
             gap: 10px;
             margin-bottom: 20px;
             padding: 15px;
-            background-color: #f0f0f0;
+            background-color: #fff;
+            border: 1px solid #4CAF50;
             border-radius: 5px;
         }
 
-        .search-form input, .search-form select {
-            flex-grow: 1;
+        .search-form input,
+        .search-form select {
+            padding: 5px;
             margin: 0;
+            border: 1px solid #4CAF50;
+            border-radius: 5px;
+            flex-grow: 1;
+            min-width: 150px;
+        }
+
+        .search-form input:focus,
+        .search-form select:focus {
+            border-color: #2e7d32;
+            outline: none;
         }
 
         .search-form button {
             padding: 8px 15px;
-            background-color: #2ecc71;
+            background-color: #2e7d32;
             border: none;
-            color: white;
+            color: #fff;
             cursor: pointer;
-            margin: 0;
+            border-radius: 5px;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            transition: background-color 0.3s ease;
         }
 
         .search-form button:hover {
-            background-color: #27ae60;
+            background-color: #1b5e20;
+        }
+
+        .search-form a {
+            padding: 8px 15px;
+            background-color: #f39c12;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-left: 5px;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            transition: background-color 0.3s ease;
+        }
+
+        .search-form a:hover {
+            background-color: #e67e22;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fff;
+            border: 1px solid #4CAF50;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        table, th, td {
+            border: 1px solid #4CAF50;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #F9F5E8;
+            color: #2e7d32;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+        }
+
+        td {
+            color: #333;
+        }
+
+        table a {
+            color: #2e7d32;
+            text-decoration: none;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            transition: color 0.3s ease;
+        }
+
+        table a:hover {
+            color: #1b5e20;
         }
 
         .export-form {
             margin-top: 20px;
             padding: 15px;
-            background-color: #f0f0f0;
+            background-color: #fff;
+            border: 1px solid #4CAF50;
             border-radius: 5px;
             display: flex;
             flex-wrap: wrap;
@@ -229,12 +272,78 @@ if ($stmt) {
             gap: 10px;
         }
 
+        .export-form input,
+        .export-form select {
+            padding: 5px;
+            margin: 0;
+            border: 1px solid #4CAF50;
+            border-radius: 5px;
+            flex-grow: 1;
+            min-width: 150px;
+        }
+
+        .export-form input:focus,
+        .export-form select:focus {
+            border-color: #2e7d32;
+            outline: none;
+        }
+
         .export-form button {
-            background-color: #16a085;
+            padding: 8px 15px;
+            background-color: #2e7d32;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 5px;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            transition: background-color 0.3s ease;
         }
 
         .export-form button:hover {
-            background-color: #117a65;
+            background-color: #1b5e20;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+                padding-bottom: 20px;
+            }
+
+            .container {
+                margin-left: 0;
+                width: 90%;
+                margin: 20px auto;
+            }
+
+            .search-form,
+            .export-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-form input,
+            .search-form select,
+            .export-form input,
+            .export-form select {
+                margin: 5px 0;
+            }
+
+            .search-form button,
+            .search-form a,
+            .export-form button {
+                margin: 5px 0;
+            }
+
+            .stats {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .stat {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -242,14 +351,13 @@ if ($stmt) {
     <!-- Sidebar Navigation -->
     <div class="sidebar">
         <div class="logo">
-            <h1>Green.tn</h1>
-            <p>Mobilité durable, énergie propre</p>
+            <img src="image/ve.png" alt="Green.tn Logo">
         </div>
         <ul>
-            <li><a href="">🏠 Accueil</a></li>
+        <li><a href="stats.php">🏠 Dashboard</a></li>
             <li><a href="">🚲 Reservation</a></li>
             <li><a href="reclamations_utilisateur.php">📋 Reclamation</a></li>
-            <li><a href="statistique.php">📊 Statistique</a></li>
+            <li><a href="liste_avis.php">⭐ Avis</a></li>
             <li><a href="logout.php">🔓 Déconnexion</a></li>
         </ul>
     </div>
@@ -264,7 +372,7 @@ if ($stmt) {
             <?php if (!empty($stat)): ?>
                 <?php foreach ($stat as $s): ?>
                     <div class="stat">
-                        <strong><?= ucfirst(htmlspecialchars($s['statut'])) ?> :</strong> <?= htmlspecialchars($s['total']) ?>
+                        <strong><?php echo ucfirst(htmlspecialchars($s['statut'])); ?> :</strong> <?php echo htmlspecialchars($s['total']); ?>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -274,15 +382,15 @@ if ($stmt) {
 
         <!-- Search Form -->
         <form method="get" class="search-form">
-            <input type="text" name="lieu" placeholder="🔎 Rechercher par lieu" value="<?= htmlspecialchars($lieu) ?>">
+            <input type="text" name="lieu" placeholder="🔎 Rechercher par lieu" value="<?php echo htmlspecialchars($lieu); ?>">
             <select name="type_probleme">
                 <option value="">🔖 Tous les types</option>
-                <option value="mécanique" <?= $type_probleme === 'mécanique' ? 'selected' : '' ?>>Mécanique</option>
-                <option value="batterie" <?= $type_probleme === 'batterie' ? 'selected' : '' ?>>Batterie</option>
-                <option value="écran" <?= $type_probleme === 'écran' ? 'selected' : '' ?>>Écran</option>
-                <option value="pneu" <?= $type_probleme === 'pneu' ? 'selected' : '' ?>>Pneu</option>
-                <option value="Infrastructure" <?= $type_probleme === 'Infrastructure' ? 'selected' : '' ?>>Infrastructure</option>
-                <option value="Autre" <?= $type_probleme === 'Autre' ? 'selected' : '' ?>>Autre</option>
+                <option value="mécanique" <?php echo $type_probleme === 'mécanique' ? 'selected' : ''; ?>>Mécanique</option>
+                <option value="batterie" <?php echo $type_probleme === 'batterie' ? 'selected' : ''; ?>>Batterie</option>
+                <option value="écran" <?php echo $type_probleme === 'écran' ? 'selected' : ''; ?>>Écran</option>
+                <option value="pneu" <?php echo $type_probleme === 'pneu' ? 'selected' : ''; ?>>Pneu</option>
+                <option value="Infrastructure" <?php echo $type_probleme === 'Infrastructure' ? 'selected' : ''; ?>>Infrastructure</option>
+                <option value="Autre" <?php echo $type_probleme === 'Autre' ? 'selected' : ''; ?>>Autre</option>
             </select>
             <button type="submit">Rechercher</button>
             <a href="?" style="padding: 8px 15px; background-color:#f39c12; color:white; text-decoration:none; border-radius:5px; margin-left: 5px;">Reset</a>
@@ -304,14 +412,14 @@ if ($stmt) {
                 <?php if (!empty($reclamations)): ?>
                     <?php foreach ($reclamations as $r): ?>
                     <tr>
-                        <td><?= htmlspecialchars($r['titre']) ?></td>
-                        <td><?= htmlspecialchars(substr($r['description'], 0, 50)) . (strlen($r['description']) > 50 ? '...' : '') ?></td>
-                        <td><?= htmlspecialchars($r['lieu']) ?></td>
-                        <td><?= htmlspecialchars($r['type_probleme']) ?></td>
-                        <td><?= htmlspecialchars(ucfirst($r['statut'])) ?></td>
+                        <td><?php echo htmlspecialchars($r['titre']); ?></td>
+                        <td><?php echo htmlspecialchars(substr($r['description'], 0, 50)) . (strlen($r['description']) > 50 ? '...' : ''); ?></td>
+                        <td><?php echo htmlspecialchars($r['lieu']); ?></td>
+                        <td><?php echo htmlspecialchars($r['type_probleme']); ?></td>
+                        <td><?php echo htmlspecialchars(ucfirst($r['statut'])); ?></td>
                         <td>
-                            <a href="voir_reclamation.php?id=<?= $r['id'] ?>" title="Voir détails">👁️Voir</a> |
-                            <a href="./controllers/supprimer_reclamation.php?id=<?= $r['id'] ?>" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette réclamation ?')" title="Supprimer">❌Supprimer</a>
+                            <a href="voir_reclamation.php?id=<?php echo $r['id']; ?>" title="Voir détails">👁️Voir</a> |
+                            <a href="./controllers/supprimer_reclamation.php?id=<?php echo $r['id']; ?>" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette réclamation ?')" title="Supprimer">❌Supprimer</a>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -325,13 +433,13 @@ if ($stmt) {
 
         <!-- Export PDF Form -->
         <form method="get" action="./controllers/export_pdf.php" class="export-form">
-            <input type="text" name="lieu" placeholder="Lieu" value="<?= htmlspecialchars($lieu) ?>">
+            <input type="text" name="lieu" placeholder="Lieu" value="<?php echo htmlspecialchars($lieu); ?>">
             <select name="type_probleme">
                 <option value="">Tous les types</option>
-                <option value="mécanique" <?= $type_probleme === 'mécanique' ? 'selected' : '' ?>>Mécanique</option>
-                <option value="batterie" <?= $type_probleme === 'batterie' ? 'selected' : '' ?>>Batterie</option>
-                <option value="écran" <?= $type_probleme === 'écran' ? 'selected' : '' ?>>Écran</option>
-                <option value="pneu" <?= $type_probleme === 'pneu' ? 'selected' : '' ?>>Pneu</option>
+                <option value="mécanique" <?php echo $type_probleme === 'mécanique' ? 'selected' : ''; ?>>Mécanique</option>
+                <option value="batterie" <?php echo $type_probleme === 'batterie' ? 'selected' : ''; ?>>Batterie</option>
+                <option value="écran" <?php echo $type_probleme === 'écran' ? 'selected' : ''; ?>>Écran</option>
+                <option value="pneu" <?php echo $type_probleme === 'pneu' ? 'selected' : ''; ?>>Pneu</option>
             </select>
             <select name="statut">
                 <option value="">Tous les statuts</option>

@@ -68,6 +68,7 @@ class Reclamation {
         $reclamations = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return $reclamations ? $reclamations : []; // Return results or empty array
     }
+    
     // ***** END OF NEW METHOD *****
     // Add updateStatus method if you added it previously
     public function updateStatus(int $id, string $newStatus): bool {
