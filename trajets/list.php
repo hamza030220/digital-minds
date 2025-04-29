@@ -284,6 +284,7 @@ try {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+   <!-- <script src="../assets/js/scripts_trajets_list.js"></script> -->
     <script>
         // Move this function OUTSIDE of DOMContentLoaded!
         function sortTrajetsTable(colIndex, type) {
