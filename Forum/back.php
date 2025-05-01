@@ -69,6 +69,7 @@ $username = htmlspecialchars($_SESSION['username']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Forum Green.tn</title>
     <link rel="stylesheet" href="forum.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         /* Admin specific styles */
         body {
@@ -199,33 +200,79 @@ $username = htmlspecialchars($_SESSION['username']);
         }
         
         .admin-actions button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-            font-weight: 600;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    background: #4CAF50; /* Green background */
+    color: white; /* White text */
+    border: none; /* Remove border */
+    border-radius: 5px; /* Rounded corners */
+    padding: 8px 12px; /* Padding for the button */
+    font-size: 14px; /* Font size */
+    font-weight: bold; /* Bold text */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth transitions */
+    display: inline-flex; /* Align icon and text */
+    align-items: center; /* Center align icon and text */
+    gap: 5px; /* Space between icon and text */
+}
+
+.admin-actions button:hover {
+    background: #45A049; /* Darker green on hover */
+    transform: translateY(-2px); /* Slight lift on hover */
+}
+
+.admin-actions .delete {
+    background: #E53935; /* Red background for delete */
+}
+
+.admin-actions .delete:hover {
+    background: #D32F2F; /* Darker red on hover */
+}
+
+.admin-actions .report {
+    background: #FF9800; /* Orange background for report */
+}
+
+.admin-actions .report:hover {
+    background: #FB8C00; /* Darker orange on hover */
+}
+
+.comments-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.comments-header h4 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #333;
+}
+
+.view-comments-btn {
+    /*background-color: #4CAF50; */
+    color:  #4CAF50; /* White text */
+    border: none; /* Remove border */
+    border-radius: 5px; /* Rounded corners */
+    padding: 8px 12px; /* Padding for the button */
+    font-size: 14px; /* Font size */
+    font-weight: bold; /* Bold text */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth transitions */
+    display: inline-flex; /* Align icon and text */
+    align-items: center; /* Center align icon and text */
+    gap: 5px; /* Space between icon and text */
+}
+
+.view-comments-btn:hover {
+    background-color: #45A049; /* Darker green on hover */
+    transform: translateY(-2px); /* Slight lift on hover */
+}
         
-        .admin-actions .delete {
-            background: linear-gradient(to right, #e53935, #c62828);
-            box-shadow: 0 2px 4px rgba(229, 57, 53, 0.2);
-        }
-        
-        .admin-actions .report {
-            background: linear-gradient(to right, #f57c00, #ef6c00);
-            box-shadow: 0 2px 4px rgba(245, 124, 0, 0.2);
-        }
-        
-        .admin-actions button:hover {
+        /*.admin-actions button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             filter: brightness(110%);
-        }
+        }*/
         
         h2 {
             font-size: 28px;
@@ -247,6 +294,36 @@ $username = htmlspecialchars($_SESSION['username']);
             height: 3px;
             background: linear-gradient(to right, #2e7d32, #219150);
             border-radius: 2px;
+        }
+        
+        .user-info-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+        
+        .user-info-modal h3 {
+            margin-top: 0;
+        }
+        
+        .user-info-modal .btn-close {
+            background: #e53935;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .user-info-modal .btn-close:hover {
+            background: #c62828;
         }
     </style>
 </head>
@@ -272,80 +349,110 @@ $username = htmlspecialchars($_SESSION['username']);
         require_once 'db_connect.php';
         
         try {
-            // Fetch all posts
             $postQuery = "SELECT p.*, u.username 
-                         FROM post p 
-                         JOIN users u ON p.user_id = u.id 
-                         WHERE p.is_deleted = 0 
-                         ORDER BY p.created_at DESC";
+                          FROM post p 
+                          JOIN users u ON p.user_id = u.id 
+                          WHERE p.is_deleted = 0 
+                          ORDER BY p.created_at DESC";
             $postStmt = $conn->prepare($postQuery);
             $postStmt->execute();
             
-            if ($postStmt->rowCount() > 0) {
-                while ($post = $postStmt->fetch(PDO::FETCH_ASSOC)) {
-                    ?>
-                    <div class="question-admin">
-                        <div class="post-header">
-                            <p><strong>Utilisateur:</strong> <?php echo htmlspecialchars($post['username']); ?></p>
-                            <span class="timestamp">Posté le: <?php echo date('d/m/Y H:i', strtotime($post['created_at'])); ?></span>
-                        </div>
-                        <h3><?php echo htmlspecialchars($post['title']); ?></h3>
-                        <div class="post-content">
-                            <p><?php echo htmlspecialchars($post['content']); ?></p>
-                        </div>
-                        <div class="admin-actions">
-                            <button class="delete" data-id="<?php echo $post['post_id']; ?>" data-type="post">Supprimer</button>
-                            <button class="report" data-id="<?php echo $post['post_id']; ?>" data-type="post" 
-                                    data-reported="<?php echo $post['is_reported'] ? '1' : '0'; ?>">
-                                <?php echo $post['is_reported'] ? 'Déjà signalé' : 'Signaler'; ?>
-                            </button>
-                        </div>
-                        
-                        <!-- Comments for this post -->
-                        <div class="comments-section">
-                            <h4>Commentaires:</h4>
-                            <?php
-                            // Fetch comments for this post
-                            $commentQuery = "SELECT c.*, u.username 
-                                           FROM commentaire c 
-                                           JOIN users u ON c.user_id = u.id 
-                                           WHERE c.post_id = :post_id AND c.is_deleted = 0 
-                                           ORDER BY c.created_at ASC";
-                            $commentStmt = $conn->prepare($commentQuery);
-                            $commentStmt->bindParam(':post_id', $post['post_id']);
-                            $commentStmt->execute();
-                            
-                            if ($commentStmt->rowCount() > 0) {
-                                while ($comment = $commentStmt->fetch(PDO::FETCH_ASSOC)) {
-                                    ?>
-                                    <div class="comment-admin">
-                                        <div class="comment-header">
-                                            <p><strong><?php echo htmlspecialchars($comment['username']); ?></strong> 
-                                            <span class="timestamp">le <?php echo date('d/m/Y H:i', strtotime($comment['created_at'])); ?></span></p>
-                                        </div>
-                                        <div class="comment-content">
-                                            <p><?php echo htmlspecialchars($comment['content']); ?></p>
-                                        </div>
-                                        <div class="admin-actions">
-                                            <button class="delete" data-id="<?php echo $comment['comment_id']; ?>" data-type="comment">Supprimer</button>
-                                            <button class="report" data-id="<?php echo $comment['comment_id']; ?>" data-type="comment"
-                                                    data-reported="<?php echo $comment['is_reported'] ? '1' : '0'; ?>">
-                                                <?php echo $comment['is_reported'] ? 'Déjà signalé' : 'Signaler'; ?>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <?php
-                                }
+            while ($post = $postStmt->fetch(PDO::FETCH_ASSOC)) {
+                error_log("Post Data: " . print_r($post, true));
+                error_log("Post ID: " . $post['post_id'] . " | Is Anonymous: " . $post['is_anonymous'] . " | Username: " . $post['username']);
+
+                $postId = $post['post_id'];
+                $stmt = $conn->prepare("SELECT u.id, u.username, u.email, p.is_anonymous 
+                                        FROM users u 
+                                        JOIN post p ON u.id = p.user_id 
+                                        WHERE p.post_id = :post_id");
+                $stmt->bindParam(':post_id', $postId, PDO::PARAM_INT);
+                $stmt->execute();
+                ?>
+                <div class="question-admin">
+                    <div class="post-header">
+                        <p>
+                            <strong>Utilisateur:</strong> 
+                            <?php 
+                            if ((int)$post['is_anonymous'] === 1) {
+                                echo "Anonyme";
                             } else {
-                                echo '<p class="no-comments">Aucun commentaire pour ce post.</p>';
+                                echo htmlspecialchars($post['username']);
                             }
                             ?>
-                        </div>
+                            <button class="btn-info" data-user-id="<?php echo $post['post_id']; ?>">Infos</button>
+                        </p>
+                        <span class="timestamp">Posté le: <?php echo date('d/m/Y H:i', strtotime($post['created_at'])); ?></span>
                     </div>
-                    <?php
-                }
-            } else {
-                echo '<p>Aucun post dans le forum pour le moment.</p>';
+                    <h3><?php echo htmlspecialchars($post['title']); ?></h3>
+                    <div class="post-content">
+                        <p><?php echo htmlspecialchars($post['content']); ?></p>
+                    </div>
+                    <div class="admin-actions">
+                        <button class="delete" data-id="<?php echo $post['post_id']; ?>" data-type="post">
+                            <i class="fas fa-trash-alt"></i> Supprimer
+                        </button>
+                        <button class="report" data-id="<?php echo $post['post_id']; ?>" data-type="post" 
+                                data-reported="<?php echo $post['is_reported'] ? '1' : '0'; ?>">
+                            <i class="fas fa-flag"></i> <?php echo $post['is_reported'] ? 'Déjà signalé' : 'Signaler'; ?>
+                        </button>
+                        <button class="btn translate-btn" data-id="<?php echo $post['post_id']; ?>" data-type="post">Traduire</button>
+                    </div>
+                    
+                    <!-- Comments for this post -->
+                    <div class="comments-section" id="comments-<?php echo $post['post_id']; ?>">
+    <div class="comments-header">
+        <h4>Commentaires:</h4>
+        <button class="btn-icon view-comments-btn" 
+                data-post-id="<?php echo $post['post_id']; ?>" 
+                data-state="closed">
+            <i class="fas fa-eye"></i> 
+        </button>
+    </div>
+    <div class="comments-list" style="display: none;"></div>
+</div>
+                        <?php
+                        // Fetch comments for this post
+                        $commentQuery = "SELECT c.*, u.username 
+                                       FROM commentaire c 
+                                       JOIN users u ON c.user_id = u.id 
+                                       WHERE c.post_id = :post_id AND c.is_deleted = 0 
+                                       ORDER BY c.created_at ASC";
+                        $commentStmt = $conn->prepare($commentQuery);
+                        $commentStmt->bindParam(':post_id', $post['post_id']);
+                        $commentStmt->execute();
+                        
+                        if ($commentStmt->rowCount() > 0) {
+                            while ($comment = $commentStmt->fetch(PDO::FETCH_ASSOC)) {
+                                ?>
+                                <div class="comment-admin">
+                                    <div class="comment-header">
+                                        <p><strong><?php echo htmlspecialchars($comment['username']); ?></strong> 
+                                        <span class="timestamp">le <?php echo date('d/m/Y H:i', strtotime($comment['created_at'])); ?></span></p>
+                                    </div>
+                                    <div class="comment-content">
+                                        <p><?php echo htmlspecialchars($comment['content']); ?></p>
+                                    </div>
+                                    <div class="admin-actions">
+                                        <button class="delete" data-id="<?php echo $comment['comment_id']; ?>" data-type="comment">
+                                            <i class="fas fa-trash-alt"></i> Supprimer
+                                        </button>
+                                        <button class="report" data-id="<?php echo $comment['comment_id']; ?>" data-type="comment" 
+                                                data-reported="<?php echo $comment['is_reported'] ? '1' : '0'; ?>">
+                                            <i class="fas fa-flag"></i> <?php echo $comment['is_reported'] ? 'Déjà signalé' : 'Signaler'; ?>
+                                            
+                                        </button>
+                                    </div>
+                                </div>
+                                <?php
+                            }
+                        } else {
+                            echo '<p class="no-comments">Aucun commentaire pour ce post.</p>';
+                        }
+                        ?>
+                    </div>
+                </div>
+                <?php
             }
         } catch(PDOException $e) {
             echo '<p class="error">Erreur de base de données: ' . $e->getMessage() . '</p>';
@@ -354,6 +461,59 @@ $username = htmlspecialchars($_SESSION['username']);
 <script src="../Forum/sidebar.js"></script>
         <!-- JavaScript for admin actions -->
         <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Handle "Infos" button click
+            document.body.addEventListener('click', function (event) {
+                if (event.target.classList.contains('btn-info')) {
+                    const userId = event.target.getAttribute('data-user-id');
+                    showUserInfo(userId);
+                }
+            });
+        });
+
+        function showUserInfo(userId) {
+            if (!userId) return;
+
+            // Fetch user information from the server
+            fetch(`get_user_info.php?user_id=${userId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(data); // Check the response in the console
+                    if (data.success) {
+                        // Display user information
+                        const userInfoHtml = `
+                            <div class="user-info-modal">
+                                <h3>Informations sur l'utilisateur</h3>
+                                <p><strong>ID :</strong> ${data.user.id}</p>
+                                <p><strong>Nom d'utilisateur :</strong> ${data.user.username}</p>
+                                <p><strong>Email :</strong> ${data.user.email}</p>
+                                <p><strong>Post Anonyme :</strong> ${data.user.is_anonymous ? 'Oui' : 'Non'}</p>
+                                <button class="btn-close" onclick="closeUserInfo()">Fermer</button>
+                            </div>
+                        `;
+                        document.body.insertAdjacentHTML('beforeend', userInfoHtml);
+                    } else {
+                        alert(data.message || 'Impossible de récupérer les informations de l\'utilisateur.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching user info:', error);
+                    alert('Une erreur est survenue lors de la récupération des informations.');
+                });
+        }
+
+        function closeUserInfo() {
+            const modal = document.querySelector('.user-info-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Handle delete buttons
             document.querySelectorAll('.delete').forEach(button => {
@@ -421,6 +581,82 @@ $username = htmlspecialchars($_SESSION['username']);
                     }
                 });
             });
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Handle "View Comments" button click
+            document.body.addEventListener('click', function (event) {
+                if (event.target.classList.contains('view-comments-btn')) {
+                    const button = event.target;
+                    const postId = button.getAttribute('data-post-id');
+                    const state = button.getAttribute('data-state');
+                    const commentsList = document.querySelector(`#comments-${postId} .comments-list`);
+
+                    if (state === 'closed') {
+                        // Load the first batch of comments
+                        loadComments(postId, 0, 4);
+                        button.setAttribute('data-state', 'open');
+                        button.innerHTML = '<i class="fas fa-eye-slash"></i> Masquer les commentaires';
+                        commentsList.style.display = 'block';
+                    } else {
+                        // Hide comments
+                        commentsList.style.display = 'none';
+                        button.setAttribute('data-state', 'closed');
+                        button.innerHTML = '<i class="fas fa-eye"></i> Voir les commentaires';
+                    }
+                }
+            });
+
+            // Function to load comments
+            function loadComments(postId, offset = 0, limit = 4) {
+                const commentsList = document.querySelector(`#comments-${postId} .comments-list`);
+
+                fetch(`get_comments.php?post_id=${postId}&offset=${offset}&limit=${limit}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.comments.length > 0) {
+                            data.comments.forEach(comment => {
+                                const commentHTML = `
+                                    <div class="comment-admin">
+                                        <div class="comment-header">
+                                            <p><strong>${escapeHtml(comment.username)}</strong> 
+                                            <span class="timestamp">le ${formatDate(comment.created_at)}</span></p>
+                                        </div>
+                                        <div class="comment-content">
+                                            <p>${escapeHtml(comment.content)}</p>
+                                        </div>
+                                        <div class="admin-actions">
+                                            <button class="delete" data-id="${comment.comment_id}" data-type="comment">
+                                                <i class="fas fa-trash-alt"></i> Supprimer
+                                            </button>
+                                            <button class="report" data-id="${comment.comment_id}" data-type="comment" 
+                                                    data-reported="${comment.is_reported ? '1' : '0'}">
+                                                <i class="fas fa-flag"></i> ${comment.is_reported ? 'Déjà signalé' : 'Signaler'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                                commentsList.insertAdjacentHTML('beforeend', commentHTML);
+                            });
+
+                            // Add "Load More" button if there are more comments to load
+                            if (data.comments.length === limit) {
+                                const loadMoreButton = document.createElement('button');
+                                loadMoreButton.className = 'btn btn-primary load-more-comments';
+                                loadMoreButton.textContent = 'Charger plus de commentaires';
+                                loadMoreButton.addEventListener('click', function () {
+                                    loadComments(postId, offset + limit, limit);
+                                });
+                                commentsList.appendChild(loadMoreButton);
+                            }
+                        } else if (offset === 0) {
+                            commentsList.innerHTML = '<p class="no-comments">Aucun commentaire pour ce post.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading comments:', error);
+                    });
+            }
         });
         </script>
         <!-- Add more questions here -->

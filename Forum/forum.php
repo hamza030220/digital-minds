@@ -11,6 +11,7 @@ header("Pragma: no-cache");
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+ini_set('error_log', 'C:\xampp\php\logs\php_error_log'); // Set error log path
 
 // Check if user is logged in
 $isLoggedIn = isset($_SESSION['user_id']);
@@ -20,6 +21,14 @@ $isAdmin = $isLoggedIn && isset($_SESSION['is_admin']) && $_SESSION['is_admin'] 
 
 // Database connection
 require_once 'db_connect.php';
+
+// Include PHPMailer for email functionality
+require 'C:/xampp/htdocs/old/Forum/phpmailer/src/PHPMailer.php';
+require 'C:/xampp/htdocs/old/Forum/phpmailer/src/SMTP.php';
+require 'C:/xampp/htdocs/old/Forum/phpmailer/src/Exception.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 // For AJAX requests
 if (isset($_POST['action'])) {
@@ -41,7 +50,7 @@ if (isset($_POST['action'])) {
 
                 $title = trim($_POST['title']);
                 $content = trim($_POST['content']);
-                $isAnonymous = isset($_POST['is_anonymous']) ? 1 : 0;
+                $isAnonymous = isset($_POST['is_anonymous']) && $_POST['is_anonymous'] === '1' ? 1 : 0;
 
                 if (empty($title) || empty($content)) {
                     echo json_encode(['success' => false, 'message' => 'Title and content are required']);
@@ -50,7 +59,6 @@ if (isset($_POST['action'])) {
 
                 $stmt = $conn->prepare("INSERT INTO post (user_id, title, content, created_at, is_deleted, is_anonymous) VALUES (?, ?, ?, NOW(), 0, ?)");
                 $stmt->execute([$userId, $title, $content, $isAnonymous]);
-
                 echo json_encode(['success' => true]);
                 exit;
             case 'add_comment':
@@ -190,31 +198,101 @@ function handleAddComment($conn, $userId) {
         echo json_encode(['success' => false, 'message' => 'Missing required fields']);
         exit;
     }
-    
+
     if ($_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
         exit;
     }
-    
+
     $postId = intval($_POST['post_id']);
     $content = trim($_POST['content']);
-    
+
     if (empty($content)) {
         echo json_encode(['success' => false, 'message' => 'Comment content is required']);
         exit;
     }
-    
+
     // Insert the comment
     $stmt = $conn->prepare("INSERT INTO commentaire (post_id, user_id, content, created_at, is_deleted) VALUES (?, ?, ?, NOW(), 0)");
     $result = $stmt->execute([$postId, $userId, $content]);
-    
+
     if ($result) {
+        // Fetch post creator's email and name
+        $postStmt = $conn->prepare("SELECT u.email, u.username, p.title 
+                                    FROM post p 
+                                    JOIN users u ON p.user_id = u.id 
+                                    WHERE p.post_id = ?");
+        $postStmt->execute([$postId]);
+        $postCreator = $postStmt->fetch(PDO::FETCH_ASSOC);
+
+        // Debug: Log the SQL query and the fetched data
+        error_log("SQL Query: SELECT u.email, u.username, p.title FROM post p JOIN users u ON p.user_id = u.id WHERE p.post_id = $postId");
+        error_log("Post Creator Data: " . print_r($postCreator, true));
+
+        if ($postCreator) {
+            // Send the email
+            sendEmailToPostCreator($postCreator['email'], $postCreator['username'], $postCreator['title'], $content);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Post creator not found']);
+        }
+
         echo json_encode(['success' => true]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to save comment']);
     }
     exit;
 }
+
+// Function to send email notification to post creator
+function sendEmailToPostCreator($recipientEmail, $recipientName, $postTitle, $commentContent) {
+    $mail = new PHPMailer(true);
+
+    try {
+        // Debug: Log the email parameters
+        error_log("Sending email to: $recipientEmail");
+        error_log("Recipient Name: $recipientName");
+        error_log("Post Title: $postTitle");
+        error_log("Comment Content: $commentContent");
+
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = 'selminaama73@gmail.com';
+        $mail->Password = 'zcij nscr ehle fosj';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = 587;
+
+        // Sender
+        $mail->setFrom('selminaama73@gmail.com', 'Forum Notifications');
+
+        // Recipient
+        $mail->addAddress($recipientEmail, $recipientName);
+
+        // Email content
+        $mail->isHTML(true);
+        $mail->Subject = 'Nouveau commentaire sur votre post : ' . $postTitle;
+        $mail->Body = "
+            <p>Bonjour $recipientName,</p>
+            <p>Un nouveau commentaire a été ajouté à votre post intitulé <strong>$postTitle</strong>.</p>
+            <p><strong>Commentaire :</strong></p>
+            <blockquote style='border-left: 4px solid #ccc; padding-left: 10px; color: #555;'>
+                $commentContent
+            </blockquote>
+            <p>Vous pouvez consulter votre post et répondre au commentaire en vous rendant sur le forum.</p>
+            <p>Meilleures salutations,<br>L'équipe du Forum</p>
+        ";
+
+        $mail->send();
+        error_log("Email sent successfully to $recipientEmail");
+        return true;
+    } catch (Exception $e) {
+        error_log('Mailer Error: ' . $mail->ErrorInfo);
+        echo 'Mailer Error: ' . $mail->ErrorInfo;
+        return false;
+    }
+}
+
 // Add CSRF protection
 if (!isset($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -354,6 +432,13 @@ if (!isset($_SESSION['csrf_token'])) {
             resize: vertical;
         }
 
+        .error-message {
+            color: #e53935;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none; /* Hidden by default */
+        }
+
         /* Button Styles */
         .btn {
             display: inline-block;
@@ -394,6 +479,21 @@ if (!isset($_SESSION['csrf_token'])) {
             background-color: #45a049; /* Slightly darker shade for hover effect */
         }
 
+        .btn-secondary {
+            background-color: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e0e0e0;
+        }
+
         /* Posts and Comments */
         .discussion-list {
             margin-top: 20px;
@@ -411,26 +511,39 @@ if (!isset($_SESSION['csrf_token'])) {
             transition: all 0.3s ease;
             position: relative;
         }
-
         
         .discussion-item:hover {
             transform: translateX(5px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-
-        .discussion-title {
-            font-size: 18px;
-            margin-bottom: 5px;
-            color: #333;
-        }
-
-        .discussion-meta {
-            font-size: 14px;
-            color: #666;
-            text-align: right;
+        
+        .discussion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 10px;
         }
-
+        
+        .discussion-title {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .discussion-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .profile-picture {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
         .discussion-content {
             margin-bottom: 10px;
         }
@@ -453,7 +566,42 @@ if (!isset($_SESSION['csrf_token'])) {
             border-radius: 3px;
             margin-left: 5px;
         }
-
+        
+        /* Anonymous post styling */
+        /* Anonymous post styling */
+        .discussion-meta .anonymous-user {
+            font-style: italic;
+            color: #666;
+            background-color: #f8f8f8;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .anonymous-post .discussion-meta {
+            color: #777;
+            background-color: #f7f7f7;
+            padding: 8px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .anonymous-post .profile-picture {
+            opacity: 0.8;
+            filter: grayscale(30%);
+        }
+        
+        .anonymous-post .discussion-meta strong {
+            font-style: italic;
+            color: #666;
+        }
+        
+        .discussion-meta span {
+            display: inline-flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
         /* Icon Buttons */
         .btn-icon {
             display: inline-flex;
@@ -518,6 +666,12 @@ if (!isset($_SESSION['csrf_token'])) {
             100% { transform: rotate(360deg); }
         }
 
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+        }
+
         /* Alert Styles */
         .alert {
             padding: 15px;
@@ -543,7 +697,6 @@ if (!isset($_SESSION['csrf_token'])) {
                 width: 30px;
                 height: 30px;
             }
-            }
         }
         
         /* Comments Styles */
@@ -553,13 +706,24 @@ if (!isset($_SESSION['csrf_token'])) {
             border-top: 1px solid #eee;
         }
         
+        .comments-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .comments-header h4 {
+            margin: 0;
+        }
+        
         .comments-list {
             margin-top: 10px;
         }
         
         .comment {
             padding: 8px 12px;
-            background-color: #f9f9f9;
+            background-color: #f8f8f8;
             border-radius: 6px;
             margin-bottom: 8px;
             border-left: 3px solid #58b687;
@@ -715,11 +879,13 @@ if (!isset($_SESSION['csrf_token'])) {
                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                     <div class="form-group">
                         <label for="postTitle" class="required-label">Titre</label>
-                        <input type="text" id="postTitle" class="form-control" required>
+                        <input type="text" id="postTitle" class="form-control">
+                        <div class="error-message" id="titleError"></div> <!-- Error message container -->
                     </div>
                     <div class="form-group">
                         <label for="postContent" class="required-label">Contenu</label>
-                        <textarea id="postContent" class="form-control" required></textarea>
+                        <textarea id="postContent" class="form-control"></textarea>
+                        <div class="error-message" id="contentError"></div> <!-- Error message container -->
                     </div>
                     <div class="form-group">
                         <label>
@@ -745,33 +911,7 @@ if (!isset($_SESSION['csrf_token'])) {
                 <div class="loading"></div>
             </div>
             <!-- Posts will be loaded here via JavaScript -->
-            <div class="discussion-item" id="post-1">
-                <div class="discussion-meta">
-                    <img src="../image/profile.jpg" alt="User Profile" class="profile-picture">
-                    Par <strong>John Doe</strong> <span class="admin-badge">Admin</span> le 17/04/2025 14:30
-                </div>
-                <h3 class="discussion-title">Sample Post Title</h3>
-                <div class="discussion-content">
-                    <p>This is a sample post content.</p>
-                </div>
-                <div class="comments-section" id="comments-1">
-                    <div class="comment" id="comment-1">
-                        <div class="comment-meta">
-                            <img src="../image/profile.jpg" alt="User Profile" class="profile-picture">
-                            Jane Doe · 17/04/2025 15:00
-                            <button class="btn-icon edit-comment-btn" data-comment-id="1" title="Modifier">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon delete-comment-btn" data-comment-id="1" title="Supprimer">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                        <div class="comment-content">
-                            This is a sample comment content.
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div id="postsPlaceholder"></div>
         </div>
     </div>
 
@@ -840,41 +980,52 @@ if (!isset($_SESSION['csrf_token'])) {
         }
 
         // Create HTML for a post
+        // Create HTML for a post
         function createPostHTML(post) {
-            const profilePicture = post.is_anonymous === 1 ? '../image/anonymous.jpg' : '../image/profile.jpg';
-            const isAnonymous = post.is_anonymous === 1;
-            const username = isAnonymous ? 'Anonyme' : escapeHtml(post.username);
-            const isAdmin = post.is_admin === 1 ? '<span class="admin-badge">Admin</span>' : '';
+            // Convert anonymous flag to boolean using Number for reliable type conversion
+            const isAnonymous = Number(post.is_anonymous) === 1;
+            
+            // Fix isAdmin logic
+            const isAdmin = Number(post.is_admin) === 1;
             
             // Convert IDs to numbers to ensure proper comparison
-            const postUserId = parseInt(post.user_id, 10);
-            const currentUserId = parseInt(post.current_user_id, 10);
-            const isCurrentUserAdmin = post.is_admin === 1;
+            const postUserId = Number(post.user_id);
+            const currentUserId = Number(post.current_user_id);
             
-            // Check if user can edit or delete post
+            // Fix canEditOrDelete logic
             const canEditOrDelete = post.is_logged_in && 
-                (isCurrentUserAdmin || postUserId === currentUserId);
+                (Number(post.current_user_id) === Number(post.user_id) || 
+                (isAdmin && post.current_user_id));
+            
+            // Track if post has comments
+            const hasComments = post.comments && post.comments.length > 0;
             
             return `
-                <div class="discussion-item" id="post-${post.post_id}" data-post-id="${post.post_id}">
-                    <div class="discussion-meta">
-                        <img src="${profilePicture}" alt="User Profile" class="profile-picture">
-                        Par <strong>${username}</strong> ${isAdmin} le ${formatDate(post.created_at)}
+                <div class="discussion-item ${isAnonymous ? 'anonymous-post' : ''}" id="post-${post.post_id}" data-post-id="${post.post_id}">
+    <div class="discussion-header">
+        <h3 class="discussion-title">${escapeHtml(post.title)}</h3>
+        <div class="discussion-meta">
+            <img src="${isAnonymous ? '../image/anonymous.jpg' : '../image/profile.jpg'}" 
+                 alt="${isAnonymous ? 'Anonymous User' : 'User Profile'}" 
+                 class="profile-picture">
+            Par <strong>${isAnonymous ? 'Anonyme' : escapeHtml(post.username)}</strong>
+            ${isAdmin && !isAnonymous ? '<span class="admin-badge">Admin</span>' : ''} 
+            le ${formatDate(post.created_at)}
+        </div>
                     </div>
-                    <h3 class="discussion-title">${escapeHtml(post.title)}</h3>
                     <div class="discussion-content">
-                        <p>${escapeHtml(post.content)}</p>
+                        <div class="post-content">
+                            <p id="post-content-${post.post_id}">${escapeHtml(post.content)}</p>
+                        
+                        </div>
                     </div>
                     <div class="post-actions">
-                        <!-- Always show action buttons section, but conditionally render buttons -->
                         <div class="action-buttons">
                             ${post.is_logged_in ? `
-                                <!-- Reply button shown to all logged-in users -->
                                 <button class="btn-icon reply-post-btn" data-post-id="${post.post_id}" title="Répondre">
                                     <i class="fas fa-reply"></i>
                                 </button>
                                 ${canEditOrDelete ? `
-                                    <!-- Edit/Delete buttons only shown to post owner or admin -->
                                     <button class="btn-icon edit-post-btn" data-post-id="${post.post_id}" title="Modifier">
                                         <i class="fas fa-edit"></i>
                                     </button>
@@ -882,37 +1033,26 @@ if (!isset($_SESSION['csrf_token'])) {
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 ` : ''}
+                                <button class="btn translate-btn" data-id="${post.post_id}" data-type="post">Traduire</button>
                             ` : `
-                                <!-- Message shown to non-logged in users -->
                                 <span class="login-prompt">Connectez-vous pour interagir</span>
                             `}
                         </div>
                     </div>
                     <div class="comments-section" id="comments-${post.post_id}">
-                        ${post.comments && post.comments.length > 0 ? `
-                            <h4>Commentaires (${post.comments.length})</h4>
-                            <div class="comments-list">
-                                ${post.comments.map(comment => `
-                                    <div class="comment" id="comment-${comment.comment_id}">
-                                        <div class="comment-meta">
-                                        <img src="../image/profile.jpg" alt="User Profile" class="profile-picture">
-                                            ${escapeHtml(comment.username)} · ${formatDate(comment.created_at)}
-                                            ${comment.is_admin ? '<span class="admin-badge">Admin</span>' : ''}
-                                            ${comment.is_owner || post.is_admin ? `
-                                                <button class="btn-icon edit-comment-btn" data-comment-id="${comment.comment_id}" title="Modifier">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="btn-icon delete-comment-btn" data-comment-id="${comment.comment_id}" title="Supprimer">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            ` : ''}
-                                            
-                                        </div>
-                                        <div class="comment-content">
-                                            ${escapeHtml(comment.content)}
-                                        </div>
-                                    </div>
-                                `).join('')}
+                        ${hasComments ? `
+                            <div class="comments-header">
+                                <h4>Commentaires (${post.comments.length})</h4>
+                                <button class="btn-icon view-comments-btn" 
+                                        data-post-id="${post.post_id}" 
+                                        title="Voir les commentaires" 
+                                        data-state="closed"
+                                        data-comment-count="${post.comments.length}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="comments-list" style="display: none;">
+                                <!-- Comments will be loaded dynamically -->
                             </div>
                         ` : `
                             <div class="no-comments">Aucun commentaire pour le moment.</div>
@@ -921,7 +1061,6 @@ if (!isset($_SESSION['csrf_token'])) {
                 </div>
             `;
         }
-
         // Add event listeners to post buttons
         function addPostEventListeners() {
             // Reply buttons
@@ -966,7 +1105,6 @@ if (!isset($_SESSION['csrf_token'])) {
             }
         });
     });
-
         }
 
         // Delete a post
@@ -1214,23 +1352,45 @@ if (!isset($_SESSION['csrf_token'])) {
                 });
             }
         }
-
+        
         // Submit new post
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load posts when the page loads
             loadPosts();
             
             const newPostForm = document.getElementById('newPostForm');
             if (newPostForm) {
-                newPostForm.addEventListener('submit', function(e) {
+                newPostForm.addEventListener('submit', function (e) {
                     e.preventDefault();
 
-                    const title = document.getElementById('postTitle').value;
-                    const content = document.getElementById('postContent').value;
-                    const isAnonymous = document.getElementById('isAnonymous').checked ? 1 : 0; // Get the checkbox value
+                    const title = document.getElementById('postTitle').value.trim();
+                    const content = document.getElementById('postContent').value.trim();
+                    const isAnonymous = document.getElementById('isAnonymous').checked ? '1' : '0';
                     const csrfToken = this.querySelector('input[name="csrf_token"]').value;
+                    // Clear previous error messages
+                    document.getElementById('titleError').style.display = 'none';
+                    document.getElementById('contentError').style.display = 'none';
 
-                    if (!title || !content) {
-                        alert('Veuillez remplir tous les champs requis.');
+                    let hasError = false;
+
+                    // Validation for title
+                    if (!title) {
+                        const titleError = document.getElementById('titleError');
+                        titleError.textContent = 'Le titre est requis.';
+                        titleError.style.display = 'block';
+                        hasError = true;
+                    }
+
+                    // Validation for content
+                    if (!content) {
+                        const contentError = document.getElementById('contentError');
+                        contentError.textContent = 'Le contenu est requis.';
+                        contentError.style.display = 'block';
+                        hasError = true;
+                    }
+
+                    // Stop form submission if there are errors
+                    if (hasError) {
                         return;
                     }
 
@@ -1238,7 +1398,7 @@ if (!isset($_SESSION['csrf_token'])) {
                     formData.append('action', 'create_post');
                     formData.append('title', title);
                     formData.append('content', content);
-                    formData.append('is_anonymous', isAnonymous); // Add the is_anonymous value
+                    formData.append('is_anonymous', isAnonymous);
                     formData.append('csrf_token', csrfToken);
 
                     fetch('forum.php', {
@@ -1250,8 +1410,8 @@ if (!isset($_SESSION['csrf_token'])) {
                         if (data.success) {
                             document.getElementById('postTitle').value = '';
                             document.getElementById('postContent').value = '';
-                            document.getElementById('isAnonymous').checked = false; // Reset the checkbox
-                            loadPosts(); // Reload posts to show the new one
+                            document.getElementById('isAnonymous').checked = false;
+                            loadPosts();
                             showFeedback('Discussion publiée avec succès!', 'success');
                         } else {
                             showFeedback(data.message || 'Une erreur est survenue', 'error');
@@ -1263,6 +1423,237 @@ if (!isset($_SESSION['csrf_token'])) {
                     });
                 });
             }
+            
+            // Function to load comments for a post
+            function loadComments(postId, offset = 0, limit = 4) {
+                console.log(`Loading comments for post ID: ${postId}, offset: ${offset}, limit: ${limit}`); // Debugging
+                const commentsList = document.querySelector(`#comments-${postId} .comments-list`);
+                const viewCommentsBtn = document.querySelector(`#comments-${postId} .view-comments-btn`);
+                
+                if (!commentsList) {
+                    console.error(`Comments list not found for post ID: ${postId}`);
+                    showFeedback('Erreur lors du chargement des commentaires.', 'error');
+                    return;
+                }
+                
+                // Set view button to loading state
+                if (viewCommentsBtn && offset === 0) {
+                    viewCommentsBtn.setAttribute('disabled', 'disabled');
+                    viewCommentsBtn.classList.add('loading');
+                    const icon = viewCommentsBtn.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fas fa-spinner fa-spin';
+                    }
+                }
+                
+                // Show comments list only after we start loading
+                commentsList.style.display = 'block';
+                
+                // Clear comments list if this is the first batch (offset = 0)
+                if (offset === 0) {
+                    commentsList.innerHTML = '';
+                } else {
+                    // Remove existing load more button if present
+                    const existingLoadMoreBtn = commentsList.querySelector('.load-more-comments');
+                    if (existingLoadMoreBtn) {
+                        existingLoadMoreBtn.remove();
+                    }
+                }
+
+                const loadingSpinner = document.createElement('div');
+                loadingSpinner.className = 'loading-spinner';
+                loadingSpinner.innerHTML = '<div class="loading"></div>';
+                commentsList.appendChild(loadingSpinner);
+
+                fetch(`get_comments.php?post_id=${postId}&offset=${offset}&limit=${limit}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Comments data:', data); // Debugging
+                        loadingSpinner.remove();
+                        
+                        // Reset view button state
+                        if (viewCommentsBtn) {
+                            viewCommentsBtn.removeAttribute('disabled');
+                            viewCommentsBtn.classList.remove('loading');
+                            viewCommentsBtn.setAttribute('data-state', 'open');
+                            const icon = viewCommentsBtn.querySelector('i');
+                            if (icon) {
+                                icon.className = 'fas fa-eye-slash';
+                            }
+                            viewCommentsBtn.setAttribute('title', 'Masquer les commentaires');
+                        }
+
+                        if (data.success && data.comments && data.comments.length > 0) {
+                            data.comments.forEach(comment => {
+                                // Check if the user can edit or delete the comment
+                                const isOwner = data.current_user_id && parseInt(comment.user_id) === parseInt(data.current_user_id);
+                                const isAdmin = data.is_admin === 1;
+                                const canModify = isOwner || isAdmin;
+                                
+                                const commentHTML = `
+                                    <div class="comment" id="comment-${comment.comment_id}">
+                                        <div class="comment-meta">
+                                            <img src="../image/profile.jpg" alt="User Profile" class="profile-picture">
+                                            ${escapeHtml(comment.username)} · ${formatDate(comment.created_at)}
+                                            ${comment.is_admin === 1 ? '<span class="admin-badge">Admin</span>' : ''}
+                                            ${canModify ? `
+                                                <button class="btn-icon edit-comment-btn" data-comment-id="${comment.comment_id}" title="Modifier">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn-icon delete-comment-btn" data-comment-id="${comment.comment_id}" title="Supprimer">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            ` : ''}
+                                            <button class="btn translate-btn" data-id="${comment.comment_id}" data-type="comment">Traduire</button>
+                                        </div>
+                                        <div class="comment-content">
+                                            <p id="comment-content-${comment.comment_id}">${escapeHtml(comment.content)}</p>
+                                            
+                                        </div>
+                                    </div>
+                                `;
+                                commentsList.insertAdjacentHTML('beforeend', commentHTML);
+                            });
+                            // Supprimer les anciens boutons "Charger plus de commentaires" et "Masquer"
+                const existingLoadMoreBtn = commentsList.querySelector('.load-more-comments');
+                const existingHideCommentsBtn = commentsList.querySelector('.hide-comments');
+                if (existingLoadMoreBtn) existingLoadMoreBtn.remove();
+                if (existingHideCommentsBtn) existingHideCommentsBtn.remove();
+                            
+                            // Add event listeners to new comment action buttons
+                            const newCommentBtns = commentsList.querySelectorAll('.edit-comment-btn, .delete-comment-btn');
+                            newCommentBtns.forEach(btn => {
+                                if (btn.classList.contains('edit-comment-btn')) {
+                                    btn.addEventListener('click', function() {
+                                        const commentId = this.getAttribute('data-comment-id');
+                                        showEditCommentForm(commentId);
+                                    });
+                                } else if (btn.classList.contains('delete-comment-btn')) {
+                                    btn.addEventListener('click', function() {
+                                        const commentId = this.getAttribute('data-comment-id');
+                                        if (confirm('Êtes-vous sûr de vouloir supprimer ce commentaire?')) {
+                                            deleteComment(commentId);
+                                        }
+                                    });
+                                }
+                            });
+
+                            // Add "Load More" button if there are more comments to load
+                            if (data.comments.length === limit) {
+                                const loadMoreButton = document.createElement('button');
+                                loadMoreButton.className = 'btn btn-primary load-more-comments';
+                                loadMoreButton.textContent = 'Charger plus de commentaires';
+                                loadMoreButton.addEventListener('click', function() {
+                                    loadComments(postId, offset + limit, limit);
+                                });
+                                commentsList.appendChild(loadMoreButton);
+                                // Ajouter le bouton "Masquer" si ce n'est pas déjà fait
+                    
+                            }
+                            // Always add the "Masquer" button
+            const hideCommentsButton = document.createElement('button');
+            hideCommentsButton.className = 'btn btn-secondary hide-comments';
+            hideCommentsButton.textContent = 'Masquer';
+            hideCommentsButton.addEventListener('click', function () {
+                hideComments(postId, limit);
+            });
+            commentsList.appendChild(hideCommentsButton);
+                        
+                        } else if (offset === 0) {
+                            commentsList.innerHTML = '<div class="no-comments">Aucun commentaire pour le moment.</div>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading comments:', error);
+                        loadingSpinner.remove();
+                        commentsList.innerHTML = '<div class="error-message">Erreur lors du chargement des commentaires.</div>';
+                        
+                        // Reset view button state
+                        if (viewCommentsBtn) {
+                            viewCommentsBtn.removeAttribute('disabled');
+                            viewCommentsBtn.classList.remove('loading');
+                            const icon = viewCommentsBtn.querySelector('i');
+                            if (icon) {
+                                icon.className = 'fas fa-eye';
+                            }
+                        }
+                        
+                        showFeedback('Erreur lors du chargement des commentaires.', 'error');
+                    });
+            }
+            
+            // Event delegation for view-comments-btn and load-more-comments
+            document.addEventListener('click', function (event) {
+                // Find the view-comments-btn target, even if clicked on an icon inside it
+                if (event.target.classList.contains('view-comments-btn') || 
+                    (event.target.tagName === 'I' && event.target.parentElement && 
+                     event.target.parentElement.classList.contains('view-comments-btn'))) {
+                    
+                    const target = event.target.classList.contains('view-comments-btn') ? 
+                                  event.target : event.target.parentElement;
+                    
+                    // Prevent actions if button is disabled or loading
+                    if (target.hasAttribute('disabled') || target.classList.contains('loading')) {
+                        return;
+                    }
+                    
+                    const postId = target.getAttribute('data-post-id');
+                    const commentsList = document.querySelector(`#comments-${postId} .comments-list`);
+                    
+                    if (!commentsList) {
+                        console.error('Comments list not found for post', postId);
+                        return;
+                    }
+                    
+                    const buttonState = target.getAttribute('data-state') || 'closed';
+                    
+                    if (buttonState === 'closed') {
+                        // Opening comments - check if we need to load them or just show them
+                        const hasLoadedComments = commentsList.children.length > 0 && 
+                                                !commentsList.querySelector('.no-comments');
+                                                
+                        if (!hasLoadedComments) {
+                            // First load - fetch comments from server
+                            loadComments(postId, 0, 4);
+                        } else {
+                            // Comments already loaded, just show them
+                            commentsList.style.display = 'block';
+                            
+                            // Update button state
+                            target.setAttribute('data-state', 'open');
+                            const icon = target.querySelector('i');
+                            if (icon) {
+                                icon.className = 'fas fa-eye-slash';
+                            }
+                            target.setAttribute('title', 'Masquer les commentaires');
+                        }
+                    } else {
+                        // Hiding comments
+                        commentsList.style.display = 'none';
+                        
+                        // Update button state
+                        target.setAttribute('data-state', 'closed');
+                        const icon = target.querySelector('i');
+                        if (icon) {
+                            icon.className = 'fas fa-eye';
+                        }
+                        target.setAttribute('title', 'Voir les commentaires');
+                    }
+                }
+                
+                // Handle clicks on load-more-comments button
+                if (event.target.classList.contains('load-more-comments')) {
+                    const postId = event.target.closest('.discussion-item').getAttribute('data-post-id');
+                    const currentCount = event.target.closest('.comments-list').querySelectorAll('.comment').length;
+                    event.target.remove(); // Remove the current load more button
+                    loadComments(postId, currentCount, 4); // Load next batch of comments
+                }
+            });
         });
 
         // Show feedback message
@@ -1278,134 +1669,222 @@ if (!isset($_SESSION['csrf_token'])) {
                 }, 5000);
             }
         }
-    function showEditCommentForm(commentId) {
-    const commentElement = document.getElementById(`comment-${commentId}`);
-    if (!commentElement) return;
 
-    const contentElement = commentElement.querySelector('.comment-content');
-    if (!contentElement) return;
-
-    const currentContent = contentElement.textContent;
-
-    // Store original content
-    commentElement.dataset.originalContent = currentContent;
-
-    // Replace with edit form
-    const formHTML = `
-        <div class="edit-comment-form" id="edit-comment-form-${commentId}">
-            <textarea class="form-control" id="edit-comment-content-${commentId}" required>${escapeHtml(currentContent)}</textarea>
-            <button type="button" class="btn btn-primary save-edit-comment-btn" data-comment-id="${commentId}">Enregistrer</button>
-            <button type="button" class="btn cancel-edit-comment-btn" data-comment-id="${commentId}">Annuler</button>
-        </div>
-    `;
-
-    contentElement.style.display = 'none';
-    contentElement.insertAdjacentHTML('afterend', formHTML);
-
-    // Add event listeners
-    document.querySelector(`#edit-comment-form-${commentId} .save-edit-comment-btn`).addEventListener('click', function () {
-        saveEditedComment(commentId);
-    });
-
-    document.querySelector(`#edit-comment-form-${commentId} .cancel-edit-comment-btn`).addEventListener('click', function () {
-        cancelEditComment(commentId);
-    });
-}
-function saveEditedComment(commentId) {
-    const contentInput = document.getElementById(`edit-comment-content-${commentId}`);
-    if (!contentInput) return;
-
-    const content = contentInput.value.trim();
-    if (!content) {
-        alert('Le commentaire ne peut pas être vide.');
-        return;
-    }
-
-    // Get CSRF token
-    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-
-    const formData = new FormData();
-    formData.append('action', 'update_comment');
-    formData.append('comment_id', commentId);
-    formData.append('content', content);
-    formData.append('csrf_token', csrfToken);
-
-    fetch('forum.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
+        // Edit comment functionality
+        function showEditCommentForm(commentId) {
             const commentElement = document.getElementById(`comment-${commentId}`);
+            if (!commentElement) return;
+
             const contentElement = commentElement.querySelector('.comment-content');
+            if (!contentElement) return;
 
-            // Update content
-            contentElement.textContent = content;
+            const currentContent = contentElement.textContent;
 
-            // Show original content
+            // Store original content
+            commentElement.dataset.originalContent = currentContent;
+
+            // Replace with edit form
+            const formHTML = `
+                <div class="edit-comment-form" id="edit-comment-form-${commentId}">
+                    <textarea class="form-control" id="edit-comment-content-${commentId}" required>${escapeHtml(currentContent)}</textarea>
+                    <button type="button" class="btn btn-primary save-edit-comment-btn" data-comment-id="${commentId}">Enregistrer</button>
+                    <button type="button" class="btn cancel-edit-comment-btn" data-comment-id="${commentId}">Annuler</button>
+                </div>
+            `;
+
+            contentElement.style.display = 'none';
+            contentElement.insertAdjacentHTML('afterend', formHTML);
+
+            // Add event listeners
+            document.querySelector(`#edit-comment-form-${commentId} .save-edit-comment-btn`).addEventListener('click', function () {
+                saveEditedComment(commentId);
+            });
+
+            document.querySelector(`#edit-comment-form-${commentId} .cancel-edit-comment-btn`).addEventListener('click', function () {
+                cancelEditComment(commentId);
+            });
+        }
+        
+        function saveEditedComment(commentId) {
+            const contentInput = document.getElementById(`edit-comment-content-${commentId}`);
+            if (!contentInput) return;
+
+            const content = contentInput.value.trim();
+            if (!content) {
+                alert('Le commentaire ne peut pas être vide.');
+                return;
+            }
+
+            // Get CSRF token
+            const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
+            const formData = new FormData();
+            formData.append('action', 'update_comment');
+            formData.append('comment_id', commentId);
+            formData.append('content', content);
+            formData.append('csrf_token', csrfToken);
+
+            fetch('forum.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const commentElement = document.getElementById(`comment-${commentId}`);
+                    const contentElement = commentElement.querySelector('.comment-content');
+                    
+                    // Update content
+                    contentElement.textContent = content;
+
+                    // Show original content
+                    contentElement.style.display = '';
+
+                    // Remove edit form
+                    const editForm = document.getElementById(`edit-comment-form-${commentId}`);
+                    if (editForm) {
+                        editForm.remove();
+                    }
+
+                    showFeedback('Commentaire modifié avec succès', 'success');
+                } else {
+                    showFeedback(data.message || 'Erreur lors de la modification', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating comment:', error);
+                showFeedback('Une erreur est survenue', 'error');
+            });
+        }
+        
+        function cancelEditComment(commentId) {
+            const commentElement = document.getElementById(`comment-${commentId}`);
+            if (!commentElement) return;
+
+            const contentElement = commentElement.querySelector('.comment-content');
             contentElement.style.display = '';
 
-            // Remove edit form
             const editForm = document.getElementById(`edit-comment-form-${commentId}`);
             if (editForm) {
                 editForm.remove();
             }
-
-            showFeedback('Commentaire modifié avec succès', 'success');
-        } else {
-            showFeedback(data.message || 'Erreur lors de la modification', 'error');
         }
-    })
-    .catch(error => {
-        console.error('Error updating comment:', error);
-        showFeedback('Une erreur est survenue', 'error');
-    });
-}
-function cancelEditComment(commentId) {
-    const commentElement = document.getElementById(`comment-${commentId}`);
-    if (!commentElement) return;
+        
+        function deleteComment(commentId) {
+            // Get CSRF token
+            const csrfToken = document.querySelector('input[name="csrf_token"]').value;
 
-    const contentElement = commentElement.querySelector('.comment-content');
-    contentElement.style.display = '';
+            const formData = new FormData();
+            formData.append('action', 'delete_comment');
+            formData.append('comment_id', commentId);
+            formData.append('csrf_token', csrfToken);
 
-    const editForm = document.getElementById(`edit-comment-form-${commentId}`);
-    if (editForm) {
-        editForm.remove();
-    }
-}
-function deleteComment(commentId) {
-    // Get CSRF token
-    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+            fetch('forum.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const commentElement = document.getElementById(`comment-${commentId}`);
+                    if (commentElement) {
+                        commentElement.remove();
+                        showFeedback('Commentaire supprimé avec succès', 'success');
+                    }
+                } else {
+                    showFeedback(data.message || 'Erreur lors de la suppression', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting comment:', error);
+                showFeedback('Une erreur est survenue', 'error');
+            });
+        }
 
-    const formData = new FormData();
-    formData.append('action', 'delete_comment');
-    formData.append('comment_id', commentId);
-    formData.append('csrf_token', csrfToken);
-
-    fetch('forum.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const commentElement = document.getElementById(`comment-${commentId}`);
-            if (commentElement) {
-                commentElement.remove();
-                showFeedback('Commentaire supprimé avec succès', 'success');
+        function hideComments(postId, limit = 4) {
+            const commentsList = document.querySelector(`#comments-${postId} .comments-list`);
+            if (!commentsList) {
+                console.error(`Comments list not found for post ID: ${postId}`);
+                return;
             }
-        } else {
-            showFeedback(data.message || 'Erreur lors de la suppression', 'error');
+
+            const comments = commentsList.querySelectorAll('.comment');
+            const totalComments = comments.length;
+
+            // Masquer les derniers commentaires par groupes de 4
+            for (let i = totalComments - 1; i >= totalComments - limit && i >= 0; i--) {
+                comments[i].remove();
+            }
+
+            // Remove existing "Load More" and "Masquer" buttons
+            const existingLoadMoreBtn = commentsList.querySelector('.load-more-comments');
+            const existingHideCommentsBtn = commentsList.querySelector('.hide-comments');
+            if (existingLoadMoreBtn) existingLoadMoreBtn.remove();
+            if (existingHideCommentsBtn) existingHideCommentsBtn.remove();
+
+            // Add "Load More" button if there are still comments to load
+            if (commentsList.querySelectorAll('.comment').length > 0) {
+                const loadMoreButton = document.createElement('button');
+                loadMoreButton.className = 'btn btn-primary load-more-comments';
+                loadMoreButton.textContent = 'Charger plus de commentaires';
+                loadMoreButton.addEventListener('click', function () {
+                    loadComments(postId, totalComments - limit, limit);
+                });
+                commentsList.appendChild(loadMoreButton);
+            }
+
+            // Add "Masquer" button
+            const hideCommentsButton = document.createElement('button');
+            hideCommentsButton.className = 'btn btn-secondary hide-comments';
+            hideCommentsButton.textContent = 'Masquer';
+            hideCommentsButton.addEventListener('click', function () {
+                hideComments(postId, limit);
+            });
+            commentsList.appendChild(hideCommentsButton);
         }
-    })
-    .catch(error => {
-        console.error('Error deleting comment:', error);
-        showFeedback('Une erreur est survenue', 'error');
-    });
-}
     </script>
+    <script>
+document.body.addEventListener('click', function (event) {
+    if (event.target.classList.contains('translate-btn')) {
+        const id = event.target.getAttribute('data-id');
+        const type = event.target.getAttribute('data-type');
+        const contentElement = document.getElementById(`${type}-content-${id}`);
+
+        if (!contentElement) {
+            alert('Contenu introuvable pour la traduction.');
+            return;
+        }
+
+        // Fetch the content to translate
+        const originalText = contentElement.textContent;
+
+        // Send the translation request
+        fetch('translate.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                q: originalText,
+                source: 'en', // Source language
+                target: 'fr', // Target language
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the content with the translated text
+                contentElement.textContent = data.translatedText;
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la traduction.');
+        });
+    }
+});
+</script>
 </body>
-
 </html>
-

@@ -109,7 +109,8 @@ try {
     $userPassword = 'user123';
     $adminHash = password_hash($adminPassword, PASSWORD_DEFAULT);
     $userHash = password_hash($userPassword, PASSWORD_DEFAULT);
-    
+    /*$naamaPassword = 'naama123';
+    $naamaHash = password_hash($naamaPassword, PASSWORD_DEFAULT);*/
     // Insert admin user (password is 'admin123')
     $adminSql = "INSERT INTO users (username, email, password, is_admin) 
               VALUES ('admin', 'admin@green.tn', 
@@ -129,6 +130,15 @@ try {
     $stmt->bindParam(':user_hash', $userHash);
     $stmt->execute();
     echo "<p style='color: green;'>✓ Created regular user.</p>";
+
+   /* $naamaSql = "INSERT INTO users (username, email, password, is_admin) 
+              VALUES ('naama', 'naama@green.tn', 
+                     :naama_hash, 
+                     FALSE)";
+    $stmt = $conn->prepare($naamaSql);
+    $stmt->bindParam(':naama_hash', $naamaHash);
+    $stmt->execute();
+    echo "<p style='color: green;'>✓ Created naama user.</p>";*/
     
     // Add a sample post
     $postSql = "INSERT INTO post (user_id, title, content)
