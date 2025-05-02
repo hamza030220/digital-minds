@@ -50,8 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_input'])) {
     }
 
     // Si aucune réponse prédéfinie n'est trouvée, utiliser l'API Hugging Face
-    $api_key = getenv("HF_API_KEY"); // Charge la clé depuis une variable d'environnement
-
+  //  $api_key = "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"; // Remplacez par votre clé API Hugging Face si nécessaire
     $url = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta";
 
     // Ajouter un contexte pour que le modèle réponde dans le cadre de Green.tn
