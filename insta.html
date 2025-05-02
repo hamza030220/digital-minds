@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil - Green.tn</title>
+    <style>
+        /* Style global */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #fafafa;
+        }
+
+        header {
+            background-color: white;
+            padding: 10px 20px;
+            border-bottom: 1px solid #ccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        header .logo img {
+            border-radius: 50%;
+        }
+
+        header .logo h2 {
+            margin-left: 10px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        header .header-right {
+            display: flex;
+            align-items: center;
+        }
+
+        header .search-bar {
+            padding: 5px;
+            border-radius: 15px;
+            border: 1px solid #ccc;
+            width: 200px;
+        }
+
+        /* Profil utilisateur */
+        .profile-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-header {
+            display: flex;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 20px;
+        }
+
+        .profile-info h1 {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .profile-info p {
+            color: #555;
+            margin-top: 5px;
+        }
+
+        .profile-stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .profile-stats span {
+            font-size: 16px;
+            color: #555;
+        }
+
+        .profile-posts {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .post {
+            position: relative;
+        }
+
+        .post-image {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        /* Footer */
+        footer {
+            background-color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 14px;
+            color: #555;
+            border-top: 1px solid #ddd;
+        }
+
+        footer p {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Green.tn" width="40">
+            <h2>Green.tn</h2>
+        </div>
+        <div class="header-right">
+            <input type="text" placeholder="Recherche" class="search-bar">
+        </div>
+    </header>
+
+    <div class="profile-container">
+        <!-- Profil utilisateur -->
+        <div class="profile-header">
+            <img src="prof.jpg" alt="User Avatar" class="profile-avatar">
+            <div class="profile-info">
+                <h1>Green.tn</h1>
+                <p>@green_tn</p>
+                <p>🌱 Promouvoir la mobilité verte pour un avenir durable !</p>
+                <div class="profile-stats">
+                    <span><strong>1000</strong> publications</span>
+                    <span><strong>25K</strong> abonnés</span>
+                    <span><strong>100</strong> abonnements</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Galerie de publications -->
+        <div class="profile-posts">
+            <div class="post">
+                <img src="lp.jpg" alt="Post 1" class="post-image">
+            </div>
+            <div class="post">
+                <img src="l.jpg" alt="Post 2" class="post-image">
+            </div>
+            <div class="post">
+                <img src="o.jpg" alt="Post 3" class="post-image">
+            </div>
+            <div class="post">
+                <img src="ll.jpg" alt="Post 4" class="post-image">
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Green.tn - Tous droits réservés.</p>
+    </footer>
+</body>
+</html>

@@ -1,11 +1,17 @@
 <?php
-// Connexion à la base de données
-$conn = new PDO("mysql:host=localhost;dbname=greentn", "root", "");
-
-// Récupération de toutes les pannes
-$sql = "SELECT * FROM pannes";
-$stmt = $conn->query($sql);
-$pannes = $stmt->fetchAll();
+// Connexion à la base de données avec gestion des erreurs
+try {
+    $conn = new PDO("mysql:host=localhost;dbname=greentn", "root", "");
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Récupération de toutes les pannes
+    $sql = "SELECT * FROM pannes";
+    $stmt = $conn->query($sql);
+    $pannes = $stmt->fetchAll();
+} catch (PDOException $e) {
+    echo "Erreur de connexion à la base de données : " . $e->getMessage();
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -51,6 +57,14 @@ $pannes = $stmt->fetchAll();
         .sidebar .active {
             background-color: #1b5e20;
             color: white;
+        }
+
+        .logout-button {
+            margin-top: 40px;
+            background-color: #c62828;
+            color: #fff;
+            border-radius: 8px;
+            font-weight: bold;
         }
 
         .main-content {
@@ -124,6 +138,7 @@ $pannes = $stmt->fetchAll();
     <a href="?page=reservations">📅 Réservations</a>
     <a href="?page=pannes" class="active">🔧 Pannes</a>
     <a href="?page=velos_batteries">🚲 Vélos & Batteries</a>
+    <a href="logout.php" class="logout-button">🚪 Déconnexion</a>
 </div>
 
 <!-- Main Content -->

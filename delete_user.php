@@ -1,51 +1,79 @@
+```php
 <?php
-// Connexion à la base de données
-require 'db.php';
-require_once('C:/xampp/htdocs/projet/db.php');
 session_start();
+require_once __DIR__ . '/models/db.php';
 
-// Vérifier si l'utilisateur est connecté et si c'est un administrateur
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header("Location: login.php");
+// Vérifier si l'utilisateur est connecté et est admin
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header("Location: index.php");
     exit();
 }
 
-// Vérifier que l'ID est passé dans l'URL et qu'il est un entier valide
-if (isset($_GET['id']) && filter_var($_GET['id'], FILTER_VALIDATE_INT)) {
-    $id = (int) $_GET['id'];
+// Vérifier si l'ID de l'utilisateur à supprimer est fourni
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    header("Location: dashboard.php?section=users&error=ID utilisateur invalide");
+    exit();
+}
 
-    // Journalisation pour le débogage
-    error_log("Tentative de suppression de l'utilisateur avec l'ID : $id");
+$user_id = (int)$_GET['id'];
 
-    // Vérifier si l'utilisateur existe dans la base
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
-    $stmt->execute([$id]);
-    $user = $stmt->fetch();
+// Vérifier si l'utilisateur existe
+$stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->execute([$user_id]);
+$user = $stmt->fetch();
 
-    if ($user) {
-        error_log("Utilisateur trouvé : " . print_r($user, true));
+if (!$user) {
+    header("Location: dashboard.php?section=users&error=Utilisateur introuvable");
+    exit();
+}
 
-        // Supprimer l'utilisateur
-        $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
-        $stmt->execute([$id]);
+// Empêcher la suppression d'un admin (optionnel)
+if ($user['role'] === 'admin') {
+    header("Location: dashboard.php?section=users&error=Impossible de supprimer un administrateur");
+    exit();
+}
 
-        // Message de succès
-        $_SESSION['success_message'] = "Utilisateur supprimé avec succès!";
+// Début de la transaction
+$pdo->beginTransaction();
 
-        // Redirection vers le tableau de bord
-        header("Location: dashboard.php");
-        exit();
-    } else {
-        // Utilisateur introuvable
-        error_log("Utilisateur introuvable pour l'ID : $id");
-        $_SESSION['error_message'] = "Utilisateur introuvable.";
-        header("Location: dashboard.php");
-        exit();
-    }
-} else {
-    // ID non valide
-    $_SESSION['error_message'] = "ID invalide.";
-    header("Location: dashboard.php");
+try {
+    // Copier l'utilisateur dans la table trash_users
+    $stmt = $pdo->prepare("
+        INSERT INTO trash_users (id, nom, prenom, email, telephone, role, age, gouvernorats, cin, deleted_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    ");
+    $stmt->execute([
+        $user['id'],
+        $user['nom'],
+        $user['prenom'],
+        $user['email'],
+        $user['telephone'],
+        $user['role'],
+        $user['age'],
+        $user['gouvernorats'],
+        $user['cin']
+    ]);
+
+    // Supprimer les notifications associées pour éviter la violation de contrainte
+    $stmt = $pdo->prepare("DELETE FROM notifications WHERE user_id = ?");
+    $stmt->execute([$user_id]);
+
+    // Supprimer l'utilisateur de la table users
+    $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+    $stmt->execute([$user_id]);
+
+    // Valider la transaction
+    $pdo->commit();
+
+    // Rediriger avec un message de succès
+    header("Location: dashboard.php?section=users&message=Utilisateur déplacé vers la corbeille avec succès");
+    exit();
+} catch (Exception $e) {
+    // Annuler la transaction en cas d'erreur
+    $pdo->rollBack();
+    // Rediriger avec un message d'erreur
+    header("Location: dashboard.php?section=users&error=Erreur lors de la suppression : " . urlencode($e->getMessage()));
     exit();
 }
 ?>
+```

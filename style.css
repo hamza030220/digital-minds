@@ -111,21 +111,7 @@ p a {
 p a:hover {
     text-decoration: underline;
 }
-/* Icône en haut à droite */
-/* Icône en haut à droite */
-.top-icon {
-    position: fixed; /* Utilisez position fixed pour la fixer en haut à droite */
-    top: 20px; /* 20px du haut */
-    right: 20px; /* 20px de la droite */
-    font-size: 30px; /* Taille de l'icône */
-    color: #4CAF50; /* Couleur de l'icône */
-    cursor: pointer; /* Curseur pointer pour montrer qu'elle est cliquable */
-    transition: color 0.3s ease;
-}
 
-.top-icon:hover {
-    color: #45a049; /* Changer la couleur de l'icône au survol */
-}
 
 /* Conteneur du logo */
 .logo-container {
@@ -212,19 +198,8 @@ p a:hover {
     color: white;
 }
 
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-right: 20px;
-}
 
-.user-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-}
+
 .logout-container {
     position: absolute;
     top: 20px;
@@ -309,3 +284,40 @@ p a:hover {
 .search-btn:hover {
     background-color: #388e3c;
 }
+/* Mode sombre */
+body.dark-mode {
+    background: url('https://images.unsplash.com/photo-1581093588401-99b2c3f75b9b?auto=format&fit=crop&w=1470&q=80') no-repeat center center fixed;
+    background-size: cover;
+}
+
+body.dark-mode .container {
+    background-color: rgba(30, 30, 30, 0.85);
+}
+
+body.dark-mode .left,
+body.dark-mode .right {
+    background-color: rgba(30, 30, 30, 0.9);
+    color: white;
+}
+
+body.dark-mode .left h1,
+body.dark-mode .right h2 {
+    color: white;
+}
+
+body.dark-mode input[type="email"],
+body.dark-mode input[type="password"] {
+    background-color: #333;
+    border: 1px solid #555;
+    color: white;
+}
+
+body.dark-mode .right a {
+    color: #1abc9c;
+}
+
+body.dark-mode .theme-toggle {
+    color: white;
+}
+
+

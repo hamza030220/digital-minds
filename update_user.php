@@ -1,29 +1,24 @@
 <?php
 session_start();
-require 'db.php';
+require_once __DIR__ . '/models/db.php';
 
-// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
 
-// Récupérer les informations de l'utilisateur connecté
 $user_id = $_SESSION['user_id'];
 $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch();
 
-// Vérifier si l'utilisateur existe
 if (!$user) {
     echo "Erreur : utilisateur introuvable.";
     exit();
 }
 
-// Vérifier si l'utilisateur est un administrateur
 $is_admin = isset($_SESSION['role']) && $_SESSION['role'] == 'admin';
 
-// Récupérer l'ID de l'utilisateur à modifier (si administrateur)
 if ($is_admin && isset($_GET['id'])) {
     $target_user_id = $_GET['id'];
     $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
@@ -35,21 +30,18 @@ if ($is_admin && isset($_GET['id'])) {
         exit();
     }
 } else {
-    // Si l'utilisateur n'est pas administrateur, on permet de modifier ses propres informations
     $target_user = $user;
     $target_user_id = $user_id;
 }
 
-// Traitement du formulaire de mise à jour des informations
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nom = $_POST['nom'];
     $prenom = $_POST['prenom'];
     $email = $_POST['email'];
-    $Gouvernorat = $_POST['gouvernorat']; // ✅ Correspond au name du <select>
+    $Gouvernorats = $_POST['gouvernorats'];
     $telephone = $_POST['telephone'];
     $age = $_POST['age'];
 
-    // Gestion de la photo de profil
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] == 0) {
         $photo_tmp = $_FILES['photo']['tmp_name'];
         $photo_name = $_FILES['photo']['name'];
@@ -59,9 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $photo_path = $target_user['photo'];
     }
 
-    // ✅ Requête avec le nom correct de la colonne : gouvernorats
     $stmt = $pdo->prepare("UPDATE users SET nom = ?, prenom = ?, email = ?, telephone = ?, photo = ?, age = ?, gouvernorats = ? WHERE id = ?");
-    $stmt->execute([$nom, $prenom, $email, $telephone, $photo_path, $age, $Gouvernorat, $target_user_id]);
+    $stmt->execute([$nom, $prenom, $email, $telephone, $photo_path, $age, $Gouvernorats, $target_user_id]);
 
     $_SESSION['success_message'] = "Les informations ont été mises à jour avec succès.";
 
@@ -78,64 +69,194 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modifier les informations</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom, #e9f5ec, #a8e6a3, #60c26d); /* dégradé de verts */
+    animation: fadeIn 1s ease-in;
+}
+
+        .profile-container {
+            max-width: 700px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            margin-bottom: 25px;
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            color: #444;
+        }
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .error-message {
+            color: red;
+            font-size: 0.85em;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        button {
+            background-color: #28a745; /* Vert */
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+        }
+        button:hover {
+            background-color: #218838; /* Vert foncé */
+        }
+        .return-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .return-button {
+            background-color: #6c757d; /* Gris */
+            padding: 10px 20px;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .return-button:hover {
+            background-color: #5a6268; /* Gris foncé */
+        }
+    </style>
 </head>
 <body>
     <div class="profile-container">
-        <div class="profile-info">
-            <h2>Modifier les informations</h2>
+        <h2>Modifier les informations</h2>
 
-            <?php if (isset($_SESSION['success_message'])): ?>
-                <p class="success"><?php echo htmlspecialchars($_SESSION['success_message']); ?></p>
-                <?php unset($_SESSION['success_message']); ?>
-            <?php endif; ?>
+        <?php if (isset($_SESSION['success_message'])): ?>
+            <p class="success"><?= htmlspecialchars($_SESSION['success_message']) ?></p>
+            <?php unset($_SESSION['success_message']); ?>
+        <?php endif; ?>
 
-            <form method="POST" enctype="multipart/form-data">
-                <h3>Informations personnelles</h3>
+        <form method="POST" enctype="multipart/form-data" onsubmit="return validateForm();">
+            <?php
+            $fields = [
+                'nom' => 'Nom',
+                'prenom' => 'Prénom',
+                'email' => 'Email',
+                'telephone' => 'Téléphone',
+                'age' => 'Âge'
+            ];
 
-                <label for="nom">Nom</label>
-                <input type="text" id="nom" name="nom" value="<?php echo htmlspecialchars($target_user['nom']); ?>" required>
+            foreach ($fields as $id => $label):
+                $value = $target_user[$id];
+            ?>
+                <div class="form-group">
+                    <label for="<?= $id ?>"><?= $label ?></label>
+                    <input type="text" id="<?= $id ?>" name="<?= $id ?>" value="<?= htmlspecialchars($value) ?>">
+                    <div id="error-<?= $id ?>" class="error-message"></div>
+                </div>
+            <?php endforeach; ?>
 
-                <label for="prenom">Prénom</label>
-                <input type="text" id="prenom" name="prenom" value="<?php echo htmlspecialchars($target_user['prenom']); ?>" required>
-
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($target_user['email']); ?>" required>
-
-                <label for="telephone">Téléphone</label>
-                <input type="text" id="telephone" name="telephone" value="<?php echo htmlspecialchars($target_user['telephone']); ?>" required>
-
-                <label for="age">Âge</label>
-                <input type="number" id="age" name="age" value="<?php echo htmlspecialchars($target_user['age']); ?>" required>
-
-                <label for="gouvernorat">Gouvernorat</label>
-                <select id="gouvernorat" name="gouvernorat" required>
+            <div class="form-group">
+                <label for="gouvernorats">Gouvernorat</label>
+                <select id="gouvernorats" name="gouvernorats">
                     <?php
                     $gouvernorats = [
                         'Ariana', 'Beja', 'Ben Arous', 'Bizerte', 'Gabes', 'Gafsa', 'Jendouba', 'Kairouan',
-                        'Kasserine', 'Kebili', 'La Manouba', 'Mahdia', 'Manouba', 'Medenine', 'Monastir',
+                        'Kasserine', 'Kebili', 'La Manouba', 'Mahdia', 'Medenine', 'Monastir',
                         'Nabeul', 'Sfax', 'Sidi Bouzid', 'Siliana', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan'
                     ];
-
                     foreach ($gouvernorats as $gouv) {
                         $selected = ($gouv == $target_user['gouvernorats']) ? 'selected' : '';
                         echo "<option value=\"$gouv\" $selected>$gouv</option>";
                     }
                     ?>
                 </select>
+                <div id="error-gouvernorats" class="error-message"></div>
+            </div>
 
+            <div class="form-group">
                 <label for="photo">Photo de profil</label>
                 <input type="file" id="photo" name="photo">
+            </div>
 
-                <button type="submit">Mettre à jour</button>
-            </form>
-        </div>
+            <button type="submit">Mettre à jour</button>
+        </form>
     </div>
 
-    <div class="logout-container">
-        <a href="logout.php"><button class="logout-button">Déconnexion</button></a>
+    <div class="return-container">
+        <?php if ($is_admin): ?>
+            <a href="dashboard.php"><button class="return-button">Retour au tableau de bord</button></a>
+        <?php else: ?>
+            <a href="info2.php?page=gestion_utilisateurs&action=infos"><button class="return-button">Retour à mes informations</button></a>
+        <?php endif; ?>
     </div>
+
+    <script>
+    function validateForm() {
+        let valid = true;
+
+        document.querySelectorAll('.error-message').forEach(el => el.innerText = '');
+
+        const fields = ['nom', 'prenom', 'email', 'telephone', 'age'];
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        fields.forEach(field => {
+            const val = document.getElementById(field).value.trim();
+            if (!val) {
+                document.getElementById('error-' + field).innerText = `Le champ ${field} est requis.`;
+                valid = false;
+            }
+        });
+
+        const email = document.getElementById('email').value.trim();
+        if (!emailRegex.test(email)) {
+            document.getElementById('error-email').innerText = 'Veuillez entrer un email valide.';
+            valid = false;
+        }
+
+        const telephone = document.getElementById('telephone').value.trim();
+        if (!/^\d{8,15}$/.test(telephone)) {
+            document.getElementById('error-telephone').innerText = 'Veuillez entrer un numéro de téléphone valide.';
+            valid = false;
+        }
+
+        const age = parseInt(document.getElementById('age').value.trim(), 10);
+        if (isNaN(age) || age < 1 || age > 120) {
+            document.getElementById('error-age').innerText = 'Veuillez entrer un âge valide.';
+            valid = false;
+        }
+
+        const gouv = document.getElementById('gouvernorats').value;
+        if (!gouv) {
+            document.getElementById('error-gouvernorats').innerText = 'Veuillez sélectionner un gouvernorat.';
+            valid = false;
+        }
+
+        return valid;
+    }
+    </script>
 </body>
 </html>
