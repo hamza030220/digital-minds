@@ -1538,7 +1538,7 @@ $totalTechnicians = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'techni
                 <label for="age" data-translate="age">Âge</label>
                 <input type="number" id="age" name="age" value="<?php echo htmlspecialchars($user['age']); ?>" min="5" max="80" >
                 <label for="gouvernorats" data-translate="gouvernorat">Gouvernorat</label>
-                <select id="gouvernorats" name="gouvernorats" >
+                <select id="gouvernorats" name="gouvernorats" required>
                     <?php
                     $gouvernorats_list = ['Ariana', 'Beja', 'Ben Arous', 'Bizerte', 'Gabes', 'Gafsa', 'Jendouba', 'Kairouan', 'Kasserine', 'Kebili', 'La Manouba', 'Mahdia', 'Manouba', 'Medenine', 'Monastir', 'Nabeul', 'Sfax', 'Sidi Bouzid', 'Siliana', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan'];
                     foreach ($gouvernorats_list as $gouv) {
