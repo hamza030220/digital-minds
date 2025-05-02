@@ -1,30 +1,74 @@
 <?php
-// index.php
-// Home page for Green.tn
+// detail.php
+// Controller logic & view to display a single reclamation's details
 
-session_start();
+// Set timezone to Tunisia (CET, UTC+1)
+date_default_timezone_set('Africa/Tunis');
+
+// Start session if not already started
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Include translation helper
 require_once __DIR__ . '/translate.php';
 
-// Connexion à la base de données using Database class
-require_once 'config/database.php';
-
-$database = new Database();
-$pdo = $database->getConnection();
-
-// Check if connection failed - Exit cleanly if it does
-if (!$pdo) {
-    die(t('error_database'));
+// Authentication Check: Ensure user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ./login.php?error=' . urlencode(t('error_session_required')));
+    exit;
 }
-?>
 
+// Include the Model
+require_once __DIR__ . '/models/Reclamation.php';
+require_once __DIR__ . '/config/database.php';
+
+// Validate reclamation ID
+$reclamationId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($reclamationId <= 0) {
+    header('Location: ./liste_reclamations.php?error=' . urlencode(t('invalid_reclamation_id')));
+    exit;
+}
+
+// Instantiate the Model
+$reclamationModel = null;
+$reclamation = null;
+$reponses = [];
+$errorMessage = null;
+$pageTitle = t('reclamation_details') . ' - Green.tn';
+
+try {
+    $reclamationModel = new Reclamation();
+    $user_id = $_SESSION['user_id'];
+    $reclamation = $reclamationModel->getParId($reclamationId);
+    // Verify the reclamation exists and belongs to the user
+    if (!$reclamation || $reclamation['utilisateur_id'] != $user_id) {
+        header('Location: ./liste_reclamations.php?error=' . urlencode(t('reclamation_not_found')));
+        exit;
+    }
+
+    // Fetch responses from the reponses table
+    $database = new Database();
+    $db = $database->getConnection();
+    $stmt = $db->prepare("SELECT contenu, date_creation, role FROM reponses WHERE reclamation_id = ? ORDER BY date_creation ASC");
+    $stmt->execute([$reclamationId]);
+    $reponses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log("detail.php: Database error fetching reclamation ID {$reclamationId} or responses - " . $e->getMessage());
+    $errorMessage = t('error_database_reclamations');
+} catch (Exception $e) {
+    error_log("detail.php: Unexpected error - " . $e->getMessage());
+    $errorMessage = t('error_unexpected_reclamations');
+}
+
+// --- View / Presentation Logic ---
+?>
 <!DOCTYPE html>
 <html lang="<?php echo $_SESSION['lang']; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo t('home'); ?> - Green.tn</title>
+    <title><?php echo htmlspecialchars($pageTitle); ?></title>
     <link rel="icon" href="image/ve.png" type="image/png">
     <style>
         * {
@@ -115,7 +159,7 @@ if (!$pdo) {
             padding: 50px;
             text-align: center;
             background-color: #60BA97;
-            margin-top: 100px; /* Account for fixed header */
+            margin-top: 100px;
         }
 
         main h2 {
@@ -131,21 +175,76 @@ if (!$pdo) {
         }
 
         .content-container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
             background-color: #F9F5E8;
             border: 1px solid #4CAF50;
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .error-message {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            border: 1px solid #f5c6cb;
+            background-color: #f8d7da;
+            color: #721c24;
             text-align: center;
         }
 
-        p {
-            line-height: 1.6;
-            margin-bottom: 20px;
-            color: #333;
+        .details-container {
+            text-align: left;
+        }
+
+        .details-container p {
+            margin: 10px 0;
             font-size: 16px;
+        }
+
+        .details-container p strong {
+            color: #2e7d32;
+            display: inline-block;
+            width: 120px;
+        }
+
+        .reponse {
+            background-color: #F9F5E8;
+            padding: 15px;
+            border: 1px solid #4CAF50;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .reponse p {
+            margin: 5px 0;
+        }
+
+        .reponse i {
+            color: #7f8c8d;
+            font-size: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background-color: #2e7d32;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            background-color: #1b5e20;
         }
 
         footer {
@@ -283,6 +382,14 @@ if (!$pdo) {
                 padding: 15px;
             }
 
+            .details-container p {
+                font-size: 14px;
+            }
+
+            .details-container p strong {
+                width: 100px;
+            }
+
             .footer-content {
                 flex-direction: column;
                 align-items: center;
@@ -311,19 +418,14 @@ if (!$pdo) {
                     <li><a href="index.php"><?php echo t('home'); ?></a></li>
                     <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
                     <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
-
                 </ul>
             </nav>
         </div>
         <nav class="nav-right">
             <ul>
                 <li>
-                    <form action="" method="POST">
-                        <input type="hidden" name="lang" value="<?php echo $_SESSION['lang'] === 'fr' ? 'en' : 'fr'; ?>">
-                        <button type="submit" class="lang-toggle"><?php echo t($_SESSION['lang'] === 'fr' ? 'toggle_language' : 'toggle_language_en'); ?></button>
+                    <form action="detail.php?id=<?php echo htmlspecialchars($reclamationId); ?>" method="POST" id="lang-toggle-form">
+                       
                     </form>
                 </li>
                 <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
@@ -332,9 +434,49 @@ if (!$pdo) {
     </header>
 
     <main>
-        <h2><?php echo t('welcome'); ?></h2>
+        <h2><?php echo t('reclamation_details'); ?></h2>
         <div class="content-container">
-            <p><?php echo t('welcome_message'); ?></p>
+            <?php if ($errorMessage): ?>
+                <div class="error-message">
+                    <?php echo htmlspecialchars($errorMessage); ?>
+                </div>
+            <?php elseif ($reclamation): ?>
+                <div class="details-container">
+                    <p><strong><?php echo t('title'); ?> :</strong> <?php echo htmlspecialchars($reclamation['titre']); ?></p>
+                    <p><strong><?php echo t('description'); ?> :</strong> <?php echo htmlspecialchars($reclamation['description']); ?></p>
+                    <p><strong><?php echo t('location'); ?> :</strong> <?php echo htmlspecialchars($reclamation['lieu']); ?></p>
+                    <p><strong><?php echo t('type'); ?> :</strong> <?php echo t($reclamation['type_probleme']); ?></p>
+                    <p><strong><?php echo t('status'); ?> :</strong> <?php echo t($reclamation['statut']); ?></p>
+                    <p><strong><?php echo t('created_at'); ?> :</strong> 
+                        <?php 
+                        $date = new DateTime($reclamation['date_creation']);
+                        $date->modify('-1 hour');
+                        echo $date->format('d/m/Y H:i:s');
+                        ?>
+                    </p>
+                    <div class="responses">
+                        <strong><?php echo t('responses'); ?> :</strong>
+                        <?php if (empty($reponses)): ?>
+                            <p><?php echo t('no_responses'); ?></p>
+                        <?php else: ?>
+                            <?php foreach ($reponses as $reponse): ?>
+                                <div class="reponse">
+                                    <p><strong><?php echo t('response_by'); ?> <?php echo t($reponse['role']); ?> :</strong></p>
+                                    <p><?php echo nl2br(htmlspecialchars($reponse['contenu'])); ?></p>
+                                    <p><i><?php echo t('response_date'); ?> 
+                                        <?php 
+                                        $responseDate = new DateTime($reponse['date_creation']);
+                                        $responseDate->modify('-1 hour');
+                                        echo $responseDate->format('d/m/Y H:i:s');
+                                        ?>
+                                    </i></p>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                    <a href="liste_reclamations.php" class="btn"><?php echo t('back_to_list'); ?></a>
+                </div>
+            <?php endif; ?>
         </div>
     </main>
 
@@ -357,9 +499,6 @@ if (!$pdo) {
                     <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
                     <li><a href="#a-propos-de-nous"><?php echo t('about_us'); ?></a></li>
                     <li><a href="#contact"><?php echo t('contact'); ?></a></li>
-                    <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
             </div>
             <div class="footer-section">

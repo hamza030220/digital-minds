@@ -1,7 +1,7 @@
 <?php
-// repondre_reclamation.php
+// ajouter_avis.php
 
-// Start session
+// Start session at the very beginning
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
@@ -9,82 +9,33 @@ if (session_status() == PHP_SESSION_NONE) {
 // Include translation helper
 require_once __DIR__ . '/translate.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php?error=' . urlencode(t('error_session_required')));
-    exit;
+// --- Retrieve Flash Message and Form Data (if any) ---
+$message = '';
+$message_type = 'error'; // Default
+$form_data = []; // Default empty form data
+
+// Check for flash message from session
+if (isset($_SESSION['flash_message'])) {
+    $message = $_SESSION['flash_message'];
+    $message_type = $_SESSION['flash_message_type'] ?? 'error';
+    // Clear the flash message from session
+    unset($_SESSION['flash_message']);
+    unset($_SESSION['flash_message_type']);
 }
 
-require_once './controllers/ResponseController.php';
-require_once 'config/database.php';
-
-// Initialize database and controller
-$database = new Database();
-$db = $database->getConnection();
-$responseController = new ResponseController();
-
-// Determine user role
-$user_role = $_SESSION['user_role'] ?? 'utilisateur';
-
-// Vérifier si l'ID de la réclamation est passé
-if (!isset($_GET['id'])) {
-    echo t('missing_reclamation_id');
-    exit;
+// Check for form data from session (used on validation errors)
+if (isset($_SESSION['form_data_flash'])) {
+    $form_data = $_SESSION['form_data_flash'];
+    // Clear the saved form data
+    unset($_SESSION['form_data_flash']);
 }
+// --- End Flash Message/Data Retrieval ---
 
-$reclamation_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT, ["options" => ["min_range" => 1]]);
-if (!$reclamation_id) {
-    echo t('invalid_reclamation_id');
-    exit;
-}
+// Check login status
+$isLoggedIn = isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 
-// Récupérer les informations de la réclamation
-$stmt = $db->prepare("SELECT * FROM reclamations WHERE id = ?");
-$stmt->execute([$reclamation_id]);
-$reclamation = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$reclamation) {
-    echo t('reclamation_not_found');
-    exit;
-}
-
-// Check if an admin has responded
-$admin_has_responded = false;
-$stmt = $db->prepare("SELECT COUNT(*) FROM reponses WHERE reclamation_id = ? AND role = 'admin'");
-$stmt->execute([$reclamation_id]);
-$admin_response_count = $stmt->fetchColumn();
-if ($admin_response_count > 0) {
-    $admin_has_responded = true;
-}
-
-// Handle form submission
-$success_message = '';
-$error_message = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Only process form if user is admin or an admin has responded
-    if ($user_role === 'admin' || $admin_has_responded) {
-        $result = $responseController->createResponse(
-            $reclamation_id,
-            $_SESSION['user_id'],
-            $_POST['reponse'],
-            $user_role
-        );
-        
-        if ($result['status'] === 'success') {
-            $success_message = $result['message'];
-        } else {
-            $error_message = $result['message'];
-        }
-    } else {
-        $error_message = t('admin_response_required');
-    }
-}
-
-// Get existing responses
-$reponses = $responseController->getResponsesByReclamation($reclamation_id);
-
-// Set page title
-$pageTitle = t('respond_reclamation') . ' - Green.tn';
+// Define page title
+$pageTitle = t('submit_review');
 ?>
 
 <!DOCTYPE html>
@@ -92,7 +43,7 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($pageTitle); ?></title>
+    <title><?php echo htmlspecialchars($pageTitle); ?> - Green.tn</title>
     <link rel="icon" href="image/ve.png" type="image/png">
     <style>
         * {
@@ -171,13 +122,13 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
         }
 
         .nav-right ul li button.lang-toggle {
-            background-color: #4CAF50;
-            border-color: #4CAF50;
+            background-color: #4CAF50 !important;
+            border-color: #4CAF50 !important;
         }
 
         .nav-right ul li button.lang-toggle:hover {
-            background-color: #1b5e20;
-            border-color: #1b5e20;
+            background-color: #1b5e20 !important;
+            border-color: #1b5e20 !important;
         }
 
         main {
@@ -199,34 +150,17 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
             border-radius: 5px;
         }
 
-        .content-container {
-            max-width: 1200px;
+        .container {
+            max-width: 500px;
             margin: 0 auto;
             background-color: #F9F5E8;
             border: 1px solid #4CAF50;
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            text-align: left;
         }
 
-        h3 {
-            color: #2e7d32;
-            font-size: 20px;
-            margin-top: 20px;
-            margin-bottom: 10px;
-            font-family: "Bauhaus 93", Arial, sans-serif;
-        }
-
-        p {
-            line-height: 1.6;
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        .success-message,
-        .error-message,
-        .info-message {
+        .message {
             padding: 10px;
             margin-bottom: 20px;
             border-radius: 4px;
@@ -235,106 +169,112 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
             text-align: center;
         }
 
-        .success-message {
+        .message.success {
             background-color: #d4edda;
             color: #155724;
             border-color: #c3e6cb;
         }
 
-        .error-message {
+        .message.success a {
+            color: #2e7d32;
+            text-decoration: none;
+        }
+
+        .message.success a:hover {
+            text-decoration: underline;
+        }
+
+        .message.error {
             background-color: #f8d7da;
             color: #721c24;
             border-color: #f5c6cb;
         }
 
-        .info-message {
-            background-color: #e7f3fe;
-            color: #31708f;
-            border-color: #d6e9f7;
+        .message.error a {
+            color: #2e7d32;
+            text-decoration: none;
+        }
+
+        .message.error a:hover {
+            text-decoration: underline;
         }
 
         form {
-            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 8px;
+        form label {
             color: #2e7d32;
-            font-family: "Bauhaus 93", Arial, sans-serif;
+            font-weight: bold;
+            font-size: 16px;
+            text-align: left;
         }
 
-        textarea {
-            width: 100%;
-            min-height: 120px;
+        form input,
+        form textarea,
+        form select {
             padding: 10px;
             border: 1px solid #4CAF50;
             border-radius: 5px;
             background-color: #fff;
-            font-size: 14px;
-            resize: vertical;
-            transition: border-color 0.2s;
+            width: 100%;
+            box-sizing: border-box;
         }
 
-        textarea:focus {
-            border-color: #2e7d32;
-            outline: none;
+        form input::placeholder,
+        form textarea::placeholder,
+        form select::placeholder {
+            color: transparent;
         }
 
-        button {
+        form textarea {
+            height: 150px;
+            resize: none;
+        }
+
+        .rating-container {
+            display: flex;
+            justify-content: flex-start;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .rating-container input[type="radio"] {
+            display: none;
+        }
+
+        .rating-container label {
+            font-size: 24px;
+            color: #ccc;
+            cursor: pointer;
+        }
+
+        .rating-container input[type="radio"]:checked ~ label,
+        .rating-container label:hover,
+        .rating-container label:hover ~ label {
+            color: #FFD700;
+        }
+
+        .rating-container input[type="radio"]:checked + label {
+            color: #FFD700;
+        }
+
+        form button {
             padding: 10px 20px;
             background-color: #2e7d32;
             color: #fff;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            align-self: flex-end;
             font-size: 16px;
             font-weight: bold;
             font-family: "Bauhaus 93", Arial, sans-serif;
-            transition: background-color 0.3s ease;
         }
 
-        button:hover {
-            background-color: #1b5e20;
-        }
-
-        .reponse {
-            background-color: #F9F5E8;
-            padding: 15px;
-            border: 1px solid #4CAF50;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .reponse p {
-            margin: 5px 0;
-        }
-
-        .reponse i {
-            color: #7f8c8d;
-            font-size: 12px;
-        }
-
-        hr {
-            border: 0;
-            border-top: 1px solid #4CAF50;
-            margin: 20px 0;
-        }
-
-        a {
-            color: #2e7d32;
-            text-decoration: none;
-            font-family: "Bauhaus 93", Arial, sans-serif;
-            transition: color 0.3s ease;
-        }
-
-        a:hover {
-            color: #1b5e20;
-        }
-
-        .error-message.form-error {
+        .error-message {
             color: #721c24;
             font-size: 0.85em;
             margin-top: 5px;
@@ -347,7 +287,7 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
         }
 
         .input-valid {
-            border-color: #155724;
+            border-color: #28a745;
         }
 
         footer {
@@ -481,7 +421,7 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
                 margin-top: 150px;
             }
 
-            .content-container {
+            .container {
                 padding: 15px;
             }
 
@@ -515,60 +455,72 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
                     <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
                     <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    
                 </ul>
             </nav>
         </div>
         <nav class="nav-right">
             <ul>
                 <li>
-                    <form action="repondre_reclamation.php?id=<?php echo htmlspecialchars($reclamation['id']); ?>" method="POST" id="lang-toggle-form">
-                        
+                    <form action="" method="POST">
+                        <input type="hidden" name="lang" value="<?php echo $_SESSION['lang'] === 'en' ? 'fr' : 'en'; ?>">
+                        <button type="submit" class="lang-toggle"><?php echo $_SESSION['lang'] === 'en' ? t('toggle_language') : t('toggle_language_en'); ?></button>
                     </form>
                 </li>
-                <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
+                <?php if ($isLoggedIn): ?>
+                    <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
+                <?php else: ?>
+                    <li><a href="login.php" class="login"><?php echo t('login'); ?></a></li>
+                    <li><a href="signup.php" class="signin"><?php echo t('signup'); ?></a></li>
+                <?php endif; ?>
             </ul>
         </nav>
     </header>
 
     <main>
-        <h2><?php echo t('respond_reclamation'); ?></h2>
+        <h2><?php echo htmlspecialchars($pageTitle); ?></h2>
+        <div class="container">
+            <?php
+            // Display feedback message if it exists
+            if (!empty($message)) {
+                $msg_class = ($message_type === 'success') ? 'success' : 'error';
+                echo "<div class='message " . $msg_class . "'>" . htmlspecialchars($message);
+                if ($message_type === 'success') {
+                    echo " <a href='ajouter_avis.php'>" . t('submit_another_review') . "</a>";
+                } elseif ($message === t('login_required')) {
+                    echo " <a href='login.php'>" . t('login') . "</a>.";
+                }
+                echo "</div>";
+            }
+            ?>
 
-        <div class="content-container">
-            <?php if ($success_message): ?>
-                <p class="success-message"><?php echo htmlspecialchars($success_message); ?></p>
-            <?php endif; ?>
-            <?php if ($error_message): ?>
-                <p class="error-message"><?php echo htmlspecialchars($error_message); ?></p>
-            <?php endif; ?>
+            <?php if ($isLoggedIn && $message_type !== 'success'): ?>
+                <form action="./controllers/AvisController.php" method="POST" id="avisForm" novalidate>
+                    <label for="titre"><?php echo t('title'); ?>:</label>
+                    <input type="text" id="titre" name="titre" value="<?php echo htmlspecialchars($form_data['titre'] ?? ''); ?>">
+                    <span class="error-message" id="titre-error"></span>
 
-            <h3><?php echo t('reclamation'); ?>: <?php echo htmlspecialchars($reclamation['titre']); ?></h3>
-            <p><strong><?php echo t('description'); ?>:</strong> <?php echo nl2br(htmlspecialchars($reclamation['description'])); ?></p>
+                    <label for="description"><?php echo t('description'); ?>:</label>
+                    <textarea id="description" name="description"><?php echo htmlspecialchars($form_data['description'] ?? ''); ?></textarea>
+                    <span class="error-message" id="description-error"></span>
 
-            <?php if ($user_role === 'admin' || $admin_has_responded): ?>
-                <form action="repondre_reclamation.php?id=<?php echo htmlspecialchars($reclamation['id']); ?>" method="POST" id="responseForm" novalidate>
-                    <label for="reponse"><?php echo t('your_response'); ?>:</label>
-                    <textarea id="reponse" name="reponse"></textarea>
-                    <div class="error-message form-error" id="reponse-error"></div>
-                    <button type="submit"><?php echo t('submit_response'); ?></button>
+                    <label for="note"><?php echo t('rating'); ?>:</label>
+                    <div class="rating-container">
+                        <?php
+                        $current_note = $form_data['note'] ?? 0;
+                        for ($i = 5; $i >= 1; $i--):
+                        ?>
+                            <input type="radio" id="note<?php echo $i; ?>" name="note" value="<?php echo $i; ?>" <?php echo $current_note == $i ? 'checked' : ''; ?>>
+                            <label for="note<?php echo $i; ?>" style="margin-right: 5px;">★</label>
+                        <?php endfor; ?>
+                    </div>
+                    <span class="error-message" id="note-error"></span>
+
+                    <button type="submit"><?php echo t('submit_review'); ?></button>
                 </form>
-            <?php else: ?>
-                <p class="error-message"><?php echo t('admin_response_required'); ?></p>
+            <?php elseif (!$isLoggedIn && empty($message)): ?>
+                <p class="message error"><?php echo t('login_required'); ?> <a href="login.php"><?php echo t('login'); ?></a>.</p>
             <?php endif; ?>
-
-            <h3><?php echo t('existing_responses'); ?>:</h3>
-            <?php if (empty($reponses)): ?>
-                <p class="info-message"><?php echo t('no_responses'); ?></p>
-            <?php else: ?>
-                <?php foreach ($reponses as $reponse): ?>
-                    <div class='reponse'>
-                        <p><strong><?php echo t('response_by'); ?> <?php echo htmlspecialchars(t($reponse['role'])); ?>:</strong></p>
-                        <p><?php echo nl2br(htmlspecialchars($reponse['contenu'])); ?></p>
-                        <p><i><?php echo t('response_date'); ?> <?php echo htmlspecialchars($reponse['date_creation']); ?></i></p>
-                    </div><hr>
-                <?php endforeach; ?>
-            <?php endif; ?>
-
-            <p><a href="liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>
         </div>
     </main>
 
@@ -589,8 +541,8 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
                 <ul>
                     <li><a href="index.php"><?php echo t('home'); ?></a></li>
                     <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="#a-propos-de-nous"><?php echo t('about_us'); ?></a></li>
-                    <li><a href="#contact"><?php echo t('contact'); ?></a></li>
+                    <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -614,55 +566,87 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
     <script>
         // Pass PHP translations to JavaScript
         const translations = {
-            response_required: '<?php echo t('response_required'); ?>',
-            response_length: '<?php echo t('response_length'); ?>'
+            titre_required: '<?php echo t('title_required'); ?>',
+            titre_length: '<?php echo t('title_length'); ?>',
+            description_required: '<?php echo t('description_required'); ?>',
+            description_length: '<?php echo t('description_length'); ?>',
+            rating_required: '<?php echo t('rating_required'); ?>'
         };
 
-        const responseForm = document.getElementById('responseForm');
-        if (responseForm) {
-            responseForm.addEventListener('submit', function(event) {
-                event.preventDefault();
-                let isValid = true;
-                const errors = {};
+        document.getElementById('avisForm')?.addEventListener('submit', function(event) {
+            event.preventDefault();
+            let isValid = true;
+            const errors = {};
 
-                const reponse = document.getElementById('reponse').value.trim();
-                if (!reponse) {
-                    errors.reponse = translations.response_required;
-                    isValid = false;
-                } else if (reponse.length < 10 || reponse.length > 1000) {
-                    errors.reponse = translations.response_length;
-                    isValid = false;
-                }
+            const titre = document.getElementById('titre').value.trim();
+            if (!titre) {
+                errors.titre = translations.titre_required;
+                isValid = false;
+            } else if (titre.length < 5 || titre.length > 100) {
+                errors.titre = translations.titre_length;
+                isValid = false;
+            }
 
-                const errorElement = document.getElementById('reponse-error');
-                const inputElement = document.getElementById('reponse');
-                if (errors.reponse) {
-                    errorElement.textContent = errors.reponse;
+            const description = document.getElementById('description').value.trim();
+            if (!description) {
+                errors.description = translations.description_required;
+                isValid = false;
+            } else if (description.length < 10 || description.length > 500) {
+                errors.description = translations.description_length;
+                isValid = false;
+            }
+
+            const note = document.querySelector('input[name="note"]:checked')?.value;
+            if (!note) {
+                errors.note = translations.rating_required;
+                isValid = false;
+            }
+
+            ['titre', 'description', 'note'].forEach(field => {
+                const errorElement = document.getElementById(`${field}-error`);
+                const inputElement = document.getElementById(field);
+                if (errors[field]) {
+                    errorElement.textContent = errors[field];
                     errorElement.style.display = 'block';
-                    inputElement.classList.add('input-error');
-                    inputElement.classList.remove('input-valid');
+                    if (field !== 'note') {
+                        inputElement.classList.add('input-error');
+                        inputElement.classList.remove('input-valid');
+                    }
                 } else {
                     errorElement.textContent = '';
                     errorElement.style.display = 'none';
-                    inputElement.classList.remove('input-error');
-                    inputElement.classList.add('input-valid');
-                }
-
-                if (isValid) {
-                    this.submit();
-                } else {
-                    inputElement.focus();
-                    inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (field !== 'note') {
+                        inputElement.classList.remove('input-error');
+                        inputElement.classList.add('input-valid');
+                    }
                 }
             });
 
-            document.getElementById('reponse').addEventListener('input', function() {
-                const errorElement = document.getElementById('reponse-error');
+            if (isValid) {
+                this.submit();
+            } else {
+                const firstInvalidField = ['titre', 'description'].find(field => errors[field]) || (errors.note ? 'note5' : null);
+                if (firstInvalidField) {
+                    document.getElementById(firstInvalidField).focus();
+                    document.getElementById(firstInvalidField).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+
+        ['titre', 'description'].forEach(field => {
+            document.getElementById(field).addEventListener('input', function() {
+                const errorElement = document.getElementById(`${field}-error`);
                 let error = '';
 
-                const value = this.value.trim();
-                if (!value) error = translations.response_required;
-                else if (value.length < 10 || value.length > 1000) error = translations.response_length;
+                if (field === 'titre') {
+                    const value = this.value.trim();
+                    if (!value) error = translations.titre_required;
+                    else if (value.length < 5 || value.length > 100) error = translations.titre_length;
+                } else if (field === 'description') {
+                    const value = this.value.trim();
+                    if (!value) error = translations.description_required;
+                    else if (value.length < 10 || value.length > 500) error = translations.description_length;
+                }
 
                 if (error) {
                     errorElement.textContent = error;
@@ -676,7 +660,15 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
                     this.classList.add('input-valid');
                 }
             });
-        }
+        });
+
+        document.querySelectorAll('input[name="note"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const errorElement = document.getElementById('note-error');
+                errorElement.textContent = '';
+                errorElement.style.display = 'none';
+            });
+        });
     </script>
 </body>
 </html>

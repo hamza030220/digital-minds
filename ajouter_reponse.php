@@ -1,7 +1,9 @@
 <?php // ajouter_reponse.php
 
 // Start session if needed (e.g., for user authentication or flash messages)
-// session_start(); // Uncomment if you plan to use session messages
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 
 // --- Database Connection ---
 // Include the database configuration file (defines the Database class).
@@ -66,6 +68,19 @@ try {
     // Execute the statement with the validated data
     // Trim content again just before insertion (optional)
     $stmt->execute([$reclamation_id, trim($contenu), $role]);
+
+    // If the response is from an admin, add a notification for the user
+    if ($role === 'admin') {
+        // Get the user ID associated with the reclamation
+        $reclamationStmt = $pdo->prepare("SELECT utilisateur_id FROM reclamations WHERE id = ?");
+        $reclamationStmt->execute([$reclamation_id]);
+        $reclamation = $reclamationStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($reclamation && $reclamation['utilisateur_id']) {
+            $notificationStmt = $pdo->prepare("INSERT INTO notifications (user_id, reclamation_id, message) VALUES (?, ?, ?)");
+            $notificationStmt->execute([$reclamation['utilisateur_id'], $reclamation_id, "admin_responded"]);
+        }
+    }
 
     // Redirect on success
     // Use urlencode for the ID in the URL

@@ -1,8 +1,11 @@
 <?php
-// index.php
-// Home page for Green.tn
+// chatbot.php
+// Page pour interagir avec un chatbot
 
-session_start();
+// Start session only if not already active
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Include translation helper
 require_once __DIR__ . '/translate.php';
@@ -24,7 +27,7 @@ if (!$pdo) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo t('home'); ?> - Green.tn</title>
+    <title><?php echo t('chatbot'); ?> - Green.tn</title>
     <link rel="icon" href="image/ve.png" type="image/png">
     <style>
         * {
@@ -141,10 +144,41 @@ if (!$pdo) {
             text-align: center;
         }
 
-        p {
-            line-height: 1.6;
-            margin-bottom: 20px;
-            color: #333;
+        .chat-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #4CAF50;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #2e7d32;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #1b5e20;
+        }
+
+        .chat-response {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #E8F5E8;
+            border-radius: 5px;
+            text-align: left;
             font-size: 16px;
         }
 
@@ -314,7 +348,6 @@ if (!$pdo) {
                     <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
                     <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
-
                 </ul>
             </nav>
         </div>
@@ -332,9 +365,13 @@ if (!$pdo) {
     </header>
 
     <main>
-        <h2><?php echo t('welcome'); ?></h2>
+        <h2><?php echo t('chatbot'); ?></h2>
         <div class="content-container">
-            <p><?php echo t('welcome_message'); ?></p>
+            <div class="chat-form">
+                <input type="text" name="user_input" placeholder="<?php echo t('ask_chatbot'); ?>" required>
+                <button type="button" onclick="sendMessage()"><?php echo t('send'); ?></button>
+            </div>
+            <div class="chat-response" id="chatResponse"></div>
         </div>
     </main>
 
@@ -379,5 +416,44 @@ if (!$pdo) {
             </div>
         </div>
     </footer>
+
+    <script>
+        async function sendMessage() {
+            const input = document.querySelector('input[name="user_input"]');
+            const userInput = input.value.trim();
+            if (!userInput) return;
+
+            const responseDiv = document.getElementById('chatResponse');
+            responseDiv.innerHTML = '<p><strong><?php echo t('chatbot_response'); ?>:</strong> Chargement...</p>';
+
+            try {
+                const response = await fetch('chatbot_handler.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'user_input=' + encodeURIComponent(userInput)
+                });
+
+                const data = await response.json();
+                if (data.response) {
+                    responseDiv.innerHTML = `<p><strong><?php echo t('chatbot_response'); ?>:</strong> ${data.response}</p>`;
+                } else {
+                    responseDiv.innerHTML = `<p><strong><?php echo t('chatbot_response'); ?>:</strong> <?php echo t('error_chatbot'); ?></p>`;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `<p><strong><?php echo t('chatbot_response'); ?>:</strong> <?php echo t('error_chatbot'); ?></p>`;
+            }
+
+            input.value = '';
+        }
+
+        // Permettre l'envoi avec la touche Entrée
+        document.querySelector('input[name="user_input"]').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
 </body>
 </html>
