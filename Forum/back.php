@@ -325,6 +325,39 @@ $username = htmlspecialchars($_SESSION['username']);
         .user-info-modal .btn-close:hover {
             background: #c62828;
         }
+        /* Pagination Styles */
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+    padding: 20px 0;
+    flex-wrap: wrap;
+}
+
+.pagination-link {
+    padding: 8px 16px;
+    margin: 0 4px;
+    border: 1px solid #ddd;
+    text-decoration: none;
+    color: #2e7d32;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.pagination-link:hover {
+    background-color: #e9e9e9;
+}
+
+.pagination-link.active {
+    background-color: #2e7d32;
+    color: white;
+    border-color: #2e7d32;
+}
+
+.pagination-link.disabled {
+    color: #ccc;
+    pointer-events: none;
+}
     </style>
 </head>
 <body>
@@ -347,70 +380,92 @@ $username = htmlspecialchars($_SESSION['username']);
         <?php
         // Include database connection
         require_once 'db_connect.php';
-        
-        try {
-            $postQuery = "SELECT p.*, u.username 
-                          FROM post p 
-                          JOIN users u ON p.user_id = u.id 
-                          WHERE p.is_deleted = 0 
-                          ORDER BY p.created_at DESC";
-            $postStmt = $conn->prepare($postQuery);
-            $postStmt->execute();
-            
-            while ($post = $postStmt->fetch(PDO::FETCH_ASSOC)) {
-                error_log("Post Data: " . print_r($post, true));
-                error_log("Post ID: " . $post['post_id'] . " | Is Anonymous: " . $post['is_anonymous'] . " | Username: " . $post['username']);
+        // Pagination configuration - THIS IS THE CRITICAL FIX
+$postsPerPage =4; // Define this FIRST before any calculations
+$currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($currentPage < 1) $currentPage = 1;
+$offset = ($currentPage - 1) * $postsPerPage;
 
-                $postId = $post['post_id'];
-                $stmt = $conn->prepare("SELECT u.id, u.username, u.email, p.is_anonymous 
-                                        FROM users u 
-                                        JOIN post p ON u.id = p.user_id 
-                                        WHERE p.post_id = :post_id");
-                $stmt->bindParam(':post_id', $postId, PDO::PARAM_INT);
-                $stmt->execute();
-                ?>
-                <div class="question-admin">
-                    <div class="post-header">
-                        <p>
-                            <strong>Utilisateur:</strong> 
-                            <?php 
-                            if ((int)$post['is_anonymous'] === 1) {
-                                echo "Anonyme";
-                            } else {
-                                echo htmlspecialchars($post['username']);
-                            }
-                            ?>
-                            <button class="btn-info" data-user-id="<?php echo $post['post_id']; ?>">Infos</button>
-                        </p>
-                        <span class="timestamp">Posté le: <?php echo date('d/m/Y H:i', strtotime($post['created_at'])); ?></span>
-                    </div>
-                    <h3><?php echo htmlspecialchars($post['title']); ?></h3>
-                    <div class="post-content">
-                        <p><?php echo htmlspecialchars($post['content']); ?></p>
-                    </div>
-                    <div class="admin-actions">
-                        <button class="delete" data-id="<?php echo $post['post_id']; ?>" data-type="post">
-                            <i class="fas fa-trash-alt"></i> Supprimer
-                        </button>
-                        <button class="report" data-id="<?php echo $post['post_id']; ?>" data-type="post" 
-                                data-reported="<?php echo $post['is_reported'] ? '1' : '0'; ?>">
-                            <i class="fas fa-flag"></i> <?php echo $post['is_reported'] ? 'Déjà signalé' : 'Signaler'; ?>
-                        </button>
-                        <button class="btn translate-btn" data-id="<?php echo $post['post_id']; ?>" data-type="post">Traduire</button>
-                    </div>
-                    
-                    <!-- Comments for this post -->
-                    <div class="comments-section" id="comments-<?php echo $post['post_id']; ?>">
-    <div class="comments-header">
-        <h4>Commentaires:</h4>
-        <button class="btn-icon view-comments-btn" 
-                data-post-id="<?php echo $post['post_id']; ?>" 
-                data-state="closed">
-            <i class="fas fa-eye"></i> 
-        </button>
-    </div>
-    <div class="comments-list" style="display: none;"></div>
-</div>
+try {
+    // Count total posts
+    $countQuery = "SELECT COUNT(*) as total FROM post WHERE is_deleted = 0";
+    $countStmt = $conn->query($countQuery);
+    $totalPosts = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $totalPages = ceil($totalPosts / $postsPerPage);
+
+    // Get paginated posts - YOUR EXACT QUERY
+    $postQuery = "SELECT p.*, u.username, 
+                 (SELECT COUNT(*) FROM commentaire c WHERE c.post_id = p.post_id AND c.is_deleted = 0) as comment_count 
+                 FROM post p 
+                 JOIN users u ON p.user_id = u.id 
+                 WHERE p.is_deleted = 0 
+                 ORDER BY p.created_at DESC
+                 LIMIT :limit OFFSET :offset";
+    
+    $postStmt = $conn->prepare($postQuery);
+    $postStmt->bindValue(':limit', $postsPerPage, PDO::PARAM_INT);
+    $postStmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $postStmt->execute();
+
+
+if ($postStmt->rowCount() > 0) {
+    while ($post = $postStmt->fetch(PDO::FETCH_ASSOC)) {
+        error_log("Post Data: " . print_r($post, true));
+        error_log("Post ID: " . $post['post_id'] . " | Is Anonymous: " . $post['is_anonymous'] . " | Username: " . $post['username']);
+
+        $postId = $post['post_id'];
+        $stmt = $conn->prepare("SELECT u.id, u.username, u.email, p.is_anonymous 
+                                FROM users u 
+                                JOIN post p ON u.id = p.user_id 
+                                WHERE p.post_id = :post_id");
+        $stmt->bindParam(':post_id', $postId, PDO::PARAM_INT);
+        $stmt->execute();
+        ?>
+        <div class="question-admin">
+            <div class="post-header">
+                <p>
+                    <strong>Utilisateur:</strong> 
+                    <?php 
+                    if ((int)$post['is_anonymous'] === 1) {
+                        echo "Anonyme";
+                    } else {
+                        echo htmlspecialchars($post['username']);
+                    }
+                    ?>
+                    <button class="btn-info" data-user-id="<?php echo $post['post_id']; ?>">Infos</button>
+                </p>
+                <span class="timestamp">Posté le: <?php echo date('d/m/Y H/i', strtotime($post['created_at'])); ?></span>
+            </div>
+            <h3><?php echo htmlspecialchars($post['title']); ?></h3>
+            <div class="post-content" id="post-content-<?php echo $post['post_id']; ?>">
+                <p><?php echo htmlspecialchars($post['content']); ?></p>
+            </div>
+            <div class="admin-actions">
+                <button class="delete" data-id="<?php echo $post['post_id']; ?>" data-type="post">
+                    <i class="fas fa-trash-alt"></i> Supprimer
+                </button>
+                <button class="report" data-id="<?php echo $post['post_id']; ?>" data-type="post" 
+                        data-reported="<?php echo $post['is_reported'] ? '1' : '0'; ?>">
+                    <i class="fas fa-flag"></i> <?php echo $post['is_reported'] ? 'Déjà signalé' : 'Signaler'; ?>
+                </button>
+                <button class="btn translate-btn" data-id="<?php echo $post['post_id']; ?>" data-type="post">Traduire</button>
+            </div>
+
+            <!-- Comments for this post -->
+            <div class="comments-section" id="comments-<?php echo $post['post_id']; ?>">
+                <div class="comments-header">
+                    <h4>Commentaires (<?php echo $post['comment_count']; ?>)</h4>
+                    <button class="btn-icon view-comments-btn" 
+                            data-post-id="<?php echo $post['post_id']; ?>" 
+                            title="Voir les commentaires" 
+                            data-state="closed"
+                            data-comment-count="<?php echo $post['comment_count']; ?>">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                
+                <?php if ($post['comment_count'] > 0): ?>
+                    <div class="comments-list" style="display: none;">
                         <?php
                         // Fetch comments for this post
                         $commentQuery = "SELECT c.*, u.username 
@@ -422,54 +477,78 @@ $username = htmlspecialchars($_SESSION['username']);
                         $commentStmt->bindParam(':post_id', $post['post_id']);
                         $commentStmt->execute();
                         
-                        if ($commentStmt->rowCount() > 0) {
-                            while ($comment = $commentStmt->fetch(PDO::FETCH_ASSOC)) {
-                                ?>
-                                <div class="comment-admin">
-                                    <div class="comment-header">
-                                        <p><strong><?php echo htmlspecialchars($comment['username']); ?></strong> 
-                                        <span class="timestamp">le <?php echo date('d/m/Y H:i', strtotime($comment['created_at'])); ?></span></p>
-                                    </div>
-                                    <div class="comment-content">
-                                        <p><?php echo htmlspecialchars($comment['content']); ?></p>
-                                    </div>
-                                    <div class="admin-actions">
-                                        <button class="delete" data-id="<?php echo $comment['comment_id']; ?>" data-type="comment">
-                                            <i class="fas fa-trash-alt"></i> Supprimer
-                                        </button>
-                                        <button class="report" data-id="<?php echo $comment['comment_id']; ?>" data-type="comment" 
-                                                data-reported="<?php echo $comment['is_reported'] ? '1' : '0'; ?>">
-                                            <i class="fas fa-flag"></i> <?php echo $comment['is_reported'] ? 'Déjà signalé' : 'Signaler'; ?>
-                                            
-                                        </button>
-                                    </div>
+                        while ($comment = $commentStmt->fetch(PDO::FETCH_ASSOC)): ?>
+                            <div class="comment-admin">
+                                <div class="comment-header">
+                                    <p><strong><?php echo htmlspecialchars($comment['username']); ?></strong> 
+                                    <span class="timestamp">le <?php echo date('d/m/Y H/i', strtotime($comment['created_at'])); ?></span></p>
                                 </div>
-                                <?php
-                            }
-                        } else {
-                            echo '<p class="no-comments">Aucun commentaire pour ce post.</p>';
-                        }
-                        ?>
+                                <div class="comment-content" id="comment-content-<?php echo $comment['comment_id']; ?>">
+                                    <p><?php echo htmlspecialchars($comment['content']); ?></p>
+                                </div>
+                                <div class="admin-actions">
+                                    <button class="delete" data-id="<?php echo $comment['comment_id']; ?>" data-type="comment">
+                                        <i class="fas fa-trash-alt"></i> Supprimer
+                                    </button>
+                                    <button class="report" data-id="<?php echo $comment['comment_id']; ?>" data-type="comment" 
+                                            data-reported="<?php echo $comment['is_reported'] ? '1' : '0'; ?>">
+                                        <i class="fas fa-flag"></i> <?php echo $comment['is_reported'] ? 'Déjà signalé' : 'Signaler'; ?>
+                                    </button>
+                                    <button class="btn translate-btn" data-id="<?php echo $comment['comment_id']; ?>" data-type="comment">Traduire</button>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
                     </div>
-                </div>
-                <?php
-            }
-        } catch(PDOException $e) {
-            echo '<p class="error">Erreur de base de données: ' . $e->getMessage() . '</p>';
-        }
-        ?>
+                <?php else: ?>
+                    <div class="no-comments">Aucun commentaire pour le moment.</div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php
+    } // End of while loop
+} else {
+    echo '<div class="no-posts">Aucun post trouvé.</div>';
+}
+} catch(PDOException $e) {
+    echo '<p class="error">Erreur de base de données: ' . $e->getMessage() . '</p>';
+}
+?>
+<!-- Pagination -->
+<div class="pagination">
+            <?php if ($totalPages > 1): ?>
+                <?php if ($currentPage > 1): ?>
+                    <a href="?page=1" class="pagination-link">&laquo; Première</a>
+                    <a href="?page=<?php echo $currentPage - 1; ?>" class="pagination-link">&lsaquo; Précédente</a>
+                <?php endif; ?>
+
+                <?php 
+                $start = max(1, $currentPage - 2);
+                $end = min($totalPages, $currentPage + 2);
+                
+                for ($i = $start; $i <= $end; $i++): ?>
+                    <a href="?page=<?php echo $i; ?>" class="pagination-link <?php echo $i == $currentPage ? 'active' : ''; ?>">
+                        <?php echo $i; ?>
+                    </a>
+                <?php endfor; ?>
+
+                <?php if ($currentPage < $totalPages): ?>
+                    <a href="?page=<?php echo $currentPage + 1; ?>" class="pagination-link">Suivante &rsaquo;</a>
+                    <a href="?page=<?php echo $totalPages; ?>" class="pagination-link">Dernière &raquo;</a>
+                <?php endif; ?>
+            <?php endif; ?>
+        </div>
 <script src="../Forum/sidebar.js"></script>
-        <!-- JavaScript for admin actions -->
-        <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Handle "Infos" button click
-            document.body.addEventListener('click', function (event) {
-                if (event.target.classList.contains('btn-info')) {
-                    const userId = event.target.getAttribute('data-user-id');
-                    showUserInfo(userId);
-                }
-            });
-        });
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Handle "Infos" button click
+    document.body.addEventListener('click', function (event) {
+        if (event.target.classList.contains('btn-info')) {
+            const userId = event.target.getAttribute('data-user-id');
+            showUserInfo(userId);
+        }
+    });
+});
+
 
         function showUserInfo(userId) {
             if (!userId) return;
@@ -581,85 +660,94 @@ $username = htmlspecialchars($_SESSION['username']);
                     }
                 });
             });
-        });
-
-        document.addEventListener('DOMContentLoaded', function () {
-            // Handle "View Comments" button click
+            // Handle view comments buttons
+document.querySelectorAll('.view-comments-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const postId = this.getAttribute('data-post-id');
+        const commentsList = this.closest('.comments-section').querySelector('.comments-list');
+        const state = this.getAttribute('data-state');
+        
+        if (state === 'closed') {
+            commentsList.style.display = 'block';
+            this.setAttribute('data-state', 'open');
+            this.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        } else {
+            commentsList.style.display = 'none';
+            this.setAttribute('data-state', 'closed');
+            this.innerHTML = '<i class="fas fa-eye"></i>';
+        }
+    });
+});
+            // Handle translate buttons
             document.body.addEventListener('click', function (event) {
-                if (event.target.classList.contains('view-comments-btn')) {
-                    const button = event.target;
-                    const postId = button.getAttribute('data-post-id');
-                    const state = button.getAttribute('data-state');
-                    const commentsList = document.querySelector(`#comments-${postId} .comments-list`);
+                if (event.target.classList.contains('translate-btn')) {
+                    const id = event.target.getAttribute('data-id');
+                    const type = event.target.getAttribute('data-type');
+                    const contentElement = document.querySelector(`#${type}-content-${id}`);
 
-                    if (state === 'closed') {
-                        // Load the first batch of comments
-                        loadComments(postId, 0, 4);
-                        button.setAttribute('data-state', 'open');
-                        button.innerHTML = '<i class="fas fa-eye-slash"></i> Masquer les commentaires';
-                        commentsList.style.display = 'block';
-                    } else {
-                        // Hide comments
-                        commentsList.style.display = 'none';
-                        button.setAttribute('data-state', 'closed');
-                        button.innerHTML = '<i class="fas fa-eye"></i> Voir les commentaires';
+                    if (!contentElement) {
+                        alert('Contenu introuvable pour la traduction.');
+                        return;
                     }
-                }
-            });
 
-            // Function to load comments
-            function loadComments(postId, offset = 0, limit = 4) {
-                const commentsList = document.querySelector(`#comments-${postId} .comments-list`);
+                    // Fetch the content to translate
+                    const originalText = contentElement.textContent;
 
-                fetch(`get_comments.php?post_id=${postId}&offset=${offset}&limit=${limit}`)
+                    // Send the translation request
+                    fetch('translate.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            q: originalText,
+                            source: 'en', // Source language
+                            target: 'fr', // Target language
+                        }),
+                    })
                     .then(response => response.json())
                     .then(data => {
-                        if (data.success && data.comments.length > 0) {
-                            data.comments.forEach(comment => {
-                                const commentHTML = `
-                                    <div class="comment-admin">
-                                        <div class="comment-header">
-                                            <p><strong>${escapeHtml(comment.username)}</strong> 
-                                            <span class="timestamp">le ${formatDate(comment.created_at)}</span></p>
-                                        </div>
-                                        <div class="comment-content">
-                                            <p>${escapeHtml(comment.content)}</p>
-                                        </div>
-                                        <div class="admin-actions">
-                                            <button class="delete" data-id="${comment.comment_id}" data-type="comment">
-                                                <i class="fas fa-trash-alt"></i> Supprimer
-                                            </button>
-                                            <button class="report" data-id="${comment.comment_id}" data-type="comment" 
-                                                    data-reported="${comment.is_reported ? '1' : '0'}">
-                                                <i class="fas fa-flag"></i> ${comment.is_reported ? 'Déjà signalé' : 'Signaler'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                `;
-                                commentsList.insertAdjacentHTML('beforeend', commentHTML);
-                            });
-
-                            // Add "Load More" button if there are more comments to load
-                            if (data.comments.length === limit) {
-                                const loadMoreButton = document.createElement('button');
-                                loadMoreButton.className = 'btn btn-primary load-more-comments';
-                                loadMoreButton.textContent = 'Charger plus de commentaires';
-                                loadMoreButton.addEventListener('click', function () {
-                                    loadComments(postId, offset + limit, limit);
-                                });
-                                commentsList.appendChild(loadMoreButton);
-                            }
-                        } else if (offset === 0) {
-                            commentsList.innerHTML = '<p class="no-comments">Aucun commentaire pour ce post.</p>';
+                        if (data.success) {
+                            // Update the content with the translated text
+                            contentElement.textContent = data.translatedText;
+                        } else {
+                            alert('Erreur: ' + data.message);
                         }
                     })
                     .catch(error => {
-                        console.error('Error loading comments:', error);
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de la traduction.');
                     });
-            }
+                }
+            });
         });
         </script>
         <!-- Add more questions here -->
+         <!-- Pagination -->
+<div class="pagination">
+    <?php if ($totalPages > 1): ?>
+        <?php if ($currentPage > 1): ?>
+            <a href="?page=1" class="pagination-link">&laquo; Première</a>
+            <a href="?page=<?php echo $currentPage - 1; ?>" class="pagination-link">&lsaquo; Précédente</a>
+        <?php endif; ?>
+
+        <?php 
+        // Afficher les numéros de page
+        $start = max(1, $currentPage - 2);
+        $end = min($totalPages, $currentPage + 2);
+        
+        for ($i = $start; $i <= $end; $i++): ?>
+            <a href="?page=<?php echo $i; ?>" class="pagination-link <?php echo $i == $currentPage ? 'active' : ''; ?>">
+                <?php echo $i; ?>
+            </a>
+        <?php endfor; ?>
+
+        <?php if ($currentPage < $totalPages): ?>
+            <a href="?page=<?php echo $currentPage + 1; ?>" class="pagination-link">Suivante &rsaquo;</a>
+            <a href="?page=<?php echo $totalPages; ?>" class="pagination-link">Dernière &raquo;</a>
+        <?php endif; ?>
+    <?php endif; ?>
+</div>
     </main>
 </body>
 </html>
