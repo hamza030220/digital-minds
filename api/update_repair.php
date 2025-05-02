@@ -23,16 +23,23 @@ try {
         exit;
     }
 
-    // Validate status based on stock quantity
-    if ($stock['quantity'] <= 0 && $data['status'] !== 'En attente') {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Status must be En attente for out-of-stock items']);
-        exit;
+    // Force status to Terminé if progression is 100 (server-side validation)
+    if (intval($data['progression']) === 100) {
+        $data['status'] = 'Terminé';
     }
-    if ($stock['quantity'] > 0 && $data['status'] === 'En attente') {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Status cannot be En attente for in-stock items']);
-        exit;
+
+    // Validate status based on stock quantity, but allow Terminé regardless of stock
+    if ($data['status'] !== 'Terminé') {
+        if ($stock['quantity'] <= 0 && $data['status'] !== 'En attente') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Status must be En attente for out-of-stock items']);
+            exit;
+        }
+        if ($stock['quantity'] > 0 && $data['status'] === 'En attente') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Status cannot be En attente for in-stock items']);
+            exit;
+        }
     }
 
     // Get current repair data
@@ -58,8 +65,8 @@ try {
             $stmt = $pdo->prepare('UPDATE stock SET quantity = quantity + 1 WHERE id = ?');
             $stmt->execute([$current_repair['stock_id']]);
         }
-        // Deduct from new stock item if in stock
-        if ($stock['quantity'] > 0) {
+        // Deduct from new stock item if in stock and status is not Terminé or En attente
+        if ($stock['quantity'] > 0 && $data['status'] !== 'Terminé' && $data['status'] !== 'En attente') {
             $stmt = $pdo->prepare('UPDATE stock SET quantity = quantity - 1 WHERE id = ?');
             $stmt->execute([$data['stock_id']]);
         }
@@ -69,8 +76,8 @@ try {
             // Restore stock if moving to En attente
             $stmt = $pdo->prepare('UPDATE stock SET quantity = quantity + 1 WHERE id = ?');
             $stmt->execute([$data['stock_id']]);
-        } elseif ($data['status'] !== 'En attente' && $current_repair['status'] === 'En attente' && $stock['quantity'] > 0) {
-            // Deduct stock if moving from En attente to in-progress or completed
+        } elseif ($data['status'] !== 'En attente' && $current_repair['status'] === 'En attente' && $stock['quantity'] > 0 && $data['status'] !== 'Terminé') {
+            // Deduct stock if moving from En attente to En cours (but not Terminé)
             $stmt = $pdo->prepare('UPDATE stock SET quantity = quantity - 1 WHERE id = ?');
             $stmt->execute([$data['stock_id']]);
         }

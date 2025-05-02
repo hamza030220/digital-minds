@@ -4,7 +4,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Green.tn - Réparation État</title>
-    <link rel="stylesheet" href="green.css">
+    <link rel="stylesheet" href="green.css"> <!-- External CSS, if still used -->
+    <!-- Embedded CSS to fix stock image size -->
+    <style>
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            max-width: 350px; /* Compact modal width */
+            width: 90%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            overflow: hidden; /* Clip any overflow */
+            max-height: 80vh; /* Limit height to viewport */
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            color: #2e7d32; /* Green */
+            font-size: 1.5em;
+        }
+
+        .modal-content p {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        /* Bike Image (unchanged, assumed working) */
+        .modal-bike-image {
+            max-width: 180px;
+            max-height: 180px;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Stock Item Image (adjusted to fix size) */
+        .modal-stock-image {
+            width: 100%;
+            max-width: 150px; /* Strict cap to prevent overflow */
+            max-height: 150px;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .close-btn {
+            background-color: #2e7d32; /* Green */
+            color: #fff;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .close-btn:hover {
+            background-color: #4CAF50; /* Lighter green */
+        }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -28,6 +109,12 @@
             <ul>
                 <li><a href="#" class="login">Login</a></li>
                 <li><a href="#" class="signin">Signin</a></li>
+                <li>
+                    <select id="language-selector" onchange="changeLanguage()">
+                        <option value="fr">Français</option>
+                        <option value="en">English</option>
+                    </select>
+                </li>
             </ul>
         </nav>
     </header>
@@ -78,14 +165,27 @@
         </div>
     </div>
 
-    <!-- Modal for Repair Details -->
-    <div class="details-modal" id="details-modal">
-        <div class="details-modal-content">
-            <h3>Détails de la Réparation</h3>
-            <div id="repair-details"></div>
-            <button class="close-btn" onclick="closeModal('details-modal')">Fermer</button>
+   <!-- Modal for Repair Details -->
+<div class="modal" id="details-modal">
+    <div class="modal-content">
+        <h3 data-translate="repair_modal_title">Détails de la Réparation</h3>
+        <div id="repair-details"></div>
+        <div id="review-form" style="display: none;">
+            <p data-translate="review_label">Évaluer cette réparation</p>
+            <div class="star-rating">
+                <span class="star" data-value="1" role="button" aria-label="1 star">★</span>
+                <span class="star" data-value="2" role="button" aria-label="2 stars">★</span>
+                <span class="star" data-value="3" role="button" aria-label="3 stars">★</span>
+                <span class="star" data-value="4" role="button" aria-label="4 stars">★</span>
+                <span class="star" data-value="5" role="button" aria-label="5 stars">★</span>
+            </div>
+            <p class="rating-display" id="rating-display"></p>
+            <button class="close-btn" onclick="submitReview()" data-translate="review_submit">Soumettre l'évaluation</button>
         </div>
+        <p id="review-average" style="display: none;" data-translate="review_average">Évaluation moyenne: <span></span></p>
+        <button class="close-btn" onclick="closeModal('details-modal')" data-translate="close_button">Fermer</button>
     </div>
+</div>
 
     <!-- Footer -->
     <footer>
@@ -121,177 +221,368 @@
     </footer>
 
     <script>
-    let allRepairs = [];
+ let allRepairs = [];
+let translations = {};
+let currentLanguage = localStorage.getItem('language') || 'fr';
+let selectedRating = 0;
+let currentRepairId = null;
 
-    function escapeHTML(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
 
-    function fetchRepairs() {
-        fetch('api/get_repairs.php')
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return response.json();
-            })
-            .then(data => {
-                allRepairs = data;
-                renderRepairs(allRepairs);
-            })
-            .catch(error => {
-                console.error('Error fetching repairs:', error);
-                alert('Erreur lors du chargement des réparations: ' + error.message);
-            });
-    }
+// Load translations
+function loadTranslations(lang) {
+    fetch(`translations/${lang}.json`)
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load translations');
+            return response.json();
+        })
+        .then(data => {
+            translations[lang] = data;
+            updateUIText();
+        })
+        .catch(error => {
+            console.error('Error loading translations:', error);
+            alert('Erreur lors du chargement des traductions');
+        });
+}
 
-    function renderRepairs(repairs) {
-        const grid = document.getElementById('reparation-grid');
-        grid.innerHTML = '';
-
-        const bikeImages = {
-            'Vélo de Ville': 'image/vv.jpg',
-            'Vélo de Course': 'image/co.jpg',
-            'Vélo de Montagne': 'image/mm.jpg'
+// Update UI with translations
+function updateUIText() {
+    document.querySelectorAll('[data-translate]').forEach(element => {
+        const key = element.getAttribute('data-translate');
+        element.textContent = translations[currentLanguage][key] || element.textContent;
+    });
+    document.title = translations[currentLanguage].page_title;
+    document.querySelector('#search-input').placeholder = translations[currentLanguage].search_placeholder;
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        const filter = btn.getAttribute('data-filter');
+        const filterKeyMap = {
+            'all': 'filter_all',
+            'en-cours': 'filter_in_progress',
+            'en-attente-de-pièces': 'filter_waiting'
         };
+        btn.textContent = translations[currentLanguage][filterKeyMap[filter]] || btn.textContent;
+    });
+    renderRepairs(allRepairs); // Re-render to update dynamic text
+}
 
-        repairs.forEach(repair => {
-            const statusClass = repair.status.toLowerCase().replace(' ', '-') || 'en-cours';
-            const bikeImage = bikeImages[repair.bike_type] || 'image/vv.jpg';
-            const estimatedDate = calculateEstimatedDate(repair.status, repair.progression);
+// Change language
+function changeLanguage() {
+    currentLanguage = document.getElementById('language-selector').value;
+    localStorage.setItem('language', currentLanguage);
+    loadTranslations(currentLanguage);
+}
 
-            const card = document.createElement('div');
-            card.className = `reparation-card`;
-            card.setAttribute('data-status', statusClass);
-            card.innerHTML = `
-                <img src="${bikeImage}" alt="${escapeHTML(repair.bike_type)}" class="bike-image">
-                <h3>${escapeHTML(repair.bike_type)} #${escapeHTML(repair.bike_id)}</h3>
-                <p>Pièce: ${escapeHTML(repair.stock_item_name || 'Aucune')}</p>
-                <p class="status ${statusClass}">État: ${escapeHTML(repair.status)}</p>
-                <div class="progress-bar">
-                    <div class="progress" style="width: ${repair.progression}%;"></div>
-                </div>
-                <p>Date estimée: ${estimatedDate}</p>
-                <button class="detail" onclick='showRepairDetails(${JSON.stringify(repair)})'>Voir Détails</button>
-                <button class="stock-btn" onclick="showStockDetails(${repair.stock_id || 0})" ${!repair.stock_id ? 'disabled' : ''}>
-                    Voir le stock
-                </button>
-            `;
-            grid.appendChild(card);
+function fetchRepairs() {
+    fetch('api/get_repairs.php')
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            allRepairs = data;
+            renderRepairs(allRepairs);
+        })
+        .catch(error => {
+            console.error('Error fetching repairs:', error);
+            alert(translations[currentLanguage].error_loading_repairs + ': ' + error.message);
         });
+}
+
+function renderRepairs(repairs) {
+    const grid = document.getElementById('reparation-grid');
+    grid.innerHTML = '';
+
+    const bikeImages = {
+        'Vélo de Ville': 'image/vv.jpg',
+        'Vélo de Course': 'image/co.jpg',
+        'Vélo de Montagne': 'image/mm.jpg'
+    };
+
+    repairs.forEach(repair => {
+        const statusClass = repair.status.toLowerCase().replace(' ', '-') || 'en-cours';
+        const bikeImage = bikeImages[repair.bike_type] || 'image/vv.jpg';
+        const estimatedDate = calculateEstimatedDate(repair.status, repair.progression);
+        const averageRating = repair.average_rating ? `${parseFloat(repair.average_rating).toFixed(1)} ★` : '';
+
+        const card = document.createElement('div');
+        card.className = `reparation-card`;
+        card.setAttribute('data-status', statusClass);
+        card.innerHTML = `
+            <img src="${bikeImage}" alt="${escapeHTML(repair.bike_type)}" class="bike-image">
+            <h3>${escapeHTML(repair.bike_type)} #${escapeHTML(repair.bike_id)}</h3>
+            <p>${translations[currentLanguage].repair_card_piece}: ${escapeHTML(repair.stock_item_name || translations[currentLanguage].no_stock)}</p>
+            <p class="status ${statusClass}">${translations[currentLanguage].repair_card_status}: ${escapeHTML(repair.status)}</p>
+            <div class="progress-bar">
+                <div class="progress" style="width: ${repair.progression}%;"></div>
+            </div>
+            <p>${translations[currentLanguage].repair_card_date}: ${estimatedDate}</p>
+            ${repair.progression == 100 && averageRating ? `<p>${translations[currentLanguage].review_average}: ${averageRating}</p>` : ''}
+            <button class="detail" onclick='showRepairDetails(${JSON.stringify(repair)})'>${translations[currentLanguage].repair_card_details}</button>
+            <button class="stock-btn" onclick="showStockDetails(${repair.stock_id || 0})" ${!repair.stock_id ? 'disabled' : ''}>
+                ${translations[currentLanguage].repair_card_stock}
+            </button>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function calculateEstimatedDate(status, progression) {
+    const baseDate = new Date('2025-04-17');
+    let daysToAdd;
+
+    if (status === 'En cours') {
+        daysToAdd = Math.round((100 - progression) / 10);
+    } else {
+        daysToAdd = 11;
     }
 
-    function calculateEstimatedDate(status, progression) {
-        const baseDate = new Date('2025-04-17');
-        let daysToAdd;
+    baseDate.setDate(baseDate.getDate() + daysToAdd);
+    return baseDate.toLocaleDateString(currentLanguage === 'fr' ? 'fr-FR' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
 
-        if (status === 'En cours') {
-            daysToAdd = Math.round((100 - progression) / 10);
-        } else {
-            daysToAdd = 11;
-        }
-
-        baseDate.setDate(baseDate.getDate() + daysToAdd);
-        return baseDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+function showStockDetails(stockId) {
+    if (!stockId || stockId === 0) {
+        alert(translations[currentLanguage].error_no_stock);
+        return;
     }
+    fetch('api/get_stock.php')
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            const stockItem = data.find(item => item.id == stockId);
+            if (!stockItem) {
+                alert(translations[currentLanguage].error_stock_not_found);
+                return;
+            }
+            const price = parseFloat(stockItem.price);
+            if (isNaN(price)) {
+                throw new Error('Price is not a valid number');
+            }
+            const stockImages = {
+                'Freins': 'image/freins.jpg',
+                'Helmet': 'image/helmet.jpg',
+                'Chain': 'image/chain.jpg'
+            };
+            const stockImage = stockImages[stockItem.item_name] || 'image/placeholder.jpg';
 
-    function showStockDetails(stockId) {
-        console.log('Stock ID:', stockId);
-        if (!stockId || stockId === 0) {
-            alert('Aucune pièce associée à cette réparation');
-            return;
-        }
-        fetch('api/get_stock.php')
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return response.json();
-            })
+            const modal = document.getElementById('stock-modal');
+            const stockDetails = document.getElementById('stock-details');
+            stockDetails.innerHTML = `
+                <img src="${stockImage}" alt="${escapeHTML(stockItem.item_name)}" class="modal-stock-image">
+                <p><strong>${translations[currentLanguage].stock_piece}:</strong> ${escapeHTML(stockItem.item_name)}</p>
+                <p><strong>${translations[currentLanguage].stock_category}:</strong> ${escapeHTML(stockItem.category)}</p>
+                <p><strong>${translations[currentLanguage].stock_quantity}:</strong> ${stockItem.quantity}</p>
+                <p><strong>${translations[currentLanguage].stock_price}:</strong> ${price.toFixed(2)} TND</p>
+            `;
+            modal.style.display = 'flex';
+            updateUIText(); // Ensure modal text is translated
+        })
+        .catch(error => {
+            console.error('Error fetching stock details:', error);
+            alert(translations[currentLanguage].error_loading_stock + ': ' + error.message);
+        });
+}
+
+function showRepairDetails(repair) {
+    currentRepairId = repair.id;
+    const modal = document.getElementById('details-modal');
+    const repairDetails = document.getElementById('repair-details');
+    const reviewForm = document.getElementById('review-form');
+    const reviewAverage = document.getElementById('review-average');
+    const estimatedDate = calculateEstimatedDate(repair.status, repair.progression);
+    const bikeImages = {
+        'Vélo de Ville': 'image/vv.jpg',
+        'Vélo de Course': 'image/co.jpg',
+        'Vélo de Montagne': 'image/mm.jpg'
+    };
+    const bikeImage = bikeImages[repair.bike_type] || 'image/vv.jpg';
+
+    repairDetails.innerHTML = `
+        <img src="${bikeImage}" alt="${escapeHTML(repair.bike_type)}" class="modal-bike-image">
+        <p><strong>${translations[currentLanguage].repair_bike_id}:</strong> ${escapeHTML(repair.bike_id)}</p>
+        <p><strong>${translations[currentLanguage].repair_bike_type}:</strong> ${escapeHTML(repair.bike_type)}</p>
+        <p><strong>${translations[currentLanguage].repair_piece}:</strong> ${escapeHTML(repair.stock_item_name || translations[currentLanguage].no_stock)}</p>
+        <p><strong>${translations[currentLanguage].repair_status}:</strong> ${escapeHTML(repair.status)}</p>
+        <p><strong>${translations[currentLanguage].repair_progress}:</strong> ${repair.progression}%</p>
+        <p><strong>${translations[currentLanguage].repair_date}:</strong> ${estimatedDate}</p>
+    `;
+
+    // Show review form for completed repairs
+    if (repair.progression == 100) {
+        reviewForm.style.display = 'block';
+        resetStarRating();
+        // Fetch and display average rating
+        fetch(`api/get_repair_rating.php?repair_id=${repair.id}`)
+            .then(response => response.json())
             .then(data => {
-                console.log('Stock Data:', data);
-                const stockItem = data.find(item => item.id == stockId);
-                console.log('Found Stock Item:', stockItem);
-                if (!stockItem) {
-                    alert('Pièce non trouvée dans le stock');
-                    return;
+                if (data.average_rating) {
+                    reviewAverage.style.display = 'block';
+                    reviewAverage.querySelector('span').textContent = `${parseFloat(data.average_rating).toFixed(1)} ★`;
+                } else {
+                    reviewAverage.style.display = 'none';
                 }
-                // Ensure price is a number before calling toFixed
-                const price = parseFloat(stockItem.price);
-                if (isNaN(price)) {
-                    throw new Error('Price is not a valid number');
-                }
-                const modal = document.getElementById('stock-modal');
-                const stockDetails = document.getElementById('stock-details');
-                stockDetails.innerHTML = `
-                    <p><strong>Pièce:</strong> ${escapeHTML(stockItem.item_name)}</p>
-                    <p><strong>Catégorie:</strong> ${escapeHTML(stockItem.category)}</p>
-                    <p><strong>Quantité en stock:</strong> ${stockItem.quantity}</p>
-                    <p><strong>Prix:</strong> ${price.toFixed(2)} TND</p>
-                `;
-                modal.style.display = 'flex';
             })
             .catch(error => {
-                console.error('Error fetching stock details:', error);
-                alert('Erreur lors du chargement des détails du stock: ' + error.message);
+                console.error('Error fetching rating:', error);
             });
+    } else {
+        reviewForm.style.display = 'none';
+        reviewAverage.style.display = 'none';
     }
 
-    function showRepairDetails(repair) {
-        const modal = document.getElementById('details-modal');
-        const repairDetails = document.getElementById('repair-details');
-        const estimatedDate = calculateEstimatedDate(repair.status, repair.progression);
-        repairDetails.innerHTML = `
-            <p><strong>ID du Vélo:</strong> ${escapeHTML(repair.bike_id)}</p>
-            <p><strong>Type de Vélo:</strong> ${escapeHTML(repair.bike_type)}</p>
-            <p><strong>Pièce:</strong> ${escapeHTML(repair.stock_item_name || 'Aucune')}</p>
-            <p><strong>État:</strong> ${escapeHTML(repair.status)}</p>
-            <p><strong>Progression:</strong> ${repair.progression}%</p>
-            <p><strong>Date Estimée:</strong> ${estimatedDate}</p>
-        `;
-        modal.style.display = 'flex';
-    }
+    modal.style.display = 'flex';
+    updateUIText(); // Ensure modal text is translated
+}
 
-    function closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        modal.style.display = 'none';
-    }
+function resetStarRating() {
+    selectedRating = 0;
+    const ratingDisplay = document.getElementById('rating-display');
+    ratingDisplay.textContent = '';
 
-    // Close modals when clicking outside the modal content
-    document.querySelectorAll('.modal, .details-modal').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
+    document.querySelectorAll('.star').forEach(star => {
+        star.classList.remove('selected');
+        star.tabIndex = 0; // Make stars focusable for keyboard access
+
+        // Click handler
+        star.addEventListener('click', () => {
+            selectedRating = parseInt(star.getAttribute('data-value'));
+            updateStarSelection();
+        });
+
+        // Hover handler
+        star.addEventListener('mouseover', () => {
+            const value = parseInt(star.getAttribute('data-value'));
+            document.querySelectorAll('.star').forEach(s => {
+                s.classList.remove('selected');
+                if (parseInt(s.getAttribute('data-value')) <= value) {
+                    s.classList.add('selected');
+                }
+            });
+        });
+
+        // Reset on mouseout
+        star.addEventListener('mouseout', () => {
+            updateStarSelection();
+        });
+
+        // Keyboard support
+        star.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                selectedRating = parseInt(star.getAttribute('data-value'));
+                updateStarSelection();
+            } else if (e.key === 'ArrowLeft' && selectedRating > 1) {
+                selectedRating--;
+                updateStarSelection();
+                document.querySelector(`.star[data-value="${selectedRating}"]`).focus();
+            } else if (e.key === 'ArrowRight' && selectedRating < 5) {
+                selectedRating++;
+                updateStarSelection();
+                document.querySelector(`.star[data-value="${selectedRating}"]`).focus();
             }
         });
     });
 
-    function searchBikes() {
-        const searchInput = document.getElementById('search-input').value.toLowerCase();
-        const filteredRepairs = allRepairs.filter(repair => 
-            repair.bike_id.toLowerCase().includes(searchInput) || 
-            repair.bike_type.toLowerCase().includes(searchInput) ||
-            (repair.stock_item_name && repair.stock_item_name.toLowerCase().includes(searchInput))
-        );
+    // Update star selection and display
+    function updateStarSelection() {
+        document.querySelectorAll('.star').forEach(s => {
+            s.classList.remove('selected');
+            if (parseInt(s.getAttribute('data-value')) <= selectedRating) {
+                s.classList.add('selected');
+            }
+        });
+        ratingDisplay.textContent = selectedRating ? `${selectedRating} ${selectedRating === 1 ? (currentLanguage === 'fr' ? 'étoile' : 'star') : (currentLanguage === 'fr' ? 'étoiles' : 'stars')}` : '';
+    }
+}
+
+function submitReview() {
+    if (!selectedRating) {
+        alert(translations[currentLanguage].review_error + ': ' + (currentLanguage === 'fr' ? 'Veuillez sélectionner une note (1 à 5 étoiles)' : 'Please select a rating (1 to 5 stars)'));
+        return;
+    }
+
+    fetch('api/submit_repair_rating.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repair_id: currentRepairId, rating: selectedRating })
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert(translations[currentLanguage].review_thanks);
+                document.getElementById('review-form').style.display = 'none';
+                fetchRepairs(); // Refresh repairs to update average rating
+            } else {
+                alert(translations[currentLanguage].review_error + ': ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error submitting review:', error);
+            alert(translations[currentLanguage].review_error + ': ' + error.message);
+        });
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.style.display = 'none';
+}
+
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+});
+
+function searchBikes() {
+    const searchInput = document.getElementById('search-input').value.toLowerCase();
+    const filteredRepairs = allRepairs.filter(repair => 
+        repair.bike_id.toLowerCase().includes(searchInput) || 
+        repair.bike_type.toLowerCase().includes(searchInput) ||
+        (repair.stock_item_name && repair.stock_item_name.toLowerCase().includes(searchInput))
+    );
+    renderRepairs(filteredRepairs);
+}
+
+document.querySelectorAll('.filter-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+
+        const filter = button.getAttribute('data-filter');
+        let filteredRepairs = allRepairs;
+
+        if (filter !== 'all') {
+            const statusFilterMap = {
+                'en-cours': currentLanguage === 'fr' ? 'En cours' : 'In Progress',
+                'en-attente-de-pièces': currentLanguage === 'fr' ? 'En attente de pièces' : 'Waiting for Parts'
+            };
+            filteredRepairs = allRepairs.filter(repair => repair.status === statusFilterMap[filter]);
+        }
+
         renderRepairs(filteredRepairs);
-    }
-
-    document.querySelectorAll('.filter-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-
-            const filter = button.getAttribute('data-filter');
-            let filteredRepairs = allRepairs;
-
-            if (filter !== 'all') {
-                const statusFilter = filter === 'en-cours' ? 'En cours' : 'En attente de pièces';
-                filteredRepairs = allRepairs.filter(repair => repair.status === statusFilter);
-            }
-
-            renderRepairs(filteredRepairs);
-        });
     });
+});
 
+// Initialize page
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('language-selector').value = currentLanguage;
+    loadTranslations(currentLanguage);
     fetchRepairs();
+});
+    
     </script>
 </body>
 </html>

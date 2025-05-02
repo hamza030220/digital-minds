@@ -5,128 +5,472 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Green.tn - Admin Dashboard</title>
     <link rel="stylesheet" href="admin.css">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- jsPDF autoTable for tables -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+    .modal-content {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-content h3 {
+        margin-top: 0;
+        color: #60BA97;
+        font-size: 18px;
+    }
+
+    .modal-content .item-list {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 15px;
+    }
+
+    .modal-content label {
+        display: flex;
+        align-items: center;
+        margin: 10px 0;
+        font-size: 16px;
+        color: #333;
+    }
+
+    .modal-content input[type="checkbox"] {
+        margin-right: 8px;
+    }
+
+    .modal-content .modal-footer {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .modal-content button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .modal-content .btn-export {
+        background-color: #60BA97;
+        color: #fff;
+    }
+
+    .modal-content .btn-cancel {
+        background-color: #ccc;
+        color: #333;
+    }
+
+    .modal-content .btn-cancel:hover {
+        background-color: #bbb;
+    }
+
+    .modal-content .error-message {
+        color: #FF4500;
+        font-size: 0.9em;
+        margin-top: 10px;
+        display: block;
+    }
+
+    .modal-content .no-data {
+        color: #333;
+        font-size: 1em;
+        margin: 10px 0;
+        text-align: center;
+    }
+
+    /* Export Button Styles */
+    .btn-export-pdf {
+        background-color: #60BA97;
+        color: #fff;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+        font-size: 16px;
+        display: inline-block;
+        text-decoration: none;
+    }
+
+    .btn-export-pdf:hover {
+        background-color: #60BA97;
+    }
+
+    /* Sidebar Styles */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 250px;
+        height: 100%;
+        background-color: #60BA97;
+        color: #fff;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        z-index: 1000;
+    }
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    .sidebar-header {
+        padding: 20px;
+        text-align: center;
+    }
+
+    .sidebar-brand img {
+        max-width: 150px;
+        height: auto;
+    }
+
+    .sidebar-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 0;
+    }
+
+    .sidebar-nav {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .sidebar-nav-item {
+        margin-bottom: 5px;
+    }
+
+    .sidebar-nav-link {
+        display: flex;
+        align-items: center;
+        padding: 10px 20px;
+        color: #fff;
+        text-decoration: none;
+        transition: background-color 0.2s;
+    }
+
+    .sidebar-nav-link:hover {
+        background-color: #60BA97;
+    }
+
+    .sidebar-nav-link.active {
+        background-color: #1B5E20;
+    }
+
+    .sidebar-nav-icon {
+        margin-right: 10px;
+        font-size: 1.2em;
+    }
+
+    .sidebar-nav-text {
+        font-size: 1em;
+    }
+
+    .sidebar-footer {
+        padding: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-footer .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .sidebar-footer .text-white {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 0.9em;
+    }
+
+    /* Sidebar Toggler */
+    .sidebar-toggler {
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 1100;
+        background-color: #60BA97;
+        color: #fff;
+        border: none;
+        padding: 8px;
+        font-size: 1.2em;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .sidebar-toggler:hover {
+        background-color: #60BA97;
+    }
+
+    /* Main Content */
+    .main-content {
+        margin-left: 0;
+        padding: 20px;
+        transition: margin-left 0.3s ease-in-out;
+    }
+
+    .main-content-expanded {
+        margin-left: 0;
+    }
+
+    /* Section Visibility */
+    .management {
+        display: none;
+    }
+
+    .management.active {
+        display: block;
+    }
+
+    /* Chart Containers */
+    .chart-container {
+        margin-bottom: 30px;
+        height: 400px; /* Fixed height for charts */
+    }
+
+    .chart-container canvas {
+        max-height: 100%;
+        width: 100%;
+    }
+
+    /* Responsive Design */
+    @media (min-width: 992px) {
+        .sidebar {
+            transform: translateX(0);
+        }
+        .main-content {
+            margin-left: 250px;
+        }
+        .sidebar-toggler {
+            display: none;
+        }
+    }
+</style>
+
 </head>
 <body>
     <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="logo">
-            <img src="image/ve.png" alt="Green.tn Logo">
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a class="sidebar-brand" href="#" data-section="dashboard">
+                <img src="image/logo.png" alt="Green.tn Admin">
+            </a>
         </div>
-        <nav class="sidebar-nav">
-            <ul>
-                <li><a href="#dashboard"><span class="icon">📊</span> Dashboard</a></li>
-                <li><a href="#bikes"><span class="icon">🚲</span> Gestion des Vélos</a></li>
-                <li><a href="#repairs" class="active"><span class="icon">🔧</span> Réparations</a></li>
-                <li><a href="#users"><span class="icon">👥</span> Utilisateurs</a></li>
-                <li><a href="#settings"><span class="icon">⚙️</span> Paramètres</a></li>
+        <div class="sidebar-content">
+            <ul class="sidebar-nav">
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link active" href="#" data-section="dashboard">
+                        <span class="sidebar-nav-icon"><i class="bi bi-speedometer2"></i></span>
+                        <span class="sidebar-nav-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" href="#" data-section="stock">
+                        <span class="sidebar-nav-icon"><i class="bi bi-box"></i></span>
+                        <span class="sidebar-nav-text">Stock</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" href="#" data-section="repairs">
+                        <span class="sidebar-nav-icon"><i class="bi bi-tools"></i></span>
+                        <span class="sidebar-nav-text">Réparations</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" href="#" data-section="users">
+                        <span class="sidebar-nav-icon"><i class="bi bi-people"></i></span>
+                        <span class="sidebar-nav-text">Utilisateurs</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" href="#" data-section="settings">
+                        <span class="sidebar-nav-icon"><i class="bi bi-gear"></i></span>
+                        <span class="sidebar-nav-text">Paramètres</span>
+                    </a>
+                </li>
             </ul>
-        </nav>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Header -->
-        <header class="admin-header">
-            <h1>Admin Dashboard</h1>
-            <div class="user-profile">
-                <img src="image/face.jpg" alt="User Avatar" class="avatar">
-                <span>Aziz miaoui</span>
+        </div>
+        <div class="sidebar-footer">
+            <div class="mb-2">
+                <span class="text-white">Bienvenue, Aziz miaoui</span>
             </div>
-        </header>
+            <a href="#logout" class="btn btn-outline-light w-100">
+                <i class="bi bi-box-arrow-right"></i> Déconnexion
+            </a>
+        </div>
+    </div>
+<!-- Sidebar Toggle Button -->
+<button class="sidebar-toggler" type="button" id="sidebarToggle">
+    <i class="bi bi-list"></i>
+</button>
 
-        <!-- Dashboard Section -->
-        <section class="dashboard" id="dashboard">
-            <h2>Vue d'ensemble</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>10</h3>
-                    <p>Vélos en Réparation</p>
-                </div>
-                <div class="stat-card">
-                    <h3>5</h3>
-                    <p>Réparations en Cours</p>
-                </div>
-                <div class="stat-card">
-                    <h3>3</h3>
-                    <p>Réparations en Attente</p>
-                </div>
-                <div class="stat-card">
-                    <h3>15</h3>
-                    <p>Réparations Terminées</p>
-                </div>
-            </div>
-        </section>
+<!-- Main Content -->
+<main class="main-content" id="main">
+    <!-- Header -->
+    <header class="admin-header">
+        <h1>Admin Dashboard</h1>
+        <div class="user-profile">
+            <img src="image/face.jpg" alt="User Avatar" class="avatar">
+            <span>Aziz miaoui</span>
+        </div>
+    </header>
 
-        <!-- Bike Management Section -->
-        <section class="management" id="bikes">
-            <h2>Gestion des Vélos</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Type</th>
-                            <th>Problème</th>
-                            <th>Statut</th>
-                            <th>Progression</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>001</td>
-                            <td>Vélo de Ville</td>
-                            <td>Pneu crevé</td>
-                            <td><span class="status en-cours">En cours</span></td>
-                            <td>
-                                <div class="progress-bar">
-                                    <div class="progress" style="width: 50%;"></div>
-                                </div>
-                            </td>
-                            <td>
-                                <a href="#" class="btn edit">Modifier</a>
-                                <a href="#" class="btn delete">Supprimer</a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <a href="#" class="btn add">Ajouter un Vélo</a>
-        </section>
+    <!-- Dashboard Section -->
+    <section class="management active" id="dashboard">
+        <h2>Statistiques</h2>
+        <div class="chart-container">
+            <h3>Statistiques du Stock</h3>
+            <canvas id="stockStatsChart"></canvas>
+            <span id="stockStatsError" class="error-message"></span>
+        </div>
+        <div class="chart-container">
+            <h3>Statistiques des Réparations</h3>
+            <canvas id="repairsStatsChart"></canvas>
+            <p id="repairsTotal" class="no-data"></p>
+            <span id="repairsStatsError" class="error-message"></span>
+        </div>
+    </section>
 
-        <!-- Repairs Section -->
-        <section class="management" id="repairs">
-            <h2>Réparations</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Type</th>
-                            <th>Pièce Utilisée</th>
-                            <th>Statut</th>
-                            <th>Progression</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="repairs-table-body"></tbody>
-                </table>
-            </div>
-            <a href="#" class="btn add" onclick="addRepair()">Ajouter une Réparation</a>
-            <div id="add-form-container"></div>
-        </section>
-    </main>
+    <!-- Stock Section -->
+    <section class="management" id="repairs">
+        <h2>Réparations</h2>
+        <div class="sort-container" style="margin-bottom: 15px;">
+            <label for="sortRepairs">Trier par: </label>
+            <select id="sortRepairs" onchange="fetchRepairs()">
+                <option value="progress-desc">Progression (décroissant)</option>
+                <option value="progress-asc">Progression (croissant)</option>
+            </select>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>Pièce Utilisée</th>
+                        <th>Statut</th>
+                        <th>Progression</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="repairs-table-body"></tbody>
+            </table>
+        </div>
+        <button class="btn add" onclick="addRepair()">Ajouter une Réparation</button>
+        <button class="btn-export-pdf" onclick="openRepairsExportModal()">Exporter en PDF</button>
+        <div id="add-form-container"></div>
+    </section>
 
-    <script>
+    <!-- Repairs Section -->
+    <section class="management" id="stock">
+        <h2>Gestion du Stock</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nom de l'Article</th>
+                        <th>Catégorie</th>
+                        <th>Quantité</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="stock-table-body"></tbody>
+            </table>
+        </div>
+        <button class="btn add" onclick="addStockItem()">Ajouter un Article</button>
+        <button class="btn-export-pdf" onclick="openStockExportModal()">Exporter en PDF</button>
+        <div id="stock-form-container"></div>
+    </section>
+
+<!-- Stock Export Modal -->
+<div id="stockExportModal" class="modal">
+    <div class="modal-content">
+        <h3>Exporter les Articles en PDF</h3>
+        <div class="item-list" id="stockExportList"></div>
+        <span id="stockExportError" class="error-message"></span>
+        <div class="modal-footer">
+            <button class="btn-export" onclick="exportStockToPDF()">Exporter</button>
+            <button class="btn-cancel" onclick="closeStockExportModal()">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<!-- Repairs Export Modal -->
+<div id="repairsExportModal" class="modal">
+    <div class="modal-content">
+        <h3>Exporter les Réparations en PDF</h3>
+        <div class="item-list" id="repairsExportList"></div>
+        <span id="repairsExportError" class="error-message"></span>
+        <div class="modal-footer">
+            <button class="btn-export" onclick="exportRepairsToPDF()">Exporter</button>
+            <button class="btn-cancel" onclick="closeRepairsExportModal()">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<script>
     let currentEditRow = null;
     let currentAddForm = null;
+    let currentStockForm = null;
     let stockItems = [];
+    let stockChart = null;
+    let repairsChart = null;
 
     // Function to escape HTML characters
     function escapeHTML(str) {
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
+    }
+
+    // Toggle section visibility
+    function showSection(sectionId) {
+        const sections = document.querySelectorAll('.management');
+        sections.forEach(section => {
+            section.classList.remove('active');
+        });
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+            targetSection.classList.add('active');
+        }
+
+        // Update active sidebar link
+        const links = document.querySelectorAll('.sidebar-nav-link');
+        links.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('data-section') === sectionId) {
+                link.classList.add('active');
+            }
+        });
     }
 
     // Fetch stock items
@@ -138,15 +482,267 @@
             })
             .then(data => {
                 stockItems = data;
-                callback();
+                if (callback) callback();
             })
             .catch(error => {
                 console.error('Error fetching stock:', error);
-                alert('Erreur lors du chargement des stocks');
+                const errorSpan = document.createElement('span');
+                errorSpan.className = 'error-message';
+                errorSpan.textContent = 'Erreur lors du chargement des stocks';
+                document.getElementById('add-form-container').appendChild(errorSpan);
             });
     }
 
-    function fetchRepairs() {
+    // Fetch and display stock items
+    function fetchStockItems() {
+        fetch('api/get_stock.php')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                if (!Array.isArray(data)) throw new Error('Expected an array of stock items');
+                const tbody = document.getElementById('stock-table-body');
+                tbody.innerHTML = '';
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">Aucun article en stock</td></tr>';
+                    return;
+                }
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    const quantityClass = item.quantity <= 5 ? 'low-stock' : '';
+                    row.innerHTML = `
+                        <td>${escapeHTML(item.id)}</td>
+                        <td>${escapeHTML(item.item_name)}</td>
+                        <td>${escapeHTML(item.category)}</td>
+                        <td class="${quantityClass}">${escapeHTML(item.quantity.toString())}</td>
+                        <td>
+                            <a href="#" class="btn edit" onclick="editStockItem(${item.id}, '${escapeHTML(item.item_name)}', '${escapeHTML(item.category)}', ${item.quantity}, this)">Modifier</a>
+                            <a href="#" class="btn delete" onclick="deleteStockItem(${item.id})">Supprimer</a>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching stock items:', error);
+                const tbody = document.getElementById('stock-table-body');
+                tbody.innerHTML = `<tr><td colspan="5">Erreur lors du chargement des données: ${error.message}</td></tr>`;
+            });
+    }
+
+    // Add stock item form
+    function addStockItem() {
+        if (currentStockForm) {
+            currentStockForm.remove();
+            currentStockForm = null;
+        }
+
+        const stockFormContainer = document.getElementById('stock-form-container');
+        const stockForm = document.createElement('div');
+        stockForm.className = 'add-form';
+        stockForm.innerHTML = `
+            <div class="form-header">
+                <h3>Ajouter un Article</h3>
+            </div>
+            <div class="form-body">
+                <label>Nom de l'Article: 
+                    <input type="text" id="addItemName" placeholder="Ex: Pneu">
+                    <span class="error-message" id="addItemNameError"></span>
+                </label>
+                <label>Catégorie: 
+                    <input type="text" id="addCategory" placeholder="Ex: Pièces">
+                    <span class="error-message" id="addCategoryError"></span>
+                </label>
+                <label>Quantité: 
+                    <input type="number" id="addQuantity" min="0" value="0">
+                    <span class="error-message" id="addQuantityError"></span>
+                </label>
+            </div>
+            <div class="form-footer">
+                <button onclick="saveNewStockItem()">Enregistrer</button>
+                <button onclick="cancelStockAdd()">Annuler</button>
+            </div>
+        `;
+        stockFormContainer.appendChild(stockForm);
+        currentStockForm = stockForm;
+    }
+
+    // Save new stock item
+    function saveNewStockItem() {
+        const itemName = document.getElementById('addItemName').value.trim();
+        const category = document.getElementById('addCategory').value.trim();
+        const quantity = parseInt(document.getElementById('addQuantity').value);
+
+        // Clear previous error messages
+        document.getElementById('addItemNameError').textContent = '';
+        document.getElementById('addCategoryError').textContent = '';
+        document.getElementById('addQuantityError').textContent = '';
+
+        let hasError = false;
+
+        if (!itemName || itemName.length > 100) {
+            document.getElementById('addItemNameError').textContent = 'Le nom est requis et doit être inférieur à 100 caractères';
+            hasError = true;
+        }
+        if (!category || category.length > 50) {
+            document.getElementById('addCategoryError').textContent = 'La catégorie est requise et doit être inférieur à 50 caractères';
+            hasError = true;
+        }
+        if (isNaN(quantity) || quantity < 0) {
+            document.getElementById('addQuantityError').textContent = 'La quantité doit être un nombre positif';
+            hasError = true;
+        }
+
+        if (hasError) return;
+
+        const data = { item_name: itemName, category, quantity };
+
+        fetch('api/add_stock.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    currentStockForm.remove();
+                    currentStockForm = null;
+                    fetchStockItems();
+                } else {
+                    document.getElementById('stock-form-container').insertAdjacentHTML('beforeend', `<span class="error-message">${escapeHTML(data.error || 'Ajout échoué')}</span>`);
+                }
+            })
+            .catch(error => {
+                console.error('Error adding stock item:', error);
+                document.getElementById('stock-form-container').insertAdjacentHTML('beforeend', `<span class="error-message">Erreur lors de l'ajout: ${escapeHTML(error.message)}</span>`);
+            });
+    }
+
+    // Cancel adding stock item
+    function cancelStockAdd() {
+        if (currentStockForm) {
+            currentStockForm.remove();
+            currentStockForm = null;
+        }
+    }
+
+    // Edit stock item (placeholder)
+    function editStockItem(id, itemName, category, quantity, button) {
+        alert('Fonctionnalité de modification à implémenter');
+    }
+
+    // Delete stock item
+    function deleteStockItem(id) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) {
+            fetch('api/delete_stock.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        fetchStockItems();
+                    } else {
+                        const tbody = document.getElementById('stock-table-body');
+                        tbody.insertAdjacentHTML('beforeend', `<tr><td colspan="5"><span class="error-message">${escapeHTML(data.error || 'Suppression échouée')}</span></td></tr>`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting stock item:', error);
+                    const tbody = document.getElementById('stock-table-body');
+                    tbody.innerHTML = `<tr><td colspan="5"><span class="error-message">Erreur lors de la suppression: ${escapeHTML(error.message)}</span></tr>`;
+                });
+        }
+    }
+
+    // Load Stock Statistics
+    function loadStockStats() {
+        const statsError = document.getElementById('stockStatsError');
+
+        if (stockChart) {
+            stockChart.destroy();
+            stockChart = null;
+        }
+
+        fetch('api/get_stock.php')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                if (!Array.isArray(data)) throw new Error('Expected an array of stock items');
+
+                const totalItems = data.length;
+                const lowStock = data.filter(item => item.quantity <= 5).length;
+                const categories = [...new Set(data.map(item => item.category))].length;
+
+                const ctx = document.getElementById('stockStatsChart').getContext('2d');
+                stockChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Total Articles', 'Stock Faible (≤ 5)', 'Catégories'],
+                        datasets: [{
+                            label: 'Statistiques du Stock',
+                            data: [totalItems, lowStock, categories],
+                            backgroundColor: ['#60BA97', '#60BA97', '#81C784'],
+                            borderColor: ['#1B5E20', '#388E3C', '#60BA97'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw}`;
+                                    }
+                                }
+                            },
+                            datalabels: {
+                                anchor: 'end',
+                                align: 'top',
+                                formatter: (value) => value,
+                                color: '#333',
+                                font: { weight: 'bold' }
+                            }
+                        }
+                    },
+                    plugins: [ChartDataLabels]
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching stock stats:', error);
+                statsError.textContent = `Erreur lors du chargement des statistiques: ${error.message}`;
+            });
+    }
+
+    // Load Repairs Statistics
+    function loadRepairsStats() {
+        const statsError = document.getElementById('repairsStatsError');
+        const totalElement = document.getElementById('repairsTotal');
+
+        if (repairsChart) {
+            repairsChart.destroy();
+            repairsChart = null;
+        }
+
         fetch('api/get_repairs.php')
             .then(response => {
                 if (!response.ok) throw new Error('Network response was not ok');
@@ -155,42 +751,133 @@
             .then(data => {
                 if (data.error) throw new Error(data.error);
                 if (!Array.isArray(data)) throw new Error('Expected an array of repairs');
-                const tbody = document.getElementById('repairs-table-body');
-                tbody.innerHTML = '';
-                if (data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6">Aucune réparation trouvée</td></tr>';
+
+                // Apply progression-based status override
+                data.forEach(repair => {
+                    if (parseInt(repair.progression) === 100) {
+                        repair.status = 'Terminé';
+                    }
+                });
+
+                const total = data.length;
+                totalElement.textContent = `Total des Réparations: ${total}`;
+
+                if (total === 0) {
+                    totalElement.textContent = 'Aucune réparation trouvée';
                     return;
                 }
-                data.forEach(repair => {
-                    const row = document.createElement('tr');
-                    const statusClass = repair.status.toLowerCase().replace(' ', '-') || 'en-cours';
-                    const stockClass = repair.stock_quantity <= 0 ? 'low-stock' : '';
-                    row.innerHTML = `
-                        <td>${escapeHTML(repair.bike_id)}</td>
-                        <td>${escapeHTML(repair.bike_type)}</td>
-                        <td class="${stockClass}">${escapeHTML(repair.stock_item_name || 'Aucune')}</td>
-                        <td><span class="status ${statusClass}">${escapeHTML(repair.status)}</span></td>
-                        <td>
-                            <div class="progress-bar">
-                                <div class="progress" style="width: ${repair.progression}%;"></div>
-                            </div>
-                        </td>
-                        <td>
-                            <a href="#" class="btn edit" onclick="editRepair(${repair.id}, '${escapeHTML(repair.bike_id)}', '${escapeHTML(repair.bike_type)}', ${repair.stock_id || 0}, '${escapeHTML(repair.status)}', ${repair.progression}, this)">Modifier</a>
-                            <a href="#" class="btn delete" onclick="deleteRepair(${repair.id})">Supprimer</a>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
+
+                const inProgress = data.filter(repair => repair.status === 'En cours').length;
+                const completed = data.filter(repair => repair.status === 'Terminé').length;
+                const waiting = data.filter(repair => repair.status === 'En attente').length;
+
+                const inProgressPercent = ((inProgress / total) * 100).toFixed(1);
+                const completedPercent = ((completed / total) * 100).toFixed(1);
+                const waitingPercent = ((waiting / total) * 100).toFixed(1);
+
+                const ctx = document.getElementById('repairsStatsChart').getContext('2d');
+                repairsChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: [
+                            `En cours: ${inProgressPercent}% (${inProgress})`,
+                            `Terminé: ${completedPercent}% (${completed})`,
+                            `En attente: ${waitingPercent}% (${waiting})`
+                        ],
+                        datasets: [{
+                            data: [inProgress || 0, completed || 0, waiting || 0],
+                            backgroundColor: ['#FFC107', '#60BA97', '#FF4500'],
+                            borderColor: ['#FFB300', '#1B5E20', '#D32F2F'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { boxWidth: 20 }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.label;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 });
             })
             .catch(error => {
-                console.error('Error fetching repairs:', error);
-                alert(`Erreur lors du chargement des réparations: ${error.message}`);
-                const tbody = document.getElementById('repairs-table-body');
-                tbody.innerHTML = '<tr><td colspan="6">Erreur lors du chargement des données</td></tr>';
+                console.error('Error fetching repairs stats:', error);
+                statsError.textContent = `Erreur lors du chargement des statistiques: ${error.message}`;
+                totalElement.textContent = '';
             });
     }
 
+    // Fetch repairs
+    function fetchRepairs() {
+    fetch('api/get_repairs.php')
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) throw new Error(data.error);
+            if (!Array.isArray(data)) throw new Error('Expected an array of repairs');
+            const tbody = document.getElementById('repairs-table-body');
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6">Aucune réparation trouvée</td></tr>';
+                return;
+            }
+
+            // Get sorting criteria
+            const sortSelect = document.getElementById('sortRepairs');
+            const sortValue = sortSelect ? sortSelect.value : 'progress-desc';
+            const [sortField, sortOrder] = sortValue.split('-');
+
+            // Sort data by progression
+            data.sort((a, b) => {
+                const progA = parseInt(a.progression);
+                const progB = parseInt(b.progression);
+                return sortOrder === 'asc' ? progA - progB : progB - progA;
+            });
+
+            // Render sorted data
+            data.forEach(repair => {
+                if (parseInt(repair.progression) === 100) {
+                    repair.status = 'Terminé';
+                }
+                const row = document.createElement('tr');
+                const statusClass = repair.status.toLowerCase().replace(' ', '-') || 'en-cours';
+                const stockClass = repair.stock_quantity <= 0 ? 'low-stock' : '';
+                row.innerHTML = `
+                    <td>${escapeHTML(repair.bike_id)}</td>
+                    <td>${escapeHTML(repair.bike_type)}</td>
+                    <td class="${stockClass}">${escapeHTML(repair.stock_item_name || 'Aucune')}</td>
+                    <td><span class="status ${statusClass}">${escapeHTML(repair.status)}</span></td>
+                    <td>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: ${repair.progression}%;"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <a href="#" class="btn edit" onclick="editRepair(${repair.id}, '${escapeHTML(repair.bike_id)}', '${escapeHTML(repair.bike_type)}', ${repair.stock_id || 0}, '${escapeHTML(repair.status)}', ${repair.progression}, this)">Modifier</a>
+                        <a href="#" class="btn delete" onclick="deleteRepair(${repair.id})">Supprimer</a>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching repairs:', error);
+            const tbody = document.getElementById('repairs-table-body');
+            tbody.innerHTML = `<tr><td colspan="6">Erreur lors du chargement des données: ${error.message}</td></tr>`;
+        });
+}
+
+    // Add repair form
     function addRepair() {
         if (currentAddForm) {
             currentAddForm.remove();
@@ -210,20 +897,33 @@
                     <h3>Ajouter une Réparation</h3>
                 </div>
                 <div class="form-body">
-                    <label>ID Vélo: <input type="text" id="addBikeId" placeholder="Ex: 001"></label>
-                    <label>Type: <input type="text" id="addBikeType" placeholder="Ex: Vélo de Ville"></label>
+                    <label>ID Vélo: 
+                        <input type="text" id="addBikeId" placeholder="Ex: 001">
+                        <span class="error-message" id="addBikeIdError"></span>
+                    </label>
+                    <label>Type: 
+                        <input type="text" id="addBikeType" placeholder="Ex: Vélo de Ville">
+                        <span class="error-message" id="addBikeTypeError"></span>
+                    </label>
                     <label>Pièce Utilisée: 
                         <select id="addStockId" class="stock-select" onchange="updateAddStatus()">
                             <option value="0" disabled selected>Sélectionner une pièce</option>
                             ${stockItems.map(item => `<option value="${item.id}" data-quantity="${item.quantity}">${escapeHTML(item.item_name)} (${item.category}, Stock: ${item.quantity})</option>`).join('')}
                         </select>
+                        <span class="error-message" id="addStockIdError"></span>
                     </label>
                     <label>Statut: 
                         <select id="addStatus">
                             <option value="En attente">En attente</option>
+                            <option value="En cours">En cours</option>
+                            <option value="Terminé">Terminé</option>
                         </select>
+                        <span class="error-message" id="addStatusError"></span>
                     </label>
-                    <label>Progression (%): <input type="number" id="addProgression" value="0" min="0" max="100"></label>
+                    <label>Progression (%): 
+                        <input type="number" id="addProgression" value="0" min="0" max="100" onchange="updateAddStatusOnProgression()">
+                        <span class="error-message" id="addProgressionError"></span>
+                    </label>
                 </div>
                 <div class="form-footer">
                     <button onclick="saveNewRepair()">Enregistrer</button>
@@ -238,44 +938,65 @@
     function updateAddStatus() {
         const stockSelect = document.getElementById('addStockId');
         const statusSelect = document.getElementById('addStatus');
-        const selectedOption = stockSelect.options[stockSelect.selectedIndex];
-        const quantity = selectedOption ? parseInt(selectedOption.getAttribute('data-quantity')) : 0;
+        const progression = parseInt(document.getElementById('addProgression').value);
 
-        statusSelect.innerHTML = quantity > 0
-            ? `
-                <option value="En cours">En cours</option>
-                <option value="Terminé">Terminé</option>
-            `
-            : `<option value="En attente">En attente</option>`;
+        if (progression === 100) {
+            statusSelect.innerHTML = `<option value="Terminé" selected>Terminé</option>`;
+            return;
+        }
+
+        statusSelect.innerHTML = `
+            <option value="En attente">En attente</option>
+            <option value="En cours">En cours</option>
+            <option value="Terminé">Terminé</option>
+        `;
+    }
+
+    function updateAddStatusOnProgression() {
+        updateAddStatus();
     }
 
     function saveNewRepair() {
         const bikeId = document.getElementById('addBikeId').value.trim();
         const bikeType = document.getElementById('addBikeType').value.trim();
         const stockId = parseInt(document.getElementById('addStockId').value);
-        const status = document.getElementById('addStatus').value;
+        let status = document.getElementById('addStatus').value;
         const progression = parseInt(document.getElementById('addProgression').value);
 
+        document.getElementById('addBikeIdError').textContent = '';
+        document.getElementById('addBikeTypeError').textContent = '';
+        document.getElementById('addStockIdError').textContent = '';
+        document.getElementById('addStatusError').textContent = '';
+        document.getElementById('addProgressionError').textContent = '';
+
+        let hasError = false;
+
         if (!bikeId.match(/^[a-zA-Z0-9-]+$/)) {
-            alert('L\'ID du vélo doit être alphanumérique');
-            return;
+            document.getElementById('addBikeIdError').textContent = 'L\'ID du vélo doit être alphanumérique';
+            hasError = true;
         }
         if (!bikeType || bikeType.length > 100) {
-            alert('Le type de vélo est requis et doit être inférieur à 100 caractères');
-            return;
+            document.getElementById('addBikeTypeError').textContent = 'Le type de vélo est requis et doit être inférieur à 100 caractères';
+            hasError = true;
         }
         if (stockId === 0) {
-            alert('Veuillez sélectionner une pièce');
-            return;
+            document.getElementById('addStockIdError').textContent = 'Veuillez sélectionner une pièce';
+            hasError = true;
         }
         if (!['En cours', 'En attente', 'Terminé'].includes(status)) {
-            alert('Statut invalide');
-            return;
+            document.getElementById('addStatusError').textContent = 'Statut invalide';
+            hasError = true;
         }
         if (isNaN(progression) || progression < 0 || progression > 100) {
-            alert('La progression doit être un nombre entre 0 et 100');
-            return;
+            document.getElementById('addProgressionError').textContent = 'La progression doit être un nombre entre 0 et 100';
+            hasError = true;
         }
+
+        if (progression === 100) {
+            status = 'Terminé';
+        }
+
+        if (hasError) return;
 
         const data = { bike_id: bikeId, bike_type: bikeType, status, progression, stock_id: stockId };
 
@@ -294,12 +1015,12 @@
                     currentAddForm = null;
                     fetchRepairs();
                 } else {
-                    alert('Erreur: ' + (data.error || 'Ajout échoué'));
+                    document.getElementById('add-form-container').insertAdjacentHTML('beforeend', `<span class="error-message">${escapeHTML(data.error || 'Ajout échoué')}</span>`);
                 }
             })
             .catch(error => {
                 console.error('Error adding repair:', error);
-                alert(`Erreur lors de l'ajout: ${error.message}`);
+                document.getElementById('add-form-container').insertAdjacentHTML('beforeend', `<span class="error-message">Erreur lors de l'ajout: ${escapeHTML(error.message)}</span>`);
             });
     }
 
@@ -323,14 +1044,16 @@
         const parentRow = button.closest('tr');
         if (!parentRow) {
             console.error('Parent row not found');
-            alert('Erreur: impossible de trouver la ligne parente');
+            const errorSpan = document.createElement('span');
+            errorSpan.className = 'error-message';
+            errorSpan.textContent = 'Erreur: impossible de trouver la ligne parente';
+            document.getElementById('add-form-container').appendChild(errorSpan);
             return;
         }
 
         fetchStock(() => {
             const editRow = document.createElement('tr');
             editRow.className = 'edit-tab';
-            const selectedStock = stockItems.find(item => item.id == stockId) || { quantity: 0 };
             editRow.innerHTML = `
                 <td colspan="6">
                     <div class="edit-form">
@@ -339,8 +1062,14 @@
                         </div>
                         <div class="form-body">
                             <input type="hidden" id="editId" value="${id}">
-                            <label>ID Vélo: <input type="text" id="editBikeId" value="${escapeHTML(bikeId)}"></label>
-                            <label>Type: <input type="text" id="editBikeType" value="${escapeHTML(bikeType)}"></label>
+                            <label>ID Vélo: 
+                                <input type="text" id="editBikeId" value="${escapeHTML(bikeId)}">
+                                <span class="error-message" id="editBikeIdError"></span>
+                            </label>
+                            <label>Type: 
+                                <input type="text" id="editBikeType" value="${escapeHTML(bikeType)}">
+                                <span class="error-message" id="editBikeTypeError"></span>
+                            </label>
                             <label>Pièce Utilisée: 
                                 <select id="editStockId" class="stock-select" onchange="updateEditStatus()">
                                     <option value="0" disabled>Sélectionner une pièce</option>
@@ -350,18 +1079,20 @@
                                         </option>
                                     `).join('')}
                                 </select>
+                                <span class="error-message" id="editStockIdError"></span>
                             </label>
                             <label>Statut: 
                                 <select id="editStatus">
-                                    ${selectedStock.quantity > 0
-                                        ? `
-                                            <option value="En cours" ${status === 'En cours' ? 'selected' : ''}>En cours</option>
-                                            <option value="Terminé" ${status === 'Terminé' ? 'selected' : ''}>Terminé</option>
-                                        `
-                                        : `<option value="En attente" selected>En attente</option>`}
+                                    <option value="En attente" ${status === 'En attente' ? 'selected' : ''}>En attente</option>
+                                    <option value="En cours" ${status === 'En cours' ? 'selected' : ''}>En cours</option>
+                                    <option value="Terminé" ${status === 'Terminé' ? 'selected' : ''}>Terminé</option>
                                 </select>
+                                <span class="error-message" id="editStatusError"></span>
                             </label>
-                            <label>Progression (%): <input type="number" id="editProgression" value="${progression}" min="0" max="100"></label>
+                            <label>Progression (%): 
+                                <input type="number" id="editProgression" value="${progression}" min="0" max="100" onchange="updateEditStatusOnProgression()">
+                                <span class="error-message" id="editProgressionError"></span>
+                            </label>
                         </div>
                         <div class="form-footer">
                             <button onclick="saveRepair()">Enregistrer</button>
@@ -372,21 +1103,28 @@
             `;
             parentRow.after(editRow);
             currentEditRow = editRow;
+            updateEditStatus();
         });
     }
 
     function updateEditStatus() {
-        const stockSelect = document.getElementById('editStockId');
         const statusSelect = document.getElementById('editStatus');
-        const selectedOption = stockSelect.options[stockSelect.selectedIndex];
-        const quantity = selectedOption ? parseInt(selectedOption.getAttribute('data-quantity')) : 0;
+        const progression = parseInt(document.getElementById('editProgression').value);
 
-        statusSelect.innerHTML = quantity > 0
-            ? `
-                <option value="En cours">En cours</option>
-                <option value="Terminé">Terminé</option>
-            `
-            : `<option value="En attente">En attente</option>`;
+        if (progression === 100) {
+            statusSelect.innerHTML = `<option value="Terminé" selected>Terminé</option>`;
+            return;
+        }
+
+        statusSelect.innerHTML = `
+            <option value="En attente">En attente</option>
+            <option value="En cours">En cours</option>
+            <option value="Terminé">Terminé</option>
+        `;
+    }
+
+    function updateEditStatusOnProgression() {
+        updateEditStatus();
     }
 
     function saveRepair() {
@@ -394,29 +1132,43 @@
         const bikeId = document.getElementById('editBikeId').value.trim();
         const bikeType = document.getElementById('editBikeType').value.trim();
         const stockId = parseInt(document.getElementById('editStockId').value);
-        const status = document.getElementById('editStatus').value;
+        let status = document.getElementById('editStatus').value;
         const progression = parseInt(document.getElementById('editProgression').value);
 
+        document.getElementById('editBikeIdError').textContent = '';
+        document.getElementById('editBikeTypeError').textContent = '';
+        document.getElementById('editStockIdError').textContent = '';
+        document.getElementById('editStatusError').textContent = '';
+        document.getElementById('editProgressionError').textContent = '';
+
+        let hasError = false;
+
         if (!bikeId.match(/^[a-zA-Z0-9-]+$/)) {
-            alert('L\'ID du vélo doit être alphanumérique');
-            return;
+            document.getElementById('editBikeIdError').textContent = 'L\'ID du vélo doit être alphanumérique';
+            hasError = true;
         }
         if (!bikeType || bikeType.length > 100) {
-            alert('Le type de vélo est requis et doit être inférieur à 100 caractères');
-            return;
+            document.getElementById('editBikeTypeError').textContent = 'Le type de vélo est requis et doit être inférieur à 100 caractères';
+            hasError = true;
         }
         if (stockId === 0) {
-            alert('Veuillez sélectionner une pièce');
-            return;
+            document.getElementById('editStockIdError').textContent = 'Veuillez sélectionner une pièce';
+            hasError = true;
         }
         if (!['En cours', 'En attente', 'Terminé'].includes(status)) {
-            alert('Statut invalide');
-            return;
+            document.getElementById('editStatusError').textContent = 'Statut invalide';
+            hasError = true;
         }
         if (isNaN(progression) || progression < 0 || progression > 100) {
-            alert('La progression doit être un nombre entre 0 et 100');
-            return;
+            document.getElementById('editProgressionError').textContent = 'La progression doit être un nombre entre 0 et 100';
+            hasError = true;
         }
+
+        if (progression === 100) {
+            status = 'Terminé';
+        }
+
+        if (hasError) return;
 
         const data = { id, bike_id: bikeId, bike_type: bikeType, status, progression, stock_id: stockId };
 
@@ -435,12 +1187,12 @@
                     currentEditRow = null;
                     fetchRepairs();
                 } else {
-                    alert('Erreur: ' + (data.error || 'Modification échouée'));
+                    currentEditRow.insertAdjacentHTML('beforeend', `<span class="error-message">${escapeHTML(data.error || 'Modification échouée')}</span>`);
                 }
             })
             .catch(error => {
                 console.error('Error updating repair:', error);
-                alert(`Erreur lors de la modification: ${error.message}`);
+                currentEditRow.insertAdjacentHTML('beforeend', `<span class="error-message">Erreur lors de la modification: ${escapeHTML(error.message)}</span>`);
             });
     }
 
@@ -466,18 +1218,335 @@
                     if (data.success) {
                         fetchRepairs();
                     } else {
-                        alert('Erreur: ' + (data.error || 'Suppression échouée'));
+                        const tbody = document.getElementById('repairs-table-body');
+                        tbody.insertAdjacentHTML('beforeend', `<tr><td colspan="6"><span class="error-message">${escapeHTML(data.error || 'Suppression échouée')}</span></td></tr>`);
                     }
                 })
                 .catch(error => {
                     console.error('Error deleting repair:', error);
-                    alert(`Erreur lors de la suppression: ${error.message}`);
+                    const tbody = document.getElementById('repairs-table-body');
+                    tbody.innerHTML = `<tr><td colspan="6"><span class="error-message">Erreur lors de la suppression: ${escapeHTML(error.message)}</span></tr>`;
                 });
         }
     }
 
-    // Load repairs on page load
-    fetchRepairs();
-    </script>
+    // Open Stock Export Modal
+    function openStockExportModal() {
+const modal = document.getElementById('stockExportModal');
+const exportList = document.getElementById('stockExportList');
+const exportError = document.getElementById('stockExportError');
+exportList.innerHTML = '';
+exportError.textContent = '';
+
+fetch('api/get_stock.php')
+    .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+    })
+    .then(data => {
+        if (data.error) throw new Error(data.error);
+        if (!Array.isArray(data)) throw new Error('Expected an array of stock items');
+
+        if (data.length === 0) {
+            exportList.innerHTML = '<p>Aucun article en stock</p>';
+            modal.style.display = 'flex';
+            return;
+        }
+
+        // Calculate total quantity
+        const totalQuantity = data.reduce((sum, item) => sum + parseInt(item.quantity), 0);
+
+        // Generate checkbox list with percentage
+        data.forEach(item => {
+            const percentage = totalQuantity > 0 ? ((parseInt(item.quantity) / totalQuantity) * 100).toFixed(2) : '0.00';
+            const label = document.createElement('label');
+            label.innerHTML = `
+                <input type="checkbox" name="stockExport" value="${item.id}">
+                ${escapeHTML(item.item_name)} (${escapeHTML(item.category)}, Stock: ${item.quantity}, ${percentage}%)
+            `;
+            exportList.appendChild(label);
+        });
+
+        modal.style.display = 'flex';
+    })
+    .catch(error => {
+        console.error('Error fetching stock for export:', error);
+        exportError.textContent = `Erreur lors du chargement des articles: ${error.message}`;
+    });
+
+}
+        // Close Stock Export Modal
+        function closeStockExportModal() {
+            document.getElementById('stockExportModal').style.display = 'none';
+        }
+
+    // Export Stock to PDF
+    function exportStockToPDF() {
+const checkboxes = document.querySelectorAll('#stockExportList input[name="stockExport"]:checked');
+const exportError = document.getElementById('stockExportError');
+
+if (checkboxes.length === 0) {
+    exportError.textContent = 'Veuillez sélectionner au moins un article';
+    return;
+}
+
+const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+fetch('api/get_stock.php')
+    .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+    })
+    .then(data => {
+        if (data.error) throw new Error(data.error);
+        if (!Array.isArray(data)) throw new Error('Expected an array of stock items');
+
+        const selectedItems = data.filter(item => selectedIds.includes(parseInt(item.id)));
+
+        if (selectedItems.length === 0) {
+            exportError.textContent = 'Aucun article sélectionné correspond aux données disponibles';
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        let yOffset = 20;
+
+        // Add logo
+        const logoWidth = 50;
+        const logoHeight = 20;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const logoX = (pageWidth - logoWidth) / 2;
+        try {
+            doc.addImage('image/logo.png', 'PNG', logoX, yOffset, logoWidth, logoHeight);
+            yOffset += logoHeight + 10;
+        } catch (error) {
+            console.error('Error adding logo:', error);
+            doc.text('Erreur: Logo non chargé', logoX, yOffset);
+            yOffset += 10;
+        }
+
+        // Add stock table
+        doc.setFontSize(14);
+        doc.text('Stock Sélectionné', 20, yOffset);
+        yOffset += 10;
+
+        const stockTable = selectedItems.map(item => [
+            item.id.toString(),
+            item.item_name || 'N/A',
+            item.category || 'N/A',
+            item.quantity.toString()
+        ]);
+
+        doc.autoTable({
+            startY: yOffset,
+            head: [['ID', 'Nom de l\'Article', 'Catégorie', 'Quantité']],
+            body: stockTable,
+            theme: 'striped',
+            headStyles: { fillColor: [46, 125, 50] },
+            margin: { top: 10 }
+        });
+
+        // Add signature
+        const pageHeight = doc.internal.pageSize.getHeight();
+        doc.setFontSize(12);
+        doc.text('Signature: ________________', pageWidth - 60, pageHeight - 20);
+
+        // Save PDF
+        doc.save('GreenTN_Stock_Export.pdf');
+        closeStockExportModal();
+    })
+    .catch(error => {
+        console.error('Error exporting stock to PDF:', error);
+        exportError.textContent = `Erreur lors de l'exportation: ${error.message}`;
+    });
+
+}
+        // Open Repairs Export Modal
+        function openRepairsExportModal() {
+            const modal = document.getElementById('repairsExportModal');
+            const exportList = document.getElementById('repairsExportList');
+            const exportError = document.getElementById('repairsExportError');
+            exportError.textContent = '';
+            exportList.innerHTML = '';
+
+        fetch('api/get_repairs.php')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                if (!Array.isArray(data)) throw new Error('Expected an array of repairs');
+
+                if (data.length === 0) {
+                    exportList.innerHTML = '<p class="no-data">Aucune réparation trouvée</p>';
+                    modal.style.display = 'flex';
+                    return;
+                }
+
+                data.forEach(repair => {
+                    const statusClass = repair.status.toLowerCase().replace(' ', '-') || 'en-cours';
+                    const repairId = String(repair.id);
+                    const item = document.createElement('label');
+                    item.innerHTML = `
+                        <input type="checkbox" id="export-repair-${repairId}">
+                        ${escapeHTML(repair.bike_id)} - ${escapeHTML(repair.bike_type)} 
+                        (<span class="status ${statusClass}">${escapeHTML(repair.status)}</span>, ${repair.progression}%)
+                    `;
+                    exportList.appendChild(item);
+                });
+
+                modal.style.display = 'flex';
+            })
+            .catch(error => {
+                console.error('Error fetching repairs for export:', error);
+                exportError.textContent = `Erreur lors du chargement des données: ${error.message}`;
+                exportList.innerHTML = '';
+                modal.style.display = 'flex';
+            });
+    }
+
+    // Close Repairs Export Modal
+    function closeRepairsExportModal() {
+        document.getElementById('repairsExportModal').style.display = 'none';
+    }
+
+    // Export Repairs to PDF
+    function exportRepairsToPDF() {
+        fetch('api/get_repairs.php')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                if (!Array.isArray(data)) throw new Error('Expected an array of repairs');
+
+                const selectedRepairs = data.filter(repair => {
+                    const repairId = String(repair.id);
+                    const checkbox = document.getElementById(`export-repair-${repairId}`);
+                    return checkbox && checkbox.checked;
+                });
+
+                if (selectedRepairs.length === 0) {
+                    document.getElementById('repairsExportError').textContent = 'Veuillez sélectionner au moins une réparation';
+                    return;
+                }
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const margin = 10;
+                let yPosition = 20;
+
+                // Add logo
+                const logoImg = new Image();
+                logoImg.src = 'image/logo.png';
+                doc.addImage(logoImg, 'PNG', margin, yPosition, 30, 30);
+                yPosition += 40;
+
+                // Add title
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Rapport des Réparations', pageWidth / 2, yPosition, { align: 'center' });
+                yPosition += 10;
+
+                // Add export date
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+                const exportDate = new Date().toLocaleDateString('fr-FR');
+                doc.text(`Exporté le: ${exportDate}`, pageWidth - margin, yPosition, { align: 'right' });
+                yPosition += 10;
+
+                // Prepare table data
+                const tableData = selectedRepairs.map(repair => [
+                    repair.bike_id,
+                    repair.bike_type,
+                    repair.stock_item_name || 'Aucune',
+                    repair.status,
+                    `${repair.progression}%`
+                ]);
+
+                // Add table
+                doc.autoTable({
+                    startY: yPosition,
+                    head: [['ID', 'Type', 'Pièce Utilisée', 'Statut', 'Progression']],
+                    body: tableData,
+                    theme: 'striped',
+                    styles: { fontSize: 10 },
+                    headStyles: { fillColor: [46, 125, 50] },
+                    margin: { left: margin, right: margin }
+                });
+
+                // Save PDF
+                doc.save('repairs-report.pdf');
+                closeRepairsExportModal();
+            })
+            .catch(error => {
+                console.error('Error exporting repairs to PDF:', error);
+                document.getElementById('repairsExportError').textContent = `Erreur lors de l'exportation: ${error.message}`;
+            });
+    }
+
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const main = document.getElementById('main');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+
+        // Sidebar toggle
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('show');
+        });
+
+        // Handle responsive behavior
+        function handleResize() {
+            if (window.innerWidth <= 992) {
+                sidebar.classList.remove('show');
+                main.classList.remove('main-content-expanded');
+            } else {
+                sidebar.classList.add('show');
+                main.classList.add('main-content-expanded');
+            }
+        }
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+
+        // Section navigation
+        const navLinks = document.querySelectorAll('.sidebar-nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const sectionId = this.getAttribute('data-section');
+                showSection(sectionId);
+
+                // Load data for the section
+                if (sectionId === 'stock') {
+                    fetchStockItems();
+                } else if (sectionId === 'repairs') {
+                    fetchRepairs();
+                } else if (sectionId === 'dashboard') {
+                    loadStockStats();
+                    loadRepairsStats();
+                }
+            });
+        });
+
+        // Initial load: show Dashboard and load charts
+        showSection('dashboard');
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0';
+        script.onload = () => {
+            Chart.register(ChartDataLabels);
+            loadStockStats();
+            loadRepairsStats();
+        };
+        document.head.appendChild(script);
+    });
+</script>
+
 </body>
 </html>
+
