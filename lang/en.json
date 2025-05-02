@@ -53,7 +53,9 @@
     "open": "Open",
     "in_progress": "In Progress",
     "resolved": "Resolved",
+
     "no_reviews": "No reviews available.",
+
     "search": "Search",
     "clear": "Clear",
     "no_reclamations": "You have not submitted any reclamations yet.",
@@ -115,21 +117,23 @@
     "submit_another_review": "submit another review",
     "my_reviews": "My Reviews",
     "submitted_by": "Submitted by",
+
     "previous": "Previous",
     "next": "Next",
     "page": "Page",
     "notifications": "Notifications",
-  "error_database_notifications": "Error fetching notifications. Please try again later.",
-  "no_notifications": "No notifications available.",
+"error_database_notifications": "Error fetching notifications. Please try again later.",
+"no_notifications": "No notifications available.",
 "average_rating": "Average Rating",
 "admin_responded": "The admin has responded to your reclamation",
-  "notification_deleted": "Notification deleted successfully.",
-  "error_deleting_notification": "Error deleting the notification.",
-  "chatbot": "Chatbot",
+"notification_deleted": "Notification deleted successfully.",
+"error_deleting_notification": "Error deleting the notification.",
+"chatbot": "Chatbot",
 "ask_chatbot": "Ask the chatbot a question",
 "chatbot_response": "Chatbot Response",
 "error_chatbot": "Sorry, an error occurred. Please try again.",
 "send": "Send"
+
 
 
 

@@ -313,7 +313,9 @@ if (!$pdo) {
                     <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
                     <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+
                     <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
+
 
                 </ul>
             </nav>
@@ -359,7 +361,9 @@ if (!$pdo) {
                     <li><a href="#contact"><?php echo t('contact'); ?></a></li>
                     <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+
                     <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
+
                 </ul>
             </div>
             <div class="footer-section">

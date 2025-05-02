@@ -464,6 +464,7 @@ $pageTitle = t('my_reviews');
                     <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
                     <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
                     <?php if ($isAdmin): ?>
                         <li><a href="liste_avis.php"><?php echo t('view_reviews'); ?></a></li>
                     <?php endif; ?>
@@ -557,6 +558,7 @@ $pageTitle = t('my_reviews');
                     <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
                     <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
                     <?php if ($isAdmin): ?>
                         <li><a href="liste_avis.php"><?php echo t('view_reviews'); ?></a></li>
                     <?php endif; ?>

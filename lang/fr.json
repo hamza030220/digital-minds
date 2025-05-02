@@ -123,6 +123,7 @@
      "delete_error": "Erreur lors de la suppression de l'avis.",
  "average_rating": "Note moyenne",
 
+
  "previous": "Précédent",
     "next": "Suivant",
     "page": "Page",
@@ -139,7 +140,8 @@
 "send": "Envoyer",
   "error_deleting_notification": "Erreur lors de la suppression de la notification."
 
- 
+
+
  
 
 
