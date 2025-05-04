@@ -341,6 +341,9 @@ try {
                     <?php endif; ?>
                 </section>
                 <div id="stations-pagination" style="text-align:center; margin-top:15px;"></div>
+                <div style="text-align:center; margin-top:10px;"></div>
+
+                </div>
             </section>
         </section>
 
@@ -462,6 +465,8 @@ try {
             .addTo(routeLayer)
             .bindPopup(stationName || "Station Location")
             .openPopup();
+            // Correction : forcer le recalcul de la taille de la carte après affichage
+            setTimeout(function() { if(map && map.invalidateSize) map.invalidateSize(); }, 200);
             return true;
         } catch (error) {
             console.error("Station Map Error:", { error: error.message, location: location, station: stationName });
@@ -628,8 +633,6 @@ try {
         const totalStations = stationButtons.length;
         const totalPages = Math.ceil(totalStations / stationsPerPage);
 
-        // ... existing station pagination code ...
-
         // --- Pagination for trajets ---
         const trajetsPerPage = 3;
         const trajetCards = document.querySelectorAll('.trajet-card');
@@ -686,8 +689,9 @@ try {
             });
         });
         */
+
             
             </script>
         </body>
         </html>
-
+   

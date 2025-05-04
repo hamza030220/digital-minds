@@ -163,115 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Axios for making HTTP requests -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
-    <style>
-        body {
-            background: #f4f6f9;
-        }
-        .breadcrumb {
-            background: none;
-            padding: 0;
-            margin-bottom: 1rem;
-        }
-        .card {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-        }
-        #map {
-            height: 500px;
-            width: 100%;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border: 2px solid #60BA97;
-        }
-        .map-instructions {
-            margin-bottom: 10px;
-            padding: 12px 18px;
-            background-color: #eafaf3;
-            border-radius: 6px;
-            border-left: 5px solid #60BA97;
-            font-size: 1rem;
-        }
-        .coords-preview {
-            font-family: monospace;
-            font-size: 0.9em;
-            color: #6c757d;
-            max-height: 100px;
-            overflow-y: auto;
-        }
-        .map-control-buttons {
-            margin-bottom: 15px;
-            display: flex;
-            gap: 12px;
-        }
-        .map-control-buttons button {
-            padding: 10px 20px;
-            border-radius: 6px;
-            border: 1px solid #dee2e6;
-            background-color: #f8f9fa;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-        }
-        .map-control-buttons button.active, .map-control-buttons button:hover {
-            background-color: #60BA97;
-            color: white;
-            border-color: #60BA97;
-        }
-        .marker-info {
-            margin-top: 5px;
-            font-size: 0.95em;
-            color: #198754;
-        }
-        .form-label {
-            font-weight: 500;
-        }
-        .form-text {
-            font-size: 0.95em;
-        }
-        .alert {
-            font-size: 1.05em;
-        }
-        .section-title {
-            font-size: 1.15em;
-            font-weight: 600;
-            color: #198754;
-            margin-bottom: 0.5em;
-        }
-        .colored-field:read-only {
-            background: #fff;
-            font-weight: bold;
-            border-width: 2.5px;
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.25rem;
-            font-size: 1.15em;
-            box-shadow: none;
-            transition: box-shadow 0.2s, border-color 0.2s;
-        }
-        .border-co2:read-only {
-            border-color: #ffe066 !important;
-            box-shadow: 0 2px 8px 0 #ffe06633;
-        }
-        .border-battery:read-only {
-            border-color: #63c2de !important;
-            box-shadow: 0 2px 8px 0 #63c2de33;
-        }
-        .border-fuel:read-only {
-            border-color: #ff6f6f !important;
-            box-shadow: 0 2px 8px 0 #ff6f6f33;
-        }
-        .colored-field.bg-warning:read-only {
-            background: linear-gradient(90deg, #fffbe6 60%, #ffe066 100%);
-            color: #856404;
-        }
-        .colored-field.bg-info:read-only {
-            background: linear-gradient(90deg, #e3f6fd 60%, #63c2de 100%);
-            color: #0c5460;
-        }
-        .colored-field.bg-danger:read-only {
-            background: linear-gradient(90deg, #ffeaea 60%, #ff6f6f 100%);
-            color: #721c24;
-        }
-    </style>
+    <link href="../assets/css/add_trajet.css" rel="stylesheet">
 </head>
 
 <body>
@@ -303,8 +195,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label for="description" class="form-label">Titre du trajet</label>
-                                    <input type="text" class="form-control" id="description" name="description" 
-                                           value="<?php echo htmlspecialchars($description); ?>">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="description" name="description" 
+                                               value="<?php echo htmlspecialchars($description); ?>">
+
+                                    </div>
                                     <div class="form-text">Exemple: "Trajet Plage - Centre-ville"</div>
                                 </div>
                                 <div class="col-md-6">
@@ -362,7 +257,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="section-title"><i class="bi bi-map"></i> Tracer l'itinéraire</div>
                             <div class="mb-3">
                                 <label for="route_description" class="form-label">Description détaillée du trajet</label>
-                                <textarea class="form-control" id="route_description" name="route_description" rows="4" required><?php echo htmlspecialchars($route_description); ?></textarea>
+                                <div class="input-group mb-2">
+                                    <textarea class="form-control" id="route_description" name="route_description" rows="4" required><?php echo htmlspecialchars($route_description); ?></textarea>
+                                    <button type="button" class="btn btn-outline-primary" id="generate_ai_route_btn" title="Générer la description détaillée par IA">
+                                        <i class="bi bi-robot"></i>
+                                    </button>
+                                </div>
                                 <div class="form-text">Détaillez le parcours, les points d'intérêt, difficultés, etc.</div>
                             </div>
                             <div class="mb-1">
@@ -405,7 +305,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../assets/js/sidebar.js"></script>
     <script src="../assets/js/scripts_trajets_add.js"></script>
-    
+    <script>
+document.getElementById('generate_ai_route_btn').addEventListener('click', function() {
+    const startName = document.getElementById('start_point_name').value;
+    const endName = document.getElementById('end_point_name').value;
+    const routeCoords = document.getElementById('route_coordinates').value;
+
+    if (!startName || !endName || !routeCoords) {
+        alert('Veuillez d\'abord renseigner le point de départ, d\'arrivée et tracer l\'itinéraire.');
+        return;
+    }
+
+    try {
+        const fallbacks = [
+            `Ce trajet entre ${startName} et ${endName} met en avant la mobilité durable. Parcourez des paysages naturels, découvrez des points d'intérêt locaux et profitez d'un itinéraire respectueux de l'environnement.`,
+            `Découvrez un itinéraire écologique reliant ${startName} à ${endName}, ponctué de paysages remarquables et d'initiatives vertes.`,
+            `Ce parcours entre ${startName} et ${endName} valorise la nature, la biodiversité et la mobilité douce.`,
+            `Voyagez de ${startName} à ${endName} en empruntant un itinéraire pensé pour minimiser l'empreinte carbone et maximiser la découverte.`,
+            `Entre ${startName} et ${endName}, ce trajet propose une expérience immersive au cœur de la nature et des solutions de mobilité verte.`,
+            `L'itinéraire entre ${startName} et ${endName} traverse des zones naturelles protégées et met en lumière les efforts locaux pour la durabilité.`,
+            `Ce trajet relie ${startName} à ${endName} en passant par des paysages variés, des espaces verts et des initiatives écologiques.`,
+            `De ${startName} à ${endName}, profitez d'un parcours où chaque kilomètre favorise la préservation de l'environnement.`,
+            `Laissez-vous guider de ${startName} à ${endName} sur un chemin où la mobilité douce et la découverte de la biodiversité sont à l'honneur.`,
+            `Ce trajet entre ${startName} et ${endName} est conçu pour sensibiliser à l'écologie tout en offrant une expérience agréable et enrichissante.`,
+            `Partez de ${startName} vers ${endName} en explorant des sentiers pittoresques et des initiatives écologiques locales.`,
+            `L'itinéraire reliant ${startName} à ${endName} favorise la découverte de la faune et de la flore régionales.`,
+            `Ce trajet de ${startName} à ${endName} met l'accent sur la mobilité verte et la préservation des espaces naturels.`,
+            `Découvrez la beauté naturelle entre ${startName} et ${endName} à travers un parcours respectueux de l'environnement.`,
+            `De ${startName} à ${endName}, ce trajet vous invite à adopter une démarche écoresponsable tout en profitant du paysage.`,
+            `Laissez-vous surprendre par la diversité des paysages entre ${startName} et ${endName}, tout en réduisant votre empreinte carbone.`,
+            `Ce parcours entre ${startName} et ${endName} est idéal pour les amateurs de nature et de mobilité douce.`,
+            `Voyagez de façon durable entre ${startName} et ${endName} grâce à cet itinéraire pensé pour l'écologie.`,
+            `Entre ${startName} et ${endName}, profitez d'un trajet ponctué de points d'intérêt naturels et d'initiatives vertes.`,
+            `Ce trajet relie ${startName} à ${endName} en mettant en avant la protection de l'environnement et la découverte locale.`
+        ];
+
+        // Sélection aléatoire d'une description
+        const randomIndex = Math.floor(Math.random() * fallbacks.length);
+        const generated = fallbacks[randomIndex];
+        document.getElementById('route_description').value = generated;
+    } catch (error) {
+        console.error('Erreur lors de la génération IA :', error);
+        // Vous pouvez afficher un message plus discret ou ne rien afficher
+    }
+});
+</script>
 </body>
 </html>
 

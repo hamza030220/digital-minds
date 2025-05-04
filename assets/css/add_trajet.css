@@ -1,0 +1,107 @@
+body {
+    background: #f4f6f9;
+}
+.breadcrumb {
+    background: none;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+.card {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+#map {
+    height: 500px;
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 2px solid #60BA97;
+}
+.map-instructions {
+    margin-bottom: 10px;
+    padding: 12px 18px;
+    background-color: #eafaf3;
+    border-radius: 6px;
+    border-left: 5px solid #60BA97;
+    font-size: 1rem;
+}
+.coords-preview {
+    font-family: monospace;
+    font-size: 0.9em;
+    color: #6c757d;
+    max-height: 100px;
+    overflow-y: auto;
+}
+.map-control-buttons {
+    margin-bottom: 15px;
+    display: flex;
+    gap: 12px;
+}
+.map-control-buttons button {
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+.map-control-buttons button.active, .map-control-buttons button:hover {
+    background-color: #60BA97;
+    color: white;
+    border-color: #60BA97;
+}
+.marker-info {
+    margin-top: 5px;
+    font-size: 0.95em;
+    color: #198754;
+}
+.form-label {
+    font-weight: 500;
+}
+.form-text {
+    font-size: 0.95em;
+}
+.alert {
+    font-size: 1.05em;
+}
+.section-title {
+    font-size: 1.15em;
+    font-weight: 600;
+    color: #198754;
+    margin-bottom: 0.5em;
+}
+.colored-field:read-only {
+    background: #fff;
+    font-weight: bold;
+    border-width: 2.5px;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.25rem;
+    font-size: 1.15em;
+    box-shadow: none;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+.border-co2:read-only {
+    border-color: #ffe066 !important;
+    box-shadow: 0 2px 8px 0 #ffe06633;
+}
+.border-battery:read-only {
+    border-color: #63c2de !important;
+    box-shadow: 0 2px 8px 0 #63c2de33;
+}
+.border-fuel:read-only {
+    border-color: #ff6f6f !important;
+    box-shadow: 0 2px 8px 0 #ff6f6f33;
+}
+.colored-field.bg-warning:read-only {
+    background: linear-gradient(90deg, #fffbe6 60%, #ffe066 100%);
+    color: #856404;
+}
+.colored-field.bg-info:read-only {
+    background: linear-gradient(90deg, #e3f6fd 60%, #63c2de 100%);
+    color: #0c5460;
+}
+.colored-field.bg-danger:read-only {
+    background: linear-gradient(90deg, #ffeaea 60%, #ff6f6f 100%);
+    color: #721c24;
+}

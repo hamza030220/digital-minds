@@ -79,10 +79,58 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.setFontSize(10);
             doc.setTextColor(150);
             doc.text('Green Admin - Export PDF', pageWidth / 2, pageHeight - 5, { align: 'center' });
-            doc.save('stations.pdf');
+            // Génération du QR code avec les données des stations sélectionnées
+            const qrData = selectedRows.map(row => headers.map((h, i) => h+': '+row[i]).join(' | ')).join('\n');
+            const qrCanvas = document.createElement('canvas');
+            new QRCode(qrCanvas, {
+                text: qrData,
+                width: 120,
+                height: 120,
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            // Convertir le canvas QR en image base64
+            setTimeout(function() {
+                const qrImgData = qrCanvas.toDataURL('image/png');
+                // Ajouter le QR code en bas du PDF
+                doc.addImage(qrImgData, 'PNG', pageWidth/2-30, pageHeight-140, 60, 60);
+                doc.save('stations.pdf');
+            }, 300);
         };
         img.onerror = function() {
             alert("Logo introuvable ou erreur de chargement.");
         };
     });
+
+
 });
+
+// Fonction de tri pour le tableau des stations
+function sortStationsTable(colIndex, type) {
+    const table = document.getElementById('stationsFullTable');
+    const tbody = table.tBodies[0];
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    let asc = table.getAttribute('data-sort-dir'+colIndex) !== 'asc';
+    rows.sort((a, b) => {
+        let aText = a.children[colIndex].textContent.trim();
+        let bText = b.children[colIndex].textContent.trim();
+        if (type === 'float') {
+            aText = parseFloat(aText.replace(',', '.')) || 0;
+            bText = parseFloat(bText.replace(',', '.')) || 0;
+        } else {
+            aText = aText.toLowerCase();
+            bText = bText.toLowerCase();
+        }
+        if (aText < bText) return asc ? -1 : 1;
+        if (aText > bText) return asc ? 1 : -1;
+        return 0;
+    });
+    rows.forEach(row => tbody.appendChild(row));
+    table.setAttribute('data-sort-dir'+colIndex, asc ? 'asc' : 'desc');
+}
+// Liaison des boutons de tri
+const sortByNameBtn = document.getElementById('sortByName');
+const sortByLocationBtn = document.getElementById('sortByLocation');
+const sortByStatusBtn = document.getElementById('sortByStatus');
+if (sortByNameBtn) sortByNameBtn.addEventListener('click', function(e) { e.preventDefault(); sortStationsTable(1, 'string'); });
+if (sortByLocationBtn) sortByLocationBtn.addEventListener('click', function(e) { e.preventDefault(); sortStationsTable(2, 'string'); });
+if (sortByStatusBtn) sortByStatusBtn.addEventListener('click', function(e) { e.preventDefault(); sortStationsTable(3, 'string'); });

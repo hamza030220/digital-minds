@@ -204,6 +204,7 @@ try {
                                 </tbody>
                             </table>
                         </div>
+                        <div id="modalTrajetsPaginationControls" class="d-flex justify-content-center mt-3"></div>
                     </div>
                 </div>
             </div>
@@ -218,7 +219,7 @@ try {
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-hover" id="mainTrajetsTable">
-                            <thead>
+                        <thead>
                             <tr>
                                 <th>ID</th>
                                 <th>Description</th>
@@ -257,12 +258,13 @@ try {
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="7" class="text-center">Aucun trajet trouvé</td>
+                                    <td colspan="10" class="text-center">Aucun trajet trouvé</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
+                <div id="trajetsPaginationControls" class="d-flex justify-content-center mt-3"></div>
             </div>
         </div>
     </div>
@@ -549,6 +551,132 @@ try {
         }
     });
     </script>
+    <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const rowsPerPageModal = 5; // Nombre de lignes par page dans le modal
+    const modalTableBody = document.querySelector('#trajetsFullTable tbody');
+    const modalRows = Array.from(modalTableBody.querySelectorAll('tr'));
+    const modalPaginationControls = document.getElementById('modalTrajetsPaginationControls');
+
+    function displayModalPage(page) {
+        const start = (page - 1) * rowsPerPageModal;
+        const end = start + rowsPerPageModal;
+
+        modalRows.forEach((row, index) => {
+            row.style.display = index >= start && index < end ? '' : 'none';
+        });
+    }
+
+    function setupModalPagination() {
+        const totalPages = Math.ceil(modalRows.length / rowsPerPageModal);
+        modalPaginationControls.innerHTML = '';
+
+        for (let i = 1; i <= totalPages; i++) {
+            const button = document.createElement('button');
+            button.textContent = i;
+            button.className = 'stations-pagination-btn'; // Réutilisation du style des boutons
+            button.addEventListener('click', () => {
+                displayModalPage(i);
+                document.querySelectorAll('#modalTrajetsPaginationControls button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+            });
+
+            if (i === 1) button.classList.add('active'); // Activer le premier bouton par défaut
+            modalPaginationControls.appendChild(button);
+        }
+    }
+
+    // Initialisation
+    if (modalRows.length > 0) {
+        displayModalPage(1);
+        setupModalPagination();
+    }
+});
+</script>
+    <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const rowsPerPage = 4; // Nombre de lignes par page
+    const tableBody = document.querySelector('#mainTrajetsTable tbody');
+    const rows = Array.from(tableBody.querySelectorAll('tr'));
+    const paginationControls = document.getElementById('trajetsPaginationControls');
+
+    function displayPage(page) {
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+
+        rows.forEach((row, index) => {
+            row.style.display = index >= start && index < end ? '' : 'none';
+        });
+    }
+
+    function setupPagination() {
+        const totalPages = Math.ceil(rows.length / rowsPerPage);
+        paginationControls.innerHTML = '';
+
+        for (let i = 1; i <= totalPages; i++) {
+            const button = document.createElement('button');
+            button.textContent = i;
+            button.className = 'stations-pagination-btn'; // Réutilisation du style des boutons
+            button.addEventListener('click', () => {
+                displayPage(i);
+                document.querySelectorAll('#trajetsPaginationControls button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+            });
+
+            if (i === 1) button.classList.add('active'); // Activer le premier bouton par défaut
+            paginationControls.appendChild(button);
+        }
+    }
+
+    // Initialisation
+    if (rows.length > 0) {
+        displayPage(1);
+        setupPagination();
+    }
+});
+</script>
+<style>
+    .stations-pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin: 0 4px;
+    border-radius: 50%;
+    border: none;
+    background: #fff;
+    color: #3a9856;
+    font-weight: bold;
+    font-size: 18px;
+    box-shadow: 0 2px 6px rgba(58, 152, 86, 0.08);
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s, transform 0.2s cubic-bezier(.4, 2, .6, 1);
+    outline: none;
+}
+
+.stations-pagination-btn.active,
+.stations-pagination-btn:focus {
+    background: #3a9856;
+    color: #fff;
+}
+
+.stations-pagination-btn:hover:not(:disabled) {
+    background: #3a9856;
+    color: #fff;
+    transform: scale(1.18) rotate(-6deg);
+    box-shadow: 0 4px 16px rgba(58, 152, 86, 0.18);
+}
+
+.stations-pagination-btn:disabled {
+    background: #e0e0e0;
+    color: #bdbdbd;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+
+</style>
 </div>
 </body>
 </html>

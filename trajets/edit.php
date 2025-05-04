@@ -154,51 +154,9 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 <!-- Axios for making HTTP requests -->
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
-<style>
-    #map {
-        height: 500px;
-        width: 100%;
-        border-radius: 5px;
-        margin-bottom: 15px;
-    }
-    .map-instructions {
-        margin-bottom: 10px;
-        padding: 10px;
-        background-color: #f8f9fa;
-        border-radius: 5px;
-        border-left: 4px solid #60BA97;
-    }
-    .coords-preview {
-        font-family: monospace;
-        font-size: 0.8em;
-        color: #6c757d;
-        max-height: 100px;
-        overflow-y: auto;
-    }
-    .map-control-buttons {
-        margin-bottom: 15px;
-        display: flex;
-        gap: 10px;
-    }
-    .map-control-buttons button {
-        padding: 8px 15px;
-        border-radius: 5px;
-        border: 1px solid #dee2e6;
-        background-color: #f8f9fa;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    .map-control-buttons button.active {
-        background-color: #60BA97;
-        color: white;
-        border-color: #60BA97;
-    }
-    .marker-info {
-        margin-top: 5px;
-        font-size: 0.9em;
-        color: #6c757d;
-    }
-</style>
+<link href="../assets/css/edit_trajet.css" rel="stylesheet">
+
+   
 </head>
 <body>
     <?php
@@ -338,29 +296,6 @@ $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
 <style>
 
-.colored-field:read-only {
-    background: #fff;
-    font-weight: bold;
-    border-width: 2.5px;
-    border-radius: 0.75rem;
-    padding: 0.75rem 1rem;
-    margin-bottom: 0.25rem;
-    font-size: 1.15em;
-    box-shadow: none;
-    transition: box-shadow 0.2s, border-color 0.2s;
-}
-.border-co2:read-only {
-    border-color: #ffe066 !important;
-    box-shadow: 0 2px 8px 0 #ffe06633;
-}
-.border-battery:read-only {
-    border-color: #63c2de !important;
-    box-shadow: 0 2px 8px 0 #63c2de33;
-}
-.border-fuel:read-only {
-    border-color: #ff6f6f !important;
-    box-shadow: 0 2px 8px 0 #ff6f6f33;
-}
 
 </style>
   

@@ -13,7 +13,7 @@ async function getReverseGeocode(latlng, fieldName) {
     const result = response.data;
     document.getElementById(fieldName).value = result.display_name;
   } catch (error) {
-    console.error('Error fetching reverse geocode data:', error);
+    // Suppression du message d'erreur pour rester silencieux
   }
 }
 
@@ -220,3 +220,46 @@ document.getElementById('distance').addEventListener('input', function() {
     document.getElementById('battery_energy').value = distance > 0 ? (distance * 5.6).toFixed(2) : '';
     document.getElementById('fuel_saved').value = distance > 0 ? (distance * 0.075).toFixed(3) : '';
 });
+/*document.getElementById('generate_ai_route_btn').addEventListener('click', async function() {
+    const startName = document.getElementById('start_point_name') ? document.getElementById('start_point_name').value : '';
+    const endName = document.getElementById('end_point_name') ? document.getElementById('end_point_name').value : '';
+    let routeCoords = '';
+    if (document.getElementById('route_coordinates')) {
+        routeCoords = document.getElementById('route_coordinates').value;
+    }
+    if (!startName || !endName || !routeCoords) {
+        // alert('Veuillez d\'abord renseigner le point de départ, le point d\'arrivée et tracer l\'itinéraire sur la carte.');
+        return;
+    }
+
+    const prompt = `Décris un trajet écologique entre "${startName}" et "${endName}" en te basant sur le parcours suivant (coordonnées): ${routeCoords}. Mets en avant les points d'intérêt, la nature, et l'aspect durable du trajet.`;
+
+    try {
+        const response = await fetch('https://api-inference.huggingface.co/models/bigscience/bloom-560m', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // Pas de clé API pour les modèles publics gratuits
+            },
+            body: JSON.stringify({ inputs: prompt })
+        });
+
+
+        const data = await response.json();
+        let generated = '';
+        if (Array.isArray(data)) {
+            generated = data[0]?.generated_text || '';
+        } else if (data.generated_text) {
+            generated = data.generated_text;
+        }
+
+        if (generated) {
+            document.getElementById('route_description').value = generated.replace(prompt, '').trim();
+        } else {
+            // alert('La génération IA n\'a pas retourné de résultat.');
+        }
+    } catch (error) {
+        // suppression complète de l'alerte en cas d'erreur
+    }
+});
+*/
