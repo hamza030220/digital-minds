@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1
--- Généré le : ven. 18 avr. 2025 à 10:35
+-- Généré le : dim. 04 mai 2025 à 14:16
 -- Version du serveur : 10.4.32-MariaDB
 -- Version de PHP : 8.0.30
 
@@ -70,17 +70,27 @@ CREATE TABLE `stations` (
   `location` varchar(255) NOT NULL,
   `status` enum('active','inactive') DEFAULT 'active',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `city` varchar(100) DEFAULT NULL,
+  `admin_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Déchargement des données de la table `stations`
 --
 
-INSERT INTO `stations` (`id`, `name`, `location`, `status`, `created_at`, `updated_at`) VALUES
-(8, 'naaa le s', '36.820279,10.185099', 'active', '2025-04-17 17:52:14', '2025-04-17 17:52:14'),
-(9, 'le z en personne', '36.811484,10.135660', 'active', '2025-04-17 17:59:03', '2025-04-17 17:59:03'),
-(10, '😂😂😂', '36.818149,10.173469', 'active', '2025-04-17 23:17:37', '2025-04-17 23:17:37');
+INSERT INTO `stations` (`id`, `name`, `location`, `status`, `created_at`, `updated_at`, `city`, `admin_id`) VALUES
+(8, 'naaa le s1', '36.820279,10.185099', 'active', '2025-04-17 17:52:14', '2025-04-29 22:25:41', 'Gouvernorat Tunis', NULL),
+(9, 'le z en personne', '36.811484,10.135660', 'inactive', '2025-04-17 17:59:03', '2025-04-23 20:46:37', 'Gouvernorat Tunis', NULL),
+(11, 'class1', '36.819454,10.182180', 'inactive', '2025-04-18 09:29:14', '2025-04-23 20:46:38', 'Gouvernorat Tunis', NULL),
+(13, 'hamzaa 0302220', '36.801863,10.182009', 'active', '2025-04-18 11:17:50', '2025-04-23 20:46:40', 'Gouvernorat Tunis', NULL),
+(14, 'sdssdsd1231', '36.848582,10.202608', 'active', '2025-04-18 11:18:31', '2025-04-23 20:46:41', 'Gouvernorat Tunis', NULL),
+(15, 'mou7awla1', '36.855450,11.097565', 'inactive', '2025-04-23 19:37:36', '2025-04-23 20:46:42', 'Gouvernorat Nabeul', NULL),
+(16, 'mou7awlaa 5', '37.274053,9.830017', 'inactive', '2025-04-23 19:37:53', '2025-04-24 11:58:57', 'Gouvernorat Bizerte', NULL),
+(18, 'mou7awlaa 999', '35.697456,10.774841', 'active', '2025-04-23 19:38:31', '2025-04-24 13:28:44', 'Gouvernorat Monastir', NULL),
+(20, 'yooooooo hamzaz', '34.746126,10.763855', 'active', '2025-04-23 20:30:55', '2025-04-23 20:46:48', 'Gouvernorat Sfax', NULL),
+(21, 'ye rabi sahell77777', '35.474092,11.038513', 'active', '2025-04-23 20:32:35', '2025-04-23 20:46:49', 'Gouvernorat Mahdia', NULL),
+(22, 'ppppp1', '36.802000,10.137892', 'active', '2025-04-28 22:25:47', '2025-04-28 22:26:08', 'Gouvernorat Tunis', NULL);
 
 -- --------------------------------------------------------
 
@@ -104,17 +114,20 @@ CREATE TABLE `trajets` (
   `end_point_name` varchar(255) DEFAULT NULL,
   `co2_saved` float DEFAULT NULL,
   `battery_energy` float DEFAULT NULL,
-  `fuel_saved` float DEFAULT NULL
+  `fuel_saved` float DEFAULT NULL,
+  `admin_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `trajets`
 --
 
-INSERT INTO `trajets` (`id`, `start_station_id`, `end_station_id`, `distance`, `description`, `route_coordinates`, `route_description`, `created_at`, `updated_at`, `start_point`, `end_point`, `start_point_name`, `end_point_name`, `co2_saved`, `battery_energy`, `fuel_saved`) VALUES
-(12, NULL, NULL, 2.49, 'skifon', '[{\"lat\":36.826985312011715,\"lng\":10.146496295928957},{\"lat\":36.83285920173124,\"lng\":10.155036449432375},{\"lat\":36.83921348680984,\"lng\":10.166923999786379},{\"lat\":36.839934750672676,\"lng\":10.16915559768677}]', 'bala bala blaa', '2025-04-17 21:29:25', '2025-04-17 21:29:25', '36.82649258036662,10.145616531372072', '36.83981990703076,10.169305801391603', 'Boulevard Mohamed Bouazizi, Ras Tabia, Délégation El Omrane, Tunis, Gouvernorat Tunis, 2062, Tunisie', 'Rue Tarek Ibn Zied, Mutuelleville, 01 Juin, Délégation El Menzah, Tunis, Gouvernorat Tunis, 1086, Tunisie', 398.4, 13.944, 0.18675),
-(13, NULL, NULL, 2.49, 'skifon', '[{\"lat\":36.83939138846153,\"lng\":10.148588418960573},{\"lat\":36.84265418698594,\"lng\":10.147880315780641},{\"lat\":36.84323804151118,\"lng\":10.149425268173218},{\"lat\":36.84170970699228,\"lng\":10.150476694107057},{\"lat\":36.84225922404405,\"lng\":10.153008699417116},{\"lat\":36.84528149724389,\"lng\":10.157557725906374}]', 'bala bala blaa', '2025-04-17 21:47:17', '2025-04-17 22:39:41', '36.839130304900074,10.148942470550539', '36.84527800924885,10.157697200775148', 'Colisée Soula, El Manar, Délégation El Menzah, Tunis, Gouvernorat Tunis, 2092, Tunisie', 'Colisée Soula, El Manar, Délégation El Menzah, Tunis, Gouvernorat Tunis, 7102, Tunisie', 398.4, 13.944, 0.18675),
-(14, NULL, NULL, 2.26, 'hhihihihih', '[{\"lat\":36.83670551247481,\"lng\":10.152595639228823},{\"lat\":36.83891228736861,\"lng\":10.149130225181581}]', 'd;s,n;sn', '2025-04-17 21:55:54', '2025-04-17 22:39:12', '36.8389929203865,10.148942470550539', '36.83664366068045,10.152729749679567', 'Colisée Soula, El Manar, Délégation El Menzah, Tunis, Gouvernorat Tunis, 2092, Tunisie', 'X 4, Colisée Soula, El Manar, Délégation El Menzah, Tunis, Gouvernorat Tunis, 2092, Tunisie', 361.6, 12.656, 0.1695);
+INSERT INTO `trajets` (`id`, `start_station_id`, `end_station_id`, `distance`, `description`, `route_coordinates`, `route_description`, `created_at`, `updated_at`, `start_point`, `end_point`, `start_point_name`, `end_point_name`, `co2_saved`, `battery_energy`, `fuel_saved`, `admin_id`) VALUES
+(13, NULL, NULL, 2.49, 'skifon2', '[{\"lat\":36.826846832196736,\"lng\":10.20260810852051},{\"lat\":36.83564033977185,\"lng\":10.225954055786135},{\"lat\":36.84168528988323,\"lng\":10.245866775512697},{\"lat\":36.85308696319283,\"lng\":10.273160934448244},{\"lat\":36.862152140387806,\"lng\":10.295133590698244},{\"lat\":36.8687443211593,\"lng\":10.309209823608398},{\"lat\":36.870529605571406,\"lng\":10.313673019409181}]', 'bala bala blaa1', '2025-04-17 21:47:17', '2025-04-28 22:26:25', '36.82544484414305,10.20029067993164', '36.870227054298226,10.313243865966799', 'Route Nationale Tunis - Bizerte, Zone Industrielle La Charguia I, Ech-Charguia, Délégation Cité El Khadra, Tunis, Gouvernorat Tunis, 2035, Tunisie', 'Route Nationale Tunis - La Marsa, Cité Les Pins, La Marsa El Montazeh, Délégation La Marsa, Tunis, Gouvernorat Tunis, 2070, Tunisie', 398.4, 13.944, 0.18675, NULL),
+(14, NULL, NULL, 2.26, 'hhihihihih', '[{\"lat\":36.83670551247481,\"lng\":10.152595639228823},{\"lat\":36.83891228736861,\"lng\":10.149130225181581}]', 'd;s,n;sn', '2025-04-17 21:55:54', '2025-04-17 22:39:12', '36.8389929203865,10.148942470550539', '36.83664366068045,10.152729749679567', 'Colisée Soula, El Manar, Délégation El Menzah, Tunis, Gouvernorat Tunis, 2092, Tunisie', 'X 4, Colisée Soula, El Manar, Délégation El Menzah, Tunis, Gouvernorat Tunis, 2092, Tunisie', 361.6, 12.656, 0.1695, NULL),
+(15, NULL, NULL, 1.37, 'new new 1', '[{\"lat\":36.801586177322015,\"lng\":10.188810825347902},{\"lat\":36.80498803388556,\"lng\":10.18855333328247},{\"lat\":36.8086302582343,\"lng\":10.188252925872805},{\"lat\":36.81141335062683,\"lng\":10.188167095184328},{\"lat\":36.81368098073698,\"lng\":10.189454555511476}]', 'ballaa blaa blaa', '2025-04-18 09:30:29', '2025-04-18 09:30:56', '36.80116898848699,10.189561843872072', '36.81367614921016,10.189390182495119', 'Avenue Habib Bourguiba, Habib Thameur, Délégation Bab Bhar, Tunis, Gouvernorat Tunis, 2058, Tunisie', 'Route Nationale Bizerte - Tunis, El Bouhaira, Délégation Cité El Khadra, Tunis, Gouvernorat Tunis, 1073, Tunisie', 219.2, 7.672, 0.10275, NULL),
+(17, NULL, NULL, 1.41, 'satar alahh', '[{\"lat\":36.80388107797049,\"lng\":10.230669379234316},{\"lat\":36.804645626896026,\"lng\":10.235443711280825}]', 'le 2ileha ela lahhhhhhhh', '2025-04-23 23:11:19', '2025-04-23 23:11:19', '36.80391799018142,10.230588912963869', '36.804722940407345,10.235443711280825', 'Route de La Goulette, El Bouhaira, Délégation Cité El Khadra, Tunis, Gouvernorat Tunis, 1053, Tunisie', 'Route de La Goulette, El Bouhaira, Délégation Cité El Khadra, Tunis, Gouvernorat Tunis, 1053, Tunisie', 225.6, 7.896, 0.10575, NULL),
+(18, NULL, NULL, 1.16, 'test test45454', '[{\"lat\":36.80065837203224,\"lng\":10.188767910003664},{\"lat\":36.80519420215369,\"lng\":10.188810825347902},{\"lat\":36.80900821498964,\"lng\":10.188167095184328},{\"lat\":36.81106976444747,\"lng\":10.18786668777466}]', 'ahaaaahhahah', '2025-04-28 22:27:44', '2025-04-28 22:27:44', '36.8002068145812,10.189218521118166', '36.81120236742129,10.188016891479494', 'Hôtel El Bahy Tunis, Rue Christophe Colomb, Lac De Tunis, Délégation Bab Bhar, Tunis, Gouvernorat Tunis, 2058, Tunisie', 'Route Nationale Bizerte - Tunis, Les Jardins, Délégation Bab Bhar, Tunis, Gouvernorat Tunis, 1073, Tunisie', 185.6, 6.496, 0.087, NULL);
 
 --
 -- Index pour les tables déchargées
@@ -144,7 +157,8 @@ ALTER TABLE `password_resets`
 -- Index pour la table `stations`
 --
 ALTER TABLE `stations`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_station_admin` (`admin_id`);
 
 --
 -- Index pour la table `trajets`
@@ -152,7 +166,8 @@ ALTER TABLE `stations`
 ALTER TABLE `trajets`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_start_station` (`start_station_id`),
-  ADD KEY `idx_end_station` (`end_station_id`);
+  ADD KEY `idx_end_station` (`end_station_id`),
+  ADD KEY `fk_trajet_admin` (`admin_id`);
 
 --
 -- AUTO_INCREMENT pour les tables déchargées
@@ -174,13 +189,13 @@ ALTER TABLE `password_resets`
 -- AUTO_INCREMENT pour la table `stations`
 --
 ALTER TABLE `stations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT pour la table `trajets`
 --
 ALTER TABLE `trajets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- Contraintes pour les tables déchargées
@@ -193,11 +208,16 @@ ALTER TABLE `password_resets`
   ADD CONSTRAINT `password_resets_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
 
 --
+-- Contraintes pour la table `stations`
+--
+ALTER TABLE `stations`
+  ADD CONSTRAINT `fk_station_admin` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
 -- Contraintes pour la table `trajets`
 --
 ALTER TABLE `trajets`
-  ADD CONSTRAINT `trajets_ibfk_1` FOREIGN KEY (`start_station_id`) REFERENCES `stations` (`id`),
-  ADD CONSTRAINT `trajets_ibfk_2` FOREIGN KEY (`end_station_id`) REFERENCES `stations` (`id`);
+  ADD CONSTRAINT `fk_trajet_admin` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
