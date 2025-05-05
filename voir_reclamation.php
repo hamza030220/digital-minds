@@ -21,7 +21,7 @@ $pdo = null; // Initialize PDO variable
 if (isset($_GET['status_update'])) {
     switch ($_GET['status_update']) {
         case 'success':
-            $feedback_message = "Réponse ajoutée avec succès. Un e-mail a été envoyé à l'utilisateur (si configuré).";
+            $feedback_message = "Statut mis à jour avec succès.";
             $message_type = 'success';
             break;
         case 'error_model':
@@ -137,7 +137,7 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
 
         .sidebar {
             width: 200px;
-            background-color: #2e7d32;
+            background-color: #60BA97;
             position: fixed;
             top: 0;
             left: 0;
@@ -553,10 +553,10 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
             <img src="image/ve.png" alt="Green.tn Logo">
         </div>
         <ul>
-            <li><a href="">🏠 Accueil</a></li>
+        <li><a href="stats.php">🏠 Dashboard</a></li>
             <li><a href="">🚲 Reservation</a></li>
             <li><a href="reclamations_utilisateur.php">📋 Reclamation</a></li>
-            <li><a href="stats.php">📊 Statistique</a></li>
+            <li><a href="liste_avis.php">⭐ Avis</a></li>
             <li><a href="logout.php">🔓 Déconnexion</a></li>
         </ul>
     </div>
@@ -721,48 +721,6 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
         <?php endif; ?>
     </div>
 
-    <footer>
-        <div class="footer-content">
-            <div class="footer-left">
-                <div class="footer-logo">
-                    <img src="image/ho.png" alt="Green.tn Logo">
-                </div>
-                <div class="social-icons">
-                    <a href="https://instagram.com"><img src="image/insta.png" alt="Instagram"></a>
-                    <a href="https://facebook.com"><img src="image/fb.png" alt="Facebook"></a>
-                    <a href="https://twitter.com"><img src="image/x.png" alt="Twitter"></a>
-                </div>
-            </div>
-            <div class="footer-section">
-                <h3>Navigation</h3>
-                <ul>
-                    <li><a href="index.php">Accueil</a></li>
-                    <li><a href="ajouter_reclamation.php">Nouvelle réclamation</a></li>
-                    <li><a href="liste_reclamations.php">Voir les réclamations</a></li>
-                    <li><a href="ajouter_avis.php">Soumettre un avis</a></li>
-                    <li><a href="mes_avis.php">Mes avis</a></li>
-                    <li><a href="chatbot.php">Chatbot</a></li>
-                    <?php if ($role === 'admin'): ?>
-                        <li><a href="liste_avis.php">Voir les avis</a></li>
-                    <?php endif; ?>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Contact</h3>
-                <p>
-                    <img src="image/location.png" alt="Location Icon">
-                    Adresse
-                </p>
-                <p>
-                    <img src="image/telephone.png" alt="Phone Icon">
-                    Téléphone
-                </p>
-                <p>
-                    <img src="image/mail.png" alt="Email Icon">
-                    <a href="mailto:Green@green.com">Email</a>
-                </p>
-            </div>
-        </div>
-    </footer>
+    
 </body>
 </html>
