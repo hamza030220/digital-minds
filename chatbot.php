@@ -1,11 +1,8 @@
 <?php
-// detail.php
-// Controller logic & view to display a single reclamation's details
+// chatbot.php
+// Page pour interagir avec un chatbot
 
-// Set timezone to Tunisia (CET, UTC+1)
-date_default_timezone_set('Africa/Tunis');
-
-// Start session if not already started
+// Start session only if not already active
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
@@ -13,76 +10,24 @@ if (session_status() == PHP_SESSION_NONE) {
 // Include translation helper
 require_once __DIR__ . '/translate.php';
 
-// Authentication Check: Ensure user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ./login.php?error=' . urlencode(t('error_session_required')));
-    exit;
+// Connexion à la base de données using Database class
+require_once 'config/database.php';
+
+$database = new Database();
+$pdo = $database->getConnection();
+
+// Check if connection failed - Exit cleanly if it does
+if (!$pdo) {
+    die(t('error_database'));
 }
-
-// Include the Model
-require_once __DIR__ . '/models/Reclamation.php';
-require_once __DIR__ . '/config/database.php';
-
-// Validate reclamation ID
-$reclamationId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if ($reclamationId <= 0) {
-    header('Location: ./liste_reclamations.php?error=' . urlencode(t('invalid_reclamation_id')));
-    exit;
-}
-
-// Instantiate the Model
-$reclamationModel = null;
-$reclamation = null;
-$reponses = [];
-$errorMessage = null;
-$pageTitle = t('reclamation_details') . ' - Green.tn';
-
-try {
-    $reclamationModel = new Reclamation();
-    $user_id = $_SESSION['user_id'];
-    $reclamation = $reclamationModel->getParId($reclamationId);
-    // Verify the reclamation exists and belongs to the user
-    if (!$reclamation || $reclamation['utilisateur_id'] != $user_id) {
-        header('Location: ./liste_reclamations.php?error=' . urlencode(t('reclamation_not_found')));
-        exit;
-    }
-
-    // Pagination for responses
-    $reponses_per_page = 3; // 3 responses per page
-    $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1; // Current page
-    $offset = ($page - 1) * $reponses_per_page; // Calculate offset
-
-    // Fetch total number of responses
-    $database = new Database();
-    $db = $database->getConnection();
-    $stmt = $db->prepare("SELECT COUNT(*) FROM reponses WHERE reclamation_id = ?");
-    $stmt->execute([$reclamationId]);
-    $total_reponses = $stmt->fetchColumn();
-    $total_pages = ceil($total_reponses / $reponses_per_page);
-
-    // Fetch responses with pagination
-    $stmt = $db->prepare("SELECT contenu, date_creation, role FROM reponses WHERE reclamation_id = ? ORDER BY date_creation ASC LIMIT ? OFFSET ?");
-    $stmt->bindValue(1, $reclamationId, PDO::PARAM_INT);
-    $stmt->bindValue(2, $reponses_per_page, PDO::PARAM_INT);
-    $stmt->bindValue(3, $offset, PDO::PARAM_INT);
-    $stmt->execute();
-    $reponses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    error_log("detail.php: Database error fetching reclamation ID {$reclamationId} or responses - " . $e->getMessage());
-    $errorMessage = t('error_database_reclamations');
-} catch (Exception $e) {
-    error_log("detail.php: Unexpected error - " . $e->getMessage());
-    $errorMessage = t('error_unexpected_reclamations');
-}
-
-// --- View / Presentation Logic ---
 ?>
+
 <!DOCTYPE html>
 <html lang="<?php echo $_SESSION['lang']; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($pageTitle); ?></title>
+    <title><?php echo t('chatbot'); ?> - Green.tn</title>
     <link rel="icon" href="image/ve.png" type="image/png">
     <style>
         * {
@@ -173,7 +118,7 @@ try {
             padding: 50px;
             text-align: center;
             background-color: #60BA97;
-            margin-top: 100px;
+            margin-top: 100px; /* Account for fixed header */
         }
 
         main h2 {
@@ -189,106 +134,52 @@ try {
         }
 
         .content-container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             background-color: #F9F5E8;
             border: 1px solid #4CAF50;
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .error-message {
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-            font-weight: bold;
-            border: 1px solid #f5c6cb;
-            background-color: #f8d7da;
-            color: #721c24;
             text-align: center;
         }
 
-        .details-container {
-            text-align: left;
+        .chat-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
-        .details-container p {
-            margin: 10px 0;
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #4CAF50;
+            border-radius: 5px;
             font-size: 16px;
         }
 
-        .details-container p strong {
-            color: #2e7d32;
-            display: inline-block;
-            width: 120px;
-        }
-
-        .reponse {
-            background-color: #F9F5E8;
-            padding: 15px;
-            border: 1px solid #4CAF50;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .reponse p {
-            margin: 5px 0;
-        }
-
-        .reponse i {
-            color: #7f8c8d;
-            font-size: 12px;
-        }
-
-        .pagination {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .pagination a {
-            display: inline-block;
-            padding: 8px 12px;
-            margin: 0 5px;
-            background-color: #4CAF50;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-        }
-
-        .pagination a:hover {
+        button {
+            padding: 10px;
             background-color: #2e7d32;
-        }
-
-        .pagination a.disabled {
-            background-color: #ccc;
-            pointer-events: none;
-        }
-
-        .pagination a.current {
-            background-color: #2e7d32;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            background-color: #2e7d32;
-            color: #fff;
+            color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
-            font-weight: bold;
-            font-family: "Bauhaus 93", Arial, sans-serif;
-            text-decoration: none;
-            display: inline-block;
-            margin-top: 20px;
         }
 
-        .btn:hover {
+        button:hover {
             background-color: #1b5e20;
+        }
+
+        .chat-response {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #E8F5E8;
+            border-radius: 5px;
+            text-align: left;
+            font-size: 16px;
         }
 
         footer {
@@ -426,14 +317,6 @@ try {
                 padding: 15px;
             }
 
-            .details-container p {
-                font-size: 14px;
-            }
-
-            .details-container p strong {
-                width: 100px;
-            }
-
             .footer-content {
                 flex-direction: column;
                 align-items: center;
@@ -459,12 +342,11 @@ try {
             </div>
             <nav class="nav-left">
                 <ul>
-                <li><a href="index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="index.php"><?php echo t('home'); ?></a></li>
                     <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
                     <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
                     <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-
                     <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
             </nav>
@@ -472,8 +354,9 @@ try {
         <nav class="nav-right">
             <ul>
                 <li>
-                    <form action="detail.php?id=<?php echo htmlspecialchars($reclamationId); ?>" method="POST" id="lang-toggle-form">
-                       
+                    <form action="" method="POST">
+                        <input type="hidden" name="lang" value="<?php echo $_SESSION['lang'] === 'fr' ? 'en' : 'fr'; ?>">
+                        <button type="submit" class="lang-toggle"><?php echo t($_SESSION['lang'] === 'fr' ? 'toggle_language' : 'toggle_language_en'); ?></button>
                     </form>
                 </li>
                 <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
@@ -482,68 +365,13 @@ try {
     </header>
 
     <main>
-        <h2><?php echo t('reclamation_details'); ?></h2>
+        <h2><?php echo t('chatbot'); ?></h2>
         <div class="content-container">
-            <?php if ($errorMessage): ?>
-                <div class="error-message">
-                    <?php echo htmlspecialchars($errorMessage); ?>
-                </div>
-            <?php elseif ($reclamation): ?>
-                <div class="details-container">
-                    <p><strong><?php echo t('title'); ?> :</strong> <?php echo htmlspecialchars($reclamation['titre']); ?></p>
-                    <p><strong><?php echo t('description'); ?> :</strong> <?php echo htmlspecialchars($reclamation['description']); ?></p>
-                    <p><strong><?php echo t('location'); ?> :</strong> <?php echo htmlspecialchars($reclamation['lieu']); ?></p>
-                    <p><strong><?php echo t('type'); ?> :</strong> <?php echo t($reclamation['type_probleme']); ?></p>
-                    <p><strong><?php echo t('status'); ?> :</strong> <?php echo t($reclamation['statut']); ?></p>
-                    <p><strong><?php echo t('created_at'); ?> :</strong> 
-                        <?php 
-                        $date = new DateTime($reclamation['date_creation']);
-                        $date->modify('-1 hour');
-                        echo $date->format('d/m/Y H:i:s');
-                        ?>
-                    </p>
-                    <div class="responses">
-                        <strong><?php echo t('responses'); ?> :</strong>
-                        <?php if ($total_reponses == 0): ?>
-                            <p><?php echo t('no_responses'); ?></p>
-                        <?php else: ?>
-                            <?php foreach ($reponses as $reponse): ?>
-                                <div class="reponse">
-                                    <p><strong><?php echo t('response_by'); ?> <?php echo t($reponse['role']); ?> :</strong></p>
-                                    <p><?php echo nl2br(htmlspecialchars($reponse['contenu'])); ?></p>
-                                    <p><i><?php echo t('response_date'); ?> 
-                                        <?php 
-                                        $responseDate = new DateTime($reponse['date_creation']);
-                                        $responseDate->modify('-1 hour');
-                                        echo $responseDate->format('d/m/Y H:i:s');
-                                        ?>
-                                    </i></p>
-                                </div>
-                            <?php endforeach; ?>
-
-                            <!-- Pagination for responses -->
-                            <div class="pagination">
-                                <?php if ($page > 1): ?>
-                                    <a href="?id=<?php echo $reclamationId; ?>&page=<?php echo $page - 1; ?>"><?php echo t('previous', 'Précédent'); ?></a>
-                                <?php else: ?>
-                                    <a href="#" class="disabled"><?php echo t('previous', 'Précédent'); ?></a>
-                                <?php endif; ?>
-
-                                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                                    <a href="?id=<?php echo $reclamationId; ?>&page=<?php echo $i; ?>" class="<?php echo $i == $page ? 'current' : ''; ?>"><?php echo $i; ?></a>
-                                <?php endfor; ?>
-
-                                <?php if ($page < $total_pages): ?>
-                                    <a href="?id=<?php echo $reclamationId; ?>&page=<?php echo $page + 1; ?>"><?php echo t('next', 'Suivant'); ?></a>
-                                <?php else: ?>
-                                    <a href="#" class="disabled"><?php echo t('next', 'Suivant'); ?></a>
-                                <?php endif; ?>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                    <a href="liste_reclamations.php" class="btn"><?php echo t('back_to_list'); ?></a>
-                </div>
-            <?php endif; ?>
+            <div class="chat-form">
+                <input type="text" name="user_input" placeholder="<?php echo t('ask_chatbot'); ?>" required>
+                <button type="button" onclick="sendMessage()"><?php echo t('send'); ?></button>
+            </div>
+            <div class="chat-response" id="chatResponse"></div>
         </div>
     </main>
 
@@ -562,13 +390,12 @@ try {
             <div class="footer-section">
                 <h3><?php echo t('navigation'); ?></h3>
                 <ul>
-                <li><a href="index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="index.php"><?php echo t('home'); ?></a></li>
                     <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
                     <li><a href="#a-propos-de-nous"><?php echo t('about_us'); ?></a></li>
                     <li><a href="#contact"><?php echo t('contact'); ?></a></li>
                     <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-
                     <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
             </div>
@@ -589,5 +416,44 @@ try {
             </div>
         </div>
     </footer>
+
+    <script>
+        async function sendMessage() {
+            const input = document.querySelector('input[name="user_input"]');
+            const userInput = input.value.trim();
+            if (!userInput) return;
+
+            const responseDiv = document.getElementById('chatResponse');
+            responseDiv.innerHTML = '<p><strong><?php echo t('chatbot_response'); ?>:</strong> Chargement...</p>';
+
+            try {
+                const response = await fetch('chatbot_handler.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'user_input=' + encodeURIComponent(userInput)
+                });
+
+                const data = await response.json();
+                if (data.response) {
+                    responseDiv.innerHTML = `<p><strong><?php echo t('chatbot_response'); ?>:</strong> ${data.response}</p>`;
+                } else {
+                    responseDiv.innerHTML = `<p><strong><?php echo t('chatbot_response'); ?>:</strong> <?php echo t('error_chatbot'); ?></p>`;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `<p><strong><?php echo t('chatbot_response'); ?>:</strong> <?php echo t('error_chatbot'); ?></p>`;
+            }
+
+            input.value = '';
+        }
+
+        // Permettre l'envoi avec la touche Entrée
+        document.querySelector('input[name="user_input"]').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
 </body>
 </html>

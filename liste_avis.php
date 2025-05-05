@@ -24,7 +24,19 @@ if ($isLoggedIn) {
     $isAdmin = $user && $user['role'] === 'admin';
 }
 
-// Récupérer tous les avis avec les informations de l'utilisateur
+// Pagination
+$avis_per_page = 3; // 3 avis par page
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1; // Page actuelle
+$offset = ($page - 1) * $avis_per_page; // Calculer l'offset
+
+// Compter le nombre total d'avis
+$total_avis_query = "SELECT COUNT(*) FROM avis";
+$stmt = $pdo->prepare($total_avis_query);
+$stmt->execute();
+$total_avis = $stmt->fetchColumn();
+$total_pages = ceil($total_avis / $avis_per_page); // Calculer le nombre total de pages
+
+// Récupérer tous les avis avec les informations de l'utilisateur avec pagination
 $avis = [];
 $average_rating = 0;
 if ($isAdmin) {
@@ -33,15 +45,23 @@ if ($isAdmin) {
         FROM avis a 
         JOIN utilisateurs u ON a.user_id = u.id 
         ORDER BY a.date_creation DESC
+        LIMIT :limit OFFSET :offset
     ";
     $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':limit', $avis_per_page, PDO::PARAM_INT);
+    $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $avis = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Calculer la note moyenne
-    if (!empty($avis)) {
-        $total_rating = array_sum(array_column($avis, 'note'));
-        $average_rating = $total_rating / count($avis);
+    // Calculer la note moyenne (sur tous les avis)
+    $query = "SELECT note FROM avis";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute();
+    $all_ratings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (!empty($all_ratings)) {
+        $total_rating = array_sum(array_column($all_ratings, 'note'));
+        $average_rating = $total_rating / count($all_ratings);
     }
 }
 
@@ -73,7 +93,7 @@ $pageTitle = "Voir les avis";
 
         .sidebar {
             width: 200px;
-            background-color: #2e7d32;
+            background-color: #60BA97;
             position: fixed;
             top: 0;
             left: 0;
@@ -217,6 +237,36 @@ $pageTitle = "Voir les avis";
             font-size: 16px;
             color: #333;
             line-height: 1.6;
+        }
+
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .pagination a {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 0 5px;
+            background-color: #4CAF50;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .pagination a:hover {
+            background-color: #2e7d32;
+        }
+
+        .pagination a.disabled {
+            background-color: #ccc;
+            pointer-events: none;
+        }
+
+        .pagination a.current {
+            background-color: #2e7d32;
         }
 
         footer {
@@ -388,7 +438,7 @@ $pageTitle = "Voir les avis";
                     }
                     ?>
                 </div>
-                <?php if (empty($avis)): ?>
+                <?php if (empty($avis) && $total_avis == 0): ?>
                     <p class="message">Aucun avis disponible.</p>
                 <?php else: ?>
                     <?php foreach ($avis as $avi): ?>
@@ -408,12 +458,30 @@ $pageTitle = "Voir les avis";
                             <p><?php echo htmlspecialchars($avi['description']); ?></p>
                         </div>
                     <?php endforeach; ?>
+
+                    <!-- Pagination -->
+                    <div class="pagination">
+                        <?php if ($page > 1): ?>
+                            <a href="?page=<?php echo $page - 1; ?>">Précédent</a>
+                        <?php else: ?>
+                            <a href="#" class="disabled">Précédent</a>
+                        <?php endif; ?>
+
+                        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                            <a href="?page=<?php echo $i; ?>" class="<?php echo $i == $page ? 'current' : ''; ?>"><?php echo $i; ?></a>
+                        <?php endfor; ?>
+
+                        <?php if ($page < $total_pages): ?>
+                            <a href="?page=<?php echo $page + 1; ?>">Suivant</a>
+                        <?php else: ?>
+                            <a href="#" class="disabled">Suivant</a>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
             <?php endif; ?>
         </div>
     </main>
 
-    
-           
+   
 </body>
 </html>

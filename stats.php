@@ -47,7 +47,7 @@ $reclamations_resolues = (int)$reclamations_resolues;
 
         .sidebar {
             width: 200px;
-            background-color: #2e7d32;
+            background-color: #60BA97;
             position: fixed;
             top: 0;
             left: 0;

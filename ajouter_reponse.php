@@ -5,105 +5,107 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// --- Include PHPMailer manually ---
+require_once __DIR__ . '/PHPMailer-master/src/PHPMailer.php';
+require_once __DIR__ . '/PHPMailer-master/src/Exception.php';
+require_once __DIR__ . '/PHPMailer-master/src/SMTP.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 // --- Database Connection ---
-// Include the database configuration file (defines the Database class).
-// Using __DIR__ makes the path relative to *this* file, which is more reliable.
 require_once __DIR__ . '/config/database.php';
 
 // 1. Instantiate the Database class
 $database = new Database();
 
-// 2. Get the PDO connection object by calling the method
-$pdo = $database->getConnection(); // <-- This line actually creates $pdo
+// 2. Get the PDO connection object
+$pdo = $database->getConnection();
 
-// 3. Check if the connection was successful (highly recommended)
+// 3. Check if the connection was successful
 if (!$pdo) {
-    // Log the error for the admin
     error_log("Database connection failed in ajouter_reponse.php");
-    // Show a generic error to the user
     die("Database connection failed. Please try again later or contact support.");
-    // Or redirect with an error message if using sessions
-    // $_SESSION['error_message'] = "Database connection failed.";
-    // header("Location: some_error_page.php"); // Or back to the form
-    // exit;
 }
-// --------------------------
-
 
 // --- Input Handling ---
-// Use null coalescing operator (??) for safer access to POST data
 $reclamation_id = $_POST['reclamation_id'] ?? null;
 $contenu = $_POST['contenu'] ?? null;
-$role = $_POST['role'] ?? null; // Expecting 'utilisateur' or 'admin'
+$role = $_POST['role'] ?? null;
 
-// Basic Validation (add more robust validation as needed)
-// Trim contenu to ensure it's not just whitespace
 if (empty($reclamation_id) || !is_numeric($reclamation_id) || empty(trim($contenu ?? '')) || empty($role)) {
-    // Handle error - redirect back with an error message or display an error
-    // Example: Store error in session and redirect
-    // session_start(); // Make sure session is started if you use this
-    // $_SESSION['error_message'] = "Données invalides. Veuillez remplir tous les champs.";
-    // // Redirect back to the specific reclamation page if possible
-    // $redirect_url = $reclamation_id ? "voir_reclamation.php?id=" . urlencode($reclamation_id) : "liste_reclamations.php";
-    // header("Location: " . $redirect_url);
-    // exit;
-
-    // Or simply die for now (not recommended for production)
     die("Erreur : Données manquantes ou invalides.");
 }
-// Ensure role is one of the expected values (optional but good)
-if (!in_array($role, ['utilisateur', 'admin'])) {
-     die("Erreur : Rôle invalide.");
-}
-// ----------------------
 
+if (!in_array($role, ['utilisateur', 'admin'])) {
+    die("Erreur : Rôle invalide.");
+}
 
 // --- Database Operation ---
-// This block should now work because $pdo is correctly initialized above
 try {
-    // Prepare the SQL statement using the valid $pdo object
     $sql = "INSERT INTO reponses (reclamation_id, contenu, role, date_creation) VALUES (?, ?, ?, NOW())";
-    $stmt = $pdo->prepare($sql); // Line 37 (approx) should now work
-
-    // Execute the statement with the validated data
-    // Trim content again just before insertion (optional)
+    $stmt = $pdo->prepare($sql);
     $stmt->execute([$reclamation_id, trim($contenu), $role]);
 
-    // If the response is from an admin, add a notification for the user
+    // Send email if response is by admin
     if ($role === 'admin') {
-        // Get the user ID associated with the reclamation
-        $reclamationStmt = $pdo->prepare("SELECT utilisateur_id FROM reclamations WHERE id = ?");
+        // Get reclamation details (including user_id and titre)
+        $reclamationStmt = $pdo->prepare("SELECT utilisateur_id, titre FROM reclamations WHERE id = ?");
         $reclamationStmt->execute([$reclamation_id]);
         $reclamation = $reclamationStmt->fetch(PDO::FETCH_ASSOC);
 
         if ($reclamation && $reclamation['utilisateur_id']) {
-            $notificationStmt = $pdo->prepare("INSERT INTO notifications (user_id, reclamation_id, message) VALUES (?, ?, ?)");
-            $notificationStmt->execute([$reclamation['utilisateur_id'], $reclamation_id, "admin_responded"]);
+            // Get user's email
+            $userStmt = $pdo->prepare("SELECT email FROM utilisateurs WHERE id = ?");
+            $userStmt->execute([$reclamation['utilisateur_id']]);
+            $user_email = $userStmt->fetchColumn();
+
+            if ($user_email) {
+                $mail = new PHPMailer(true);
+
+                try {
+                    // Server settings
+                    $mail->isSMTP();
+                    $mail->Host = 'smtp.gmail.com'; // Serveur SMTP (Gmail dans cet exemple)
+                    $mail->SMTPAuth = true;
+                    $mail->Username = 'habib.znaidi@gmail.com'; // Ton e-mail ou un e-mail système
+                    $mail->Password = '1111'; // Ton mot de passe ou mot de passe d'application
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->Port = 587;
+
+                    // Recipients
+                    $mail->setFrom('ton.email@gmail.com', 'Green.tn'); // L'expéditeur (ton e-mail)
+                    $mail->addAddress($user_email); // Destinataire (l'utilisateur qui a créé la réclamation)
+
+                    // Content
+                    $mail->isHTML(true);
+                    $mail->Subject = 'Nouvelle réponse à votre réclamation';
+                    $mail->Body = "
+                        <h2>Nouvelle réponse</h2>
+                        <p>Bonjour,</p>
+                        <p>Une réponse a été ajoutée à votre réclamation :</p>
+                        <p><strong>Titre :</strong> " . htmlspecialchars($reclamation['titre']) . "</p>
+                        <p><strong>Réponse :</strong> " . nl2br(htmlspecialchars($contenu)) . "</p>
+                        <p>Consultez les détails ici : <a href='http://localhost/green-tn/voir_reclamation.php?id=" . $reclamation_id . "'>http://localhost/green-tn/voir_reclamation.php?id=" . $reclamation_id . "</a></p>
+                        <p>Merci,<br>Green.tn</p>
+                    ";
+                    $mail->AltBody = strip_tags($mail->Body);
+
+                    $mail->send();
+                } catch (Exception $e) {
+                    error_log("Email sending failed: " . $mail->ErrorInfo);
+                }
+            }
         }
     }
 
     // Redirect on success
-    // Use urlencode for the ID in the URL
-    // Add a success message (optional, using session)
-    // session_start(); // Make sure session is started
-    // $_SESSION['success_message'] = "Réponse ajoutée avec succès.";
-    header("Location: voir_reclamation.php?id=" . urlencode($reclamation_id));
-    exit; // Always exit after a header redirect
+    header("Location: voir_reclamation.php?id=" . urlencode($reclamation_id) . "&status_update=success");
+    exit;
 
 } catch (PDOException $e) {
-    // Handle potential database errors during the query execution
-    // In production, log the error:
     error_log("Error inserting response for reclamation ID $reclamation_id: " . $e->getMessage());
-
-    // Display a generic error to the user or redirect with an error flag:
-    // session_start(); // Make sure session is started
-    // $_SESSION['error_message'] = "Impossible d'enregistrer votre réponse. Veuillez réessayer.";
-    // header("Location: voir_reclamation.php?id=" . urlencode($reclamation_id));
-    // exit;
-
-    // For development, show the error:
-    die("La requête a échoué : " . $e->getMessage());
+    header("Location: voir_reclamation.php?id=" . urlencode($reclamation_id) . "&status_update=error_db");
+    exit;
 }
-// ----------------------
-
 ?>

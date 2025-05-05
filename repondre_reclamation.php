@@ -80,8 +80,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get existing responses
-$reponses = $responseController->getResponsesByReclamation($reclamation_id);
+// Pagination for responses
+$reponses_per_page = 3; // 3 responses per page
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1; // Current page
+$offset = ($page - 1) * $reponses_per_page; // Calculate offset
+
+// Count total responses
+$total_reponses_query = "SELECT COUNT(*) FROM reponses WHERE reclamation_id = ?";
+$stmt = $db->prepare($total_reponses_query);
+$stmt->execute([$reclamation_id]);
+$total_reponses = $stmt->fetchColumn();
+$total_pages = ceil($total_reponses / $reponses_per_page);
+
+// Get existing responses with pagination
+$reponses_query = "
+    SELECT * FROM reponses 
+    WHERE reclamation_id = ? 
+    ORDER BY date_creation ASC 
+    LIMIT ? OFFSET ?
+";
+$stmt = $db->prepare($reponses_query);
+$stmt->bindValue(1, $reclamation_id, PDO::PARAM_INT);
+$stmt->bindValue(2, $reponses_per_page, PDO::PARAM_INT);
+$stmt->bindValue(3, $offset, PDO::PARAM_INT);
+$stmt->execute();
+$reponses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Set page title
 $pageTitle = t('respond_reclamation') . ' - Green.tn';
@@ -323,6 +346,36 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
             margin: 20px 0;
         }
 
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .pagination a {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 0 5px;
+            background-color: #4CAF50;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .pagination a:hover {
+            background-color: #2e7d32;
+        }
+
+        .pagination a.disabled {
+            background-color: #ccc;
+            pointer-events: none;
+        }
+
+        .pagination a.current {
+            background-color: #2e7d32;
+        }
+
         a {
             color: #2e7d32;
             text-decoration: none;
@@ -556,7 +609,7 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
             <?php endif; ?>
 
             <h3><?php echo t('existing_responses'); ?>:</h3>
-            <?php if (empty($reponses)): ?>
+            <?php if ($total_reponses == 0): ?>
                 <p class="info-message"><?php echo t('no_responses'); ?></p>
             <?php else: ?>
                 <?php foreach ($reponses as $reponse): ?>
@@ -566,6 +619,25 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
                         <p><i><?php echo t('response_date'); ?> <?php echo htmlspecialchars($reponse['date_creation']); ?></i></p>
                     </div><hr>
                 <?php endforeach; ?>
+
+                <!-- Pagination for responses -->
+                <div class="pagination">
+                    <?php if ($page > 1): ?>
+                        <a href="?id=<?php echo $reclamation_id; ?>&page=<?php echo $page - 1; ?>"><?php echo t('previous', 'Précédent'); ?></a>
+                    <?php else: ?>
+                        <a href="#" class="disabled"><?php echo t('previous', 'Précédent'); ?></a>
+                    <?php endif; ?>
+
+                    <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                        <a href="?id=<?php echo $reclamation_id; ?>&page=<?php echo $i; ?>" class="<?php echo $i == $page ? 'current' : ''; ?>"><?php echo $i; ?></a>
+                    <?php endfor; ?>
+
+                    <?php if ($page < $total_pages): ?>
+                        <a href="?id=<?php echo $reclamation_id; ?>&page=<?php echo $page + 1; ?>"><?php echo t('next', 'Suivant'); ?></a>
+                    <?php else: ?>
+                        <a href="#" class="disabled"><?php echo t('next', 'Suivant'); ?></a>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
 
             <p><a href="liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>

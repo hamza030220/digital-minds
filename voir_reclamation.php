@@ -7,7 +7,6 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 // --- Dependencies ---
-// Adjust paths if this file is not in the web root
 require_once __DIR__ . '/config/database.php'; // Needed for Database class
 require_once __DIR__ . '/models/Reclamation.php'; // Needed for Reclamation model
 
@@ -22,7 +21,7 @@ $pdo = null; // Initialize PDO variable
 if (isset($_GET['status_update'])) {
     switch ($_GET['status_update']) {
         case 'success':
-            $feedback_message = "Statut mis à jour avec succès.";
+            $feedback_message = "Réponse ajoutée avec succès. Un e-mail a été envoyé à l'utilisateur (si configuré).";
             $message_type = 'success';
             break;
         case 'error_model':
@@ -52,17 +51,38 @@ $reclamation_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT, ["options" 
 if ($reclamation_id) {
     try {
         // --- Use Reclamation Model to fetch details ---
-        $reclamationModel = new Reclamation(); // Instantiates model (uses Database class inside)
-        $reclamation = $reclamationModel->getParId($reclamation_id); // Fetch by ID using the model method
+        $reclamationModel = new Reclamation();
+        $reclamation = $reclamationModel->getParId($reclamation_id);
 
         if ($reclamation) {
-            // --- Fetch associated responses ---
+            // --- Fetch associated responses with pagination ---
             $database = new Database();
             $pdo = $database->getConnection();
 
             if ($pdo) {
-                $repStmt = $pdo->prepare("SELECT * FROM reponses WHERE reclamation_id = ? ORDER BY date_creation ASC");
+                // Pagination for responses
+                $reponses_per_page = 3; // 3 responses per page
+                $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1; // Current page
+                $offset = ($page - 1) * $reponses_per_page; // Calculate offset
+
+                // Count total responses
+                $total_reponses_query = "SELECT COUNT(*) FROM reponses WHERE reclamation_id = ?";
+                $stmt = $pdo->prepare($total_reponses_query);
+                $stmt->bindParam(1, $reclamation_id, PDO::PARAM_INT);
+                $stmt->execute();
+                $total_reponses = $stmt->fetchColumn();
+                $total_pages = ceil($total_reponses / $reponses_per_page);
+
+                // Fetch responses for the current page
+                $repStmt = $pdo->prepare("
+                    SELECT * FROM reponses 
+                    WHERE reclamation_id = ? 
+                    ORDER BY date_creation ASC 
+                    LIMIT ? OFFSET ?
+                ");
                 $repStmt->bindParam(1, $reclamation_id, PDO::PARAM_INT);
+                $repStmt->bindParam(2, $reponses_per_page, PDO::PARAM_INT);
+                $repStmt->bindParam(3, $offset, PDO::PARAM_INT);
                 $repStmt->execute();
                 $reponses = $repStmt->fetchAll(PDO::FETCH_ASSOC);
             } else {
@@ -89,7 +109,7 @@ if ($reclamation_id) {
 }
 
 // Determine the role safely
-$role = $_SESSION['user_role'] ?? 'utilisateur'; // Assuming 'role' is the session key
+$role = $_SESSION['user_role'] ?? 'utilisateur';
 
 // Set page title
 $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur - Green.tn';
@@ -291,6 +311,36 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
             font-size: 12px;
             display: block;
             margin-top: 5px;
+        }
+
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .pagination a {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 0 5px;
+            background-color: #4CAF50;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .pagination a:hover {
+            background-color: #2e7d32;
+        }
+
+        .pagination a.disabled {
+            background-color: #ccc;
+            pointer-events: none;
+        }
+
+        .pagination a.current {
+            background-color: #2e7d32;
         }
 
         .formulaire-reponse h3 {
@@ -554,7 +604,7 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
 
             <section class="reponses">
                 <h3>Réponses :</h3>
-                <?php if (empty($reponses)): ?>
+                <?php if (empty($reponses) && $total_reponses == 0): ?>
                     <p>Aucune réponse pour l'instant.</p>
                 <?php else: ?>
                     <?php foreach ($reponses as $r): ?>
@@ -568,6 +618,25 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
                             </small>
                         </div>
                     <?php endforeach; ?>
+
+                    <!-- Pagination for responses -->
+                    <div class="pagination">
+                        <?php if ($page > 1): ?>
+                            <a href="?id=<?php echo $reclamation_id; ?>&page=<?php echo $page - 1; ?>">Précédent</a>
+                        <?php else: ?>
+                            <a href="#" class="disabled">Précédent</a>
+                        <?php endif; ?>
+
+                        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                            <a href="?id=<?php echo $reclamation_id; ?>&page=<?php echo $i; ?>" class="<?php echo $i == $page ? 'current' : ''; ?>"><?php echo $i; ?></a>
+                        <?php endfor; ?>
+
+                        <?php if ($page < $total_pages): ?>
+                            <a href="?id=<?php echo $reclamation_id; ?>&page=<?php echo $page + 1; ?>">Suivant</a>
+                        <?php else: ?>
+                            <a href="#" class="disabled">Suivant</a>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
             </section>
 
@@ -652,6 +721,48 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
         <?php endif; ?>
     </div>
 
-  
+    <footer>
+        <div class="footer-content">
+            <div class="footer-left">
+                <div class="footer-logo">
+                    <img src="image/ho.png" alt="Green.tn Logo">
+                </div>
+                <div class="social-icons">
+                    <a href="https://instagram.com"><img src="image/insta.png" alt="Instagram"></a>
+                    <a href="https://facebook.com"><img src="image/fb.png" alt="Facebook"></a>
+                    <a href="https://twitter.com"><img src="image/x.png" alt="Twitter"></a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Navigation</h3>
+                <ul>
+                    <li><a href="index.php">Accueil</a></li>
+                    <li><a href="ajouter_reclamation.php">Nouvelle réclamation</a></li>
+                    <li><a href="liste_reclamations.php">Voir les réclamations</a></li>
+                    <li><a href="ajouter_avis.php">Soumettre un avis</a></li>
+                    <li><a href="mes_avis.php">Mes avis</a></li>
+                    <li><a href="chatbot.php">Chatbot</a></li>
+                    <?php if ($role === 'admin'): ?>
+                        <li><a href="liste_avis.php">Voir les avis</a></li>
+                    <?php endif; ?>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <p>
+                    <img src="image/location.png" alt="Location Icon">
+                    Adresse
+                </p>
+                <p>
+                    <img src="image/telephone.png" alt="Phone Icon">
+                    Téléphone
+                </p>
+                <p>
+                    <img src="image/mail.png" alt="Email Icon">
+                    <a href="mailto:Green@green.com">Email</a>
+                </p>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>
