@@ -71,7 +71,7 @@ Green Admin is a web application for managing eco-friendly routes ("trajets") an
 - The dashboard provides interactive charts for both stations and routes.
 - Route statistics use the route's name (description) for chart labels, making analysis clearer.
 - Charts include:
-  - **CO₂ saved per route:** Bar chart with route names
+  - **CO₂ saved per route:*  * Bar chart with route names
   - **Energy consumption per route:** Stacked bar chart (battery and fuel)
   - **Distance distribution:** Pie chart by distance range
 

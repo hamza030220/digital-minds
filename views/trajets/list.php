@@ -1,84 +1,76 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
-require_once '../includes/config.php';
-
-// Debug check - remove this after fixing
-
-
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+require_once '../../includes/config.php';
 requireLogin();
+
+$basePath = '../../';
+$currentPage = 'trajets';
+
 $error = '';
 $success = '';
 
 try {
-    // Initialize database connection
     $pdo = getDBConnection();
     if (!$pdo) {
         throw new PDOException("Failed to connect to database");
     }
-    
-    // Debug: Vérifier les stations
-    $stmt = $pdo->query("SELECT COUNT(*) as count FROM stations");
-    $stationsCount = $stmt->fetch()['count'];
-    error_log("Nombre de stations dans la base: " . $stationsCount);
 
-    // Récupérer tous les trajets
-    $stmt = $pdo->query("SELECT t.id, t.route_coordinates FROM trajets t WHERE t.route_coordinates IS NOT NULL LIMIT 1");
-    $sampleTrajet = $stmt->fetch();
-    //error_log("Exemple de coordonnées de trajet: " . print_r($sampleTrajet['route_coordinates'], true));
-
-    // Récupérer tous les trajets (version originale)
-    $stmt = $pdo->query("SELECT t.id, t.distance, t.route_description AS description, 
-                         t.start_point_name, t.end_point_name, t.route_coordinates,
-                         t.co2_saved, t.battery_energy, t.fuel_saved
-                         FROM trajets t"); // <-- Removed ORDER BY t.id DESC
-    $trajets = $stmt->fetchAll();
+    // Fetch all trajets
+    $stmt = $pdo->query("SELECT id, distance, description, 
+                         start_point_name, end_point_name, route_coordinates,
+                         co2_saved, battery_energy, fuel_saved
+                         FROM trajets");
+    $trajets = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Get all stations with coordinates
     $stmt = $pdo->query("SELECT id, name, 
-                     CAST(TRIM(SUBSTRING_INDEX(location, ',', 1)) AS DECIMAL(10,6)) as latitude,
-                     CAST(TRIM(SUBSTRING_INDEX(location, ',', -1)) AS DECIMAL(10,6)) as longitude 
-                     FROM stations");
-    $stations = $stmt->fetchAll();
+                         CAST(TRIM(SUBSTRING_INDEX(location, ',', 1)) AS DECIMAL(10,6)) as latitude,
+                         CAST(TRIM(SUBSTRING_INDEX(location, ',', -1)) AS DECIMAL(10,6)) as longitude 
+                         FROM stations");
+    $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Calculate nearest station for each route with Haversine formula
     foreach ($trajets as &$trajet) {
         $nearestStation = null;
         $minDistance = PHP_FLOAT_MAX;
-        
+
         if (!empty($trajet['route_coordinates'])) {
             $routeCoords = json_decode($trajet['route_coordinates'], true);
-            $startPoint = $routeCoords[0];
-            
-            foreach ($stations as $station) {
-                // Haversine formula for accurate distance
-                $lat1 = deg2rad($startPoint['lat']);
-                $lon1 = deg2rad($startPoint['lng']);
-                $lat2 = deg2rad($station['latitude']);
-                $lon2 = deg2rad($station['longitude']);
-                
-                $dlat = $lat2 - $lat1;
-                $dlon = $lon2 - $lon1;
-                
-                $a = sin($dlat/2) * sin($dlat/2) + 
-                     cos($lat1) * cos($lat2) * 
-                     sin($dlon/2) * sin($dlon/2);
-                $c = 2 * atan2(sqrt($a), sqrt(1-$a));
-                $distance = 6371 * $c; // Earth radius in km
-                
-                if ($distance < $minDistance) {
-                    $minDistance = $distance;
-                    $nearestStation = $station['name'] . ' (' . round($distance, 2) . ' km)';
+            if (is_array($routeCoords) && !empty($routeCoords)) {
+                $startPoint = $routeCoords[0];
+
+                foreach ($stations as $station) {
+                    $lat1 = deg2rad($startPoint['lat']);
+                    $lon1 = deg2rad($startPoint['lng']);
+                    $lat2 = deg2rad($station['latitude']);
+                    $lon2 = deg2rad($station['longitude']);
+
+                    $dlat = $lat2 - $lat1;
+                    $dlon = $lon2 - $lon1;
+
+                    $a = sin($dlat / 2) * sin($dlat / 2) +
+                         cos($lat1) * cos($lat2) *
+                         sin($dlon / 2) * sin($dlon / 2);
+                    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+                    $distance = 6371 * $c; // Earth radius in km
+
+                    if ($distance < $minDistance) {
+                        $minDistance = $distance;
+                        $nearestStation = $station['name'] . ' (' . round($distance, 2) . ' km)';
+                    }
                 }
             }
         }
-        
+
         $trajet['nearest_station'] = $nearestStation ?? 'N/A';
     }
     unset($trajet);
 
 } catch (PDOException $e) {
-    error_log($e->getMessage());
-    $error = "Erreur lors de la récupération des trajets.";
+    error_log("Database Error: " . $e->getMessage());
+    $error = "Erreur lors de la récupération des trajets: " . htmlspecialchars($e->getMessage());
 }
 ?>
 <!DOCTYPE html>
@@ -89,14 +81,14 @@ try {
     <title>Liste des Trajets - Green Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="../assets/css/styles.css" rel="stylesheet">
+    <link href="../../assets/css/styles.css" rel="stylesheet">
     <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
 </head>
-<body>
+<body>  
 <?php 
-    $basePath = '../';
+    $basePath = '../../';
     $currentPage = 'trajets';
-    include '../includes/sidbar.php';
+    include '../../includes/sidbar.php';
 ?>
 <div id="main" class="main-content">
     <div class="container mt-4">
@@ -150,7 +142,7 @@ try {
                         <input type="text" id="modalTrajetSearchInput" class="form-control" placeholder="Rechercher dans le tableau complet...">
                         <div id="modalTrajetSearchMessage" class="mt-2" style="display:none;"></div>
                     </div>
-                    <div class="modal-body" style="max-height:70vh; overflow:auto;">
+                    <div class="modal-body" >
                         <div class="table-responsive">
                             <table class="table table-hover table-bordered mb-0" id="trajetsFullTable">
                                 <thead>

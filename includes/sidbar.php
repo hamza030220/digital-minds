@@ -18,13 +18,13 @@
                 </a>
             </li>
             <li class="sidebar-nav-item">
-                <a class="sidebar-nav-link <?php echo $currentPage === 'stations' ? 'active' : ''; ?>" href="<?php echo $basePath; ?>stations/list.php">
+                <a class="sidebar-nav-link <?php echo $currentPage === 'stations' ? 'active' : ''; ?>" href="<?php echo $basePath; ?>views/stations/list.php">
                     <span class="sidebar-nav-icon"><i class="bi bi-geo-alt"></i></span>
                     <span class="sidebar-nav-text">Stations</span>
                 </a>
             </li>
             <li class="sidebar-nav-item">
-                <a class="sidebar-nav-link <?php echo $currentPage === 'trajets' ? 'active' : ''; ?>" href="<?php echo $basePath; ?>trajets/list.php">
+                <a class="sidebar-nav-link <?php echo $currentPage === 'trajets' ? 'active' : ''; ?>" href="<?php echo $basePath; ?>views/trajets/list.php">
                     <span class="sidebar-nav-icon"><i class="bi bi-map"></i></span>
                     <span class="sidebar-nav-text">Trajets</span>
                 </a>
@@ -35,7 +35,7 @@
         <div class="mb-2">
             <span class="text-white">Bienvenue, <?php echo htmlspecialchars($_SESSION['username']); ?></span>
         </div>
-        <a href="<?php echo $basePath; ?>logout.php" class="btn btn-outline-light w-100">
+        <a href="<?php echo $basePath; ?>views/users/logout.php" class="btn btn-outline-light w-100">
             <i class="bi bi-box-arrow-right"></i> Déconnexion
         </a>
     </div>
