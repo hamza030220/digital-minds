@@ -563,10 +563,10 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
             </div>
             <nav class="nav-left">
                 <ul>
-                    <li><a href="index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="views/index.php"><?php echo t('home'); ?></a></li>
                     <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
                     <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
                 </ul>
             </nav>
@@ -659,7 +659,7 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
             <div class="footer-section">
                 <h3><?php echo t('navigation'); ?></h3>
                 <ul>
-                    <li><a href="index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="views/index.php"><?php echo t('home'); ?></a></li>
                     <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
                     <li><a href="#a-propos-de-nous"><?php echo t('about_us'); ?></a></li>
                     <li><a href="#contact"><?php echo t('contact'); ?></a></li>

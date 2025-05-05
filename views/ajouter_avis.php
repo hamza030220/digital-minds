@@ -6,8 +6,11 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Définir le chemin racine du projet
+define('ROOT_PATH', realpath(__DIR__ . '/..'));
+
 // Include translation helper
-require_once __DIR__ . '/translate.php';
+require_once ROOT_PATH . '/translate.php';
 
 // --- Retrieve Flash Message and Form Data (if any) ---
 $message = '';
@@ -44,7 +47,7 @@ $pageTitle = t('submit_review');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle); ?> - Green.tn</title>
-    <link rel="icon" href="image/ve.png" type="image/png">
+    <link rel="icon" href="../image/ve.png" type="image/png">
     <style>
         * {
             margin: 0;
@@ -446,33 +449,32 @@ $pageTitle = t('submit_review');
     <header>
         <div class="logo-nav-container">
             <div class="logo">
-                <img src="image/ve.png" alt="Green.tn Logo">
+                <img src="../image/ve.png" alt="Green.tn Logo">
             </div>
             <nav class="nav-left">
                 <ul>
-                    <li><a href="index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
-                    
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="../mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
             </nav>
         </div>
         <nav class="nav-right">
             <ul>
                 <li>
-                    <form action="" method="POST">
+                    <form action="../views/ajouter_avis.php" method="POST">
                         <input type="hidden" name="lang" value="<?php echo $_SESSION['lang'] === 'en' ? 'fr' : 'en'; ?>">
                         <button type="submit" class="lang-toggle"><?php echo $_SESSION['lang'] === 'en' ? t('toggle_language') : t('toggle_language_en'); ?></button>
                     </form>
                 </li>
                 <?php if ($isLoggedIn): ?>
-                    <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
+                    <li><a href="../logout.php" class="login"><?php echo t('logout'); ?></a></li>
                 <?php else: ?>
-                    <li><a href="login.php" class="login"><?php echo t('login'); ?></a></li>
-                    <li><a href="signup.php" class="signin"><?php echo t('signup'); ?></a></li>
+                    <li><a href="../login.php" class="login"><?php echo t('login'); ?></a></li>
+                    <li><a href="../signup.php" class="signin"><?php echo t('signup'); ?></a></li>
                 <?php endif; ?>
             </ul>
         </nav>
@@ -487,16 +489,16 @@ $pageTitle = t('submit_review');
                 $msg_class = ($message_type === 'success') ? 'success' : 'error';
                 echo "<div class='message " . $msg_class . "'>" . htmlspecialchars($message);
                 if ($message_type === 'success') {
-                    echo " <a href='ajouter_avis.php'>" . t('submit_another_review') . "</a>";
+                    echo " <a href='../views/ajouter_avis.php'>" . t('submit_another_review') . "</a>";
                 } elseif ($message === t('login_required')) {
-                    echo " <a href='login.php'>" . t('login') . "</a>.";
+                    echo " <a href='../login.php'>" . t('login') . "</a>.";
                 }
                 echo "</div>";
             }
             ?>
 
             <?php if ($isLoggedIn && $message_type !== 'success'): ?>
-                <form action="./controllers/AvisController.php" method="POST" id="avisForm" novalidate>
+                <form action="../controllers/AvisController.php" method="POST" id="avisForm" novalidate>
                     <label for="titre"><?php echo t('title'); ?>:</label>
                     <input type="text" id="titre" name="titre" value="<?php echo htmlspecialchars($form_data['titre'] ?? ''); ?>">
                     <span class="error-message" id="titre-error"></span>
@@ -520,7 +522,7 @@ $pageTitle = t('submit_review');
                     <button type="submit"><?php echo t('submit_review'); ?></button>
                 </form>
             <?php elseif (!$isLoggedIn && empty($message)): ?>
-                <p class="message error"><?php echo t('login_required'); ?> <a href="login.php"><?php echo t('login'); ?></a>.</p>
+                <p class="message error"><?php echo t('login_required'); ?> <a href="../login.php"><?php echo t('login'); ?></a>.</p>
             <?php endif; ?>
         </div>
     </main>
@@ -529,35 +531,35 @@ $pageTitle = t('submit_review');
         <div class="footer-content">
             <div class="footer-left">
                 <div class="footer-logo">
-                    <img src="image/ho.png" alt="Green.tn Logo">
+                    <img src="../image/ho.png" alt="Green.tn Logo">
                 </div>
                 <div class="social-icons">
-                    <a href="https://instagram.com"><img src="image/insta.png" alt="Instagram"></a>
-                    <a href="https://facebook.com"><img src="image/fb.png" alt="Facebook"></a>
-                    <a href="https://twitter.com"><img src="image/x.png" alt="Twitter"></a>
+                    <a href="https://instagram.com"><img src="../image/insta.png" alt="Instagram"></a>
+                    <a href="https://facebook.com"><img src="../image/fb.png" alt="Facebook"></a>
+                    <a href="https://twitter.com"><img src="../image/x.png" alt="Twitter"></a>
                 </div>
             </div>
             <div class="footer-section">
                 <h3><?php echo t('navigation'); ?></h3>
                 <ul>
-                    <li><a href="index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h3><?php echo t('contact'); ?></h3>
                 <p>
-                    <img src="image/location.png" alt="Location Icon">
+                    <img src="../image/location.png" alt="Location Icon">
                     <?php echo t('address'); ?>
                 </p>
                 <p>
-                    <img src="image/telephone.png" alt="Phone Icon">
+                    <img src="../image/telephone.png" alt="Phone Icon">
                     <?php echo t('phone'); ?>
                 </p>
                 <p>
-                    <img src="image/mail.png" alt="Email Icon">
+                    <img src="../image/mail.png" alt="Email Icon">
                     <a href="mailto:Green@green.com"><?php echo t('email'); ?></a>
                 </p>
             </div>

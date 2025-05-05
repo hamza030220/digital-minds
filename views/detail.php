@@ -11,22 +11,22 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 // Include translation helper
-require_once __DIR__ . '/translate.php';
+require_once __DIR__ . '/../translate.php';
 
 // Authentication Check: Ensure user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ./login.php?error=' . urlencode(t('error_session_required')));
+    header('Location: ../login.php?error=' . urlencode(t('error_session_required')));
     exit;
 }
 
 // Include the Model
-require_once __DIR__ . '/models/Reclamation.php';
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/../models/Reclamation.php';
+require_once __DIR__ . '/../config/database.php';
 
 // Validate reclamation ID
 $reclamationId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($reclamationId <= 0) {
-    header('Location: ./liste_reclamations.php?error=' . urlencode(t('invalid_reclamation_id')));
+    header('Location: ../liste_reclamations.php?error=' . urlencode(t('invalid_reclamation_id')));
     exit;
 }
 
@@ -43,7 +43,7 @@ try {
     $reclamation = $reclamationModel->getParId($reclamationId);
     // Verify the reclamation exists and belongs to the user
     if (!$reclamation || $reclamation['utilisateur_id'] != $user_id) {
-        header('Location: ./liste_reclamations.php?error=' . urlencode(t('reclamation_not_found')));
+        header('Location: ../liste_reclamations.php?error=' . urlencode(t('reclamation_not_found')));
         exit;
     }
 
@@ -83,7 +83,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle); ?></title>
-    <link rel="icon" href="image/ve.png" type="image/png">
+    <link rel="icon" href="../image/ve.png" type="image/png">
     <style>
         * {
             margin: 0;
@@ -455,28 +455,27 @@ try {
     <header>
         <div class="logo-nav-container">
             <div class="logo">
-                <img src="image/ve.png" alt="Green.tn Logo">
+                <img src="../image/ve.png" alt="Green.tn Logo">
             </div>
             <nav class="nav-left">
                 <ul>
-                <li><a href="index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-
-                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="../mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
             </nav>
         </div>
         <nav class="nav-right">
             <ul>
                 <li>
-                    <form action="detail.php?id=<?php echo htmlspecialchars($reclamationId); ?>" method="POST" id="lang-toggle-form">
-                       
+                    <form action="../views/detail.php?id=<?php echo htmlspecialchars($reclamationId); ?>" method="POST" id="lang-toggle-form">
+                        <!-- Le contrôleur gérera le changement de langue -->
                     </form>
                 </li>
-                <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
+                <li><a href="../logout.php" class="login"><?php echo t('logout'); ?></a></li>
             </ul>
         </nav>
     </header>
@@ -541,7 +540,7 @@ try {
                             </div>
                         <?php endif; ?>
                     </div>
-                    <a href="liste_reclamations.php" class="btn"><?php echo t('back_to_list'); ?></a>
+                    <a href="../liste_reclamations.php" class="btn"><?php echo t('back_to_list'); ?></a>
                 </div>
             <?php endif; ?>
         </div>
@@ -551,39 +550,38 @@ try {
         <div class="footer-content">
             <div class="footer-left">
                 <div class="footer-logo">
-                    <img src="image/ho.png" alt="Green.tn Logo">
+                    <img src="../image/ho.png" alt="Green.tn Logo">
                 </div>
                 <div class="social-icons">
-                    <a href="https://instagram.com"><img src="image/insta.png" alt="Instagram"></a>
-                    <a href="https://facebook.com"><img src="image/fb.png" alt="Facebook"></a>
-                    <a href="https://twitter.com"><img src="image/x.png" alt="Twitter"></a>
+                    <a href="https://instagram.com"><img src="../image/insta.png" alt="Instagram"></a>
+                    <a href="https://facebook.com"><img src="../image/fb.png" alt="Facebook"></a>
+                    <a href="https://twitter.com"><img src="../image/x.png" alt="Twitter"></a>
                 </div>
             </div>
             <div class="footer-section">
                 <h3><?php echo t('navigation'); ?></h3>
                 <ul>
-                <li><a href="index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
                     <li><a href="#a-propos-de-nous"><?php echo t('about_us'); ?></a></li>
                     <li><a href="#contact"><?php echo t('contact'); ?></a></li>
-                    <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-
-                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
+                    <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="../mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h3><?php echo t('contact'); ?></h3>
                 <p>
-                    <img src="image/location.png" alt="Location Icon">
+                    <img src="../image/location.png" alt="Location Icon">
                     <?php echo t('address'); ?>
                 </p>
                 <p>
-                    <img src="image/telephone.png" alt="Phone Icon">
+                    <img src="../image/telephone.png" alt="Phone Icon">
                     <?php echo t('phone'); ?>
                 </p>
                 <p>
-                    <img src="image/mail.png" alt="Email Icon">
+                    <img src="../image/mail.png" alt="Email Icon">
                     <a href="mailto:Green@green.com"><?php echo t('email'); ?></a>
                 </p>
             </div>

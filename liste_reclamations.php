@@ -639,10 +639,10 @@ try {
             </div>
             <nav class="nav-left">
                 <ul>
-                    <li><a href="index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="views/index.php"><?php echo t('home'); ?></a></li>
                     <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
                     <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
                     <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
@@ -720,7 +720,7 @@ try {
                         <tbody>
                             <?php foreach ($filteredReclamations as $reclamation): ?>
                                 <tr data-type="<?php echo htmlspecialchars($reclamation['type_probleme']); ?>" data-status="<?php echo htmlspecialchars($reclamation['statut']); ?>">
-                                    <td><a href="detail.php?id=<?php echo $reclamation['id']; ?>" class="title-link"><?php echo htmlspecialchars($reclamation['titre']); ?></a></td>
+                                <td><a href="views/detail.php?id=<?php echo $reclamation['id']; ?>" class="title-link"><?php echo htmlspecialchars($reclamation['titre']); ?></a></td>
                                     <td><?php echo htmlspecialchars(substr($reclamation['description'], 0, 100)) . (strlen($reclamation['description']) > 100 ? '...' : ''); ?></td>
                                     <td><?php echo htmlspecialchars($reclamation['lieu']); ?></td>
                                     <td><?php echo htmlspecialchars(t(getTypeTranslationKey($reclamation['type_probleme']))); ?></td>
@@ -767,11 +767,11 @@ try {
             <div class="footer-section">
                 <h3><?php echo t('navigation'); ?></h3>
                 <ul>
-                    <li><a href="index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="views/index.php"><?php echo t('home'); ?></a></li>
                     <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
                     <li><a href="#a-propos-de-nous"><?php echo t('about_us'); ?></a></li>
                     <li><a href="#contact"><?php echo t('contact'); ?></a></li>
-                    <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                     <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
                     <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
@@ -877,7 +877,7 @@ try {
                 tr.setAttribute('data-type', reclamation.type_probleme);
                 tr.setAttribute('data-status', reclamation.statut);
                 tr.innerHTML = `
-                    <td><a href="detail.php?id=${reclamation.id}" class="title-link">${reclamation.titre}</a></td>
+                    <td><a href="views/detail.php?id=${reclamation.id}" class="title-link">${reclamation.titre}</a></td>
                     <td>${reclamation.description.substring(0, 100)}${reclamation.description.length > 100 ? '...' : ''}</td>
                     <td>${reclamation.lieu}</td>
                     <td>${translations[normalizedType] || reclamation.type_probleme}</td>
