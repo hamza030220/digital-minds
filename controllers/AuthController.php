@@ -25,9 +25,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['user_role'] = $user->role;
 
         if ($user->role === 'admin') {
-            header("Location: ../reclamations_utilisateur.php");
+            header("Location: ../views/reclamations_utilisateur.php");
         } else {
-            header("Location: ../liste_reclamations.php");
+            header("Location: ../views/liste_reclamations.php");
         }
         exit();
     } else {

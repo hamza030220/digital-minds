@@ -2,8 +2,12 @@
 // mes_avis.php
 
 session_start();
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/translate.php';
+
+// Définir le chemin racine du projet
+define('ROOT_PATH', realpath(__DIR__ . '/..'));
+
+require_once ROOT_PATH . '/config/database.php';
+require_once ROOT_PATH . '/translate.php';
 
 // Connexion à la base de données
 $database = new Database();
@@ -106,7 +110,7 @@ $pageTitle = t('my_reviews');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle); ?> - Green.tn</title>
-    <link rel="icon" href="image/ve.png" type="image/png">
+    <link rel="icon" href="../image/ve.png" type="image/png">
     <style>
         * {
             margin: 0;
@@ -507,18 +511,18 @@ $pageTitle = t('my_reviews');
     <header>
         <div class="logo-nav-container">
             <div class="logo">
-                <img src="image/ve.png" alt="Green.tn Logo">
+                <img src="../image/ve.png" alt="Green.tn Logo">
             </div>
             <nav class="nav-left">
                 <ul>
-                    <li><a href="views/index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../views/ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../views/liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="../views/mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../views/chatbot.php"><?php echo t('chatbot'); ?></a></li>
                     <?php if ($isAdmin): ?>
-                        <li><a href="liste_avis.php"><?php echo t('view_reviews'); ?></a></li>
+                        <li><a href="../liste_avis.php"><?php echo t('view_reviews'); ?></a></li>
                     <?php endif; ?>
                 </ul>
             </nav>
@@ -526,12 +530,12 @@ $pageTitle = t('my_reviews');
         <nav class="nav-right">
             <ul>
                 <?php if ($isLoggedIn): ?>
-                    <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
+                    <li><a href="../logout.php" class="login"><?php echo t('logout'); ?></a></li>
                 <?php else: ?>
-                    <li><a href="login.php" class="login"><?php echo t('login'); ?></a></li>
+                    <li><a href="../login.php" class="login"><?php echo t('login'); ?></a></li>
                 <?php endif; ?>
                 <li>
-                    <form action="" method="POST">
+                    <form action="../views/mes_avis.php" method="POST">
                         <input type="hidden" name="lang" value="<?php echo $_SESSION['lang'] === 'fr' ? 'en' : 'fr'; ?>">
                         <button type="submit" class="lang-toggle"><?php echo t($_SESSION['lang'] === 'fr' ? 'toggle_language' : 'toggle_language_en'); ?></button>
                     </form>
@@ -544,7 +548,7 @@ $pageTitle = t('my_reviews');
         <div class="container">
             <h2><?php echo htmlspecialchars($pageTitle); ?></h2>
             <?php if (!$isLoggedIn): ?>
-                <p class="message error"><?php echo t('login_required'); ?> <a href="login.php"><?php echo t('login'); ?></a>.</p>
+                <p class="message error"><?php echo t('login_required'); ?> <a href="../login.php"><?php echo t('login'); ?></a>.</p>
             <?php else: ?>
                 <?php if ($message): ?>
                     <p class="message <?php echo strpos($message, t('review_deleted')) !== false ? 'success' : 'error'; ?>">
@@ -579,7 +583,7 @@ $pageTitle = t('my_reviews');
                                 ?>
                             </div>
                             <p><?php echo htmlspecialchars($avi['description']); ?></p>
-                            <form method="POST" action="" style="display:inline;">
+                            <form method="POST" action="../views/mes_avis.php" style="display:inline;">
                                 <input type="hidden" name="delete_avis_id" value="<?php echo $avi['id']; ?>">
                                 <button type="submit" class="delete-btn"><?php echo t('delete'); ?></button>
                             </form>
@@ -589,17 +593,17 @@ $pageTitle = t('my_reviews');
                     <!-- Pagination -->
                     <div class="pagination">
                         <?php if ($page > 1): ?>
-                            <a href="?page=<?php echo $page - 1; ?>"><?php echo t('previous'); ?></a>
+                            <a href="../views/mes_avis.php?page=<?php echo $page - 1; ?>"><?php echo t('previous'); ?></a>
                         <?php else: ?>
                             <a href="#" class="disabled"><?php echo t('previous'); ?></a>
                         <?php endif; ?>
 
                         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                            <a href="?page=<?php echo $i; ?>" class="<?php echo $i == $page ? 'current' : ''; ?>"><?php echo $i; ?></a>
+                            <a href="../views/mes_avis.php?page=<?php echo $i; ?>" class="<?php echo $i == $page ? 'current' : ''; ?>"><?php echo $i; ?></a>
                         <?php endfor; ?>
 
                         <?php if ($page < $total_pages): ?>
-                            <a href="?page=<?php echo $page + 1; ?>"><?php echo t('next'); ?></a>
+                            <a href="../views/mes_avis.php?page=<?php echo $page + 1; ?>"><?php echo t('next'); ?></a>
                         <?php else: ?>
                             <a href="#" class="disabled"><?php echo t('next'); ?></a>
                         <?php endif; ?>
@@ -613,40 +617,40 @@ $pageTitle = t('my_reviews');
         <div class="footer-content">
             <div class="footer-left">
                 <div class="footer-logo">
-                    <img src="image/ho.png" alt="Green.tn Logo">
+                    <img src="../image/ho.png" alt="Green.tn Logo">
                 </div>
                 <div class="social-icons">
-                    <a href="https://instagram.com"><img src="image/insta.png" alt="Instagram"></a>
-                    <a href="https://facebook.com"><img src="image/fb.png" alt="Facebook"></a>
-                    <a href="https://twitter.com"><img src="image/x.png" alt="Twitter"></a>
+                    <a href="https://instagram.com"><img src="../image/insta.png" alt="Instagram"></a>
+                    <a href="https://facebook.com"><img src="../image/fb.png" alt="Facebook"></a>
+                    <a href="https://twitter.com"><img src="../image/x.png" alt="Twitter"></a>
                 </div>
             </div>
             <div class="footer-section">
                 <h3><?php echo t('navigation'); ?></h3>
                 <ul>
-                    <li><a href="views/index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../views/ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../views/liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="../views/mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../views/chatbot.php"><?php echo t('chatbot'); ?></a></li>
                     <?php if ($isAdmin): ?>
-                        <li><a href="liste_avis.php"><?php echo t('view_reviews'); ?></a></li>
+                        <li><a href="../liste_avis.php"><?php echo t('view_reviews'); ?></a></li>
                     <?php endif; ?>
                 </ul>
             </div>
             <div class="footer-section">
                 <h3><?php echo t('contact'); ?></h3>
                 <p>
-                    <img src="image/location.png" alt="Location Icon">
+                    <img src="../image/location.png" alt="Location Icon">
                     <?php echo t('address'); ?>
                 </p>
                 <p>
-                    <img src="image/telephone.png" alt="Phone Icon">
+                    <img src="../image/telephone.png" alt="Phone Icon">
                     <?php echo t('phone'); ?>
                 </p>
                 <p>
-                    <img src="image/mail.png" alt="Email Icon">
+                    <img src="../image/mail.png" alt="Email Icon">
                     <a href="mailto:Green@green.com"><?php echo t('email'); ?></a>
                 </p>
             </div>

@@ -454,11 +454,11 @@ $pageTitle = t('submit_review');
             <nav class="nav-left">
                 <ul>
                     <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="../ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="../liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="../views/ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../views/liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
                     <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="../mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-                    <li><a href="../chatbot.php"><?php echo t('chatbot'); ?></a></li>
+                    <li><a href="../views/mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../views/chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
             </nav>
         </div>
@@ -543,8 +543,8 @@ $pageTitle = t('submit_review');
                 <h3><?php echo t('navigation'); ?></h3>
                 <ul>
                     <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="../ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="../liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="../views/ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../views/liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
                     <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
                 </ul>
             </div>

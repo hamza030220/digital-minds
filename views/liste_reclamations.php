@@ -7,18 +7,21 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Définir le chemin racine du projet
+define('ROOT_PATH', realpath(__DIR__ . '/..'));
+
 // Include translation helper
-require_once __DIR__ . '/translate.php';
+require_once ROOT_PATH . '/translate.php';
 
 // Include the Model
-require_once __DIR__ . '/models/Reclamation.php';
+require_once ROOT_PATH . '/models/Reclamation.php';
 
 // Include Database connection
-require_once __DIR__ . '/config/database.php';
+require_once ROOT_PATH . '/config/database.php';
 
 // Authentication Check: Ensure user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ./login.php?error=' . urlencode(t('error_session_required')));
+    header('Location: ../login.php?error=' . urlencode(t('error_session_required')));
     exit;
 }
 
@@ -118,7 +121,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle); ?></title>
-    <link rel="icon" href="image/ve.png" type="image/png">
+    <link rel="icon" href="../image/ve.png" type="image/png">
     <style>
         * {
             margin: 0;
@@ -635,23 +638,23 @@ try {
     <header>
         <div class="logo-nav-container">
             <div class="logo">
-                <img src="image/ve.png" alt="Green.tn Logo">
+                <img src="../image/ve.png" alt="Green.tn Logo">
             </div>
             <nav class="nav-left">
                 <ul>
-                    <li><a href="views/index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../views/ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../views/liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="../views/mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../views/chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
             </nav>
         </div>
         <nav class="nav-right">
             <ul>
                 <li>
-                    <a href="notifications.php" class="notification">
+                    <a href="../views/notifications.php" class="notification">
                         🔔
                         <?php if ($notificationCount > 0): ?>
                             <span class="badge"><?php echo $notificationCount; ?></span>
@@ -659,12 +662,12 @@ try {
                     </a>
                 </li>
                 <li>
-                    <form action="liste_reclamations.php" method="POST" id="lang-toggle-form">
+                    <form action="../views/liste_reclamations.php" method="POST" id="lang-toggle-form">
                         <input type="hidden" name="lang" value="<?php echo $_SESSION['lang'] === 'en' ? 'fr' : 'en'; ?>">
                         <button type="submit" class="lang-toggle"><?php echo $_SESSION['lang'] === 'en' ? t('toggle_language') : t('toggle_language_en'); ?></button>
                     </form>
                 </li>
-                <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
+                <li><a href="../logout.php" class="login"><?php echo t('logout'); ?></a></li>
             </ul>
         </nav>
     </header>
@@ -703,7 +706,7 @@ try {
 
             <div class="table-container">
                 <?php if (!$errorMessage && empty($reclamations)): ?>
-                    <p class="info-message"><?php echo t('no_reclamations'); ?> <a href="ajouter_reclamation.php"><?php echo t('submit_new_reclamation'); ?></a></p>
+                    <p class="info-message"><?php echo t('no_reclamations'); ?> <a href="../views/ajouter_reclamation.php"><?php echo t('submit_new_reclamation'); ?></a></p>
                 <?php elseif (!empty($reclamations)): ?>
                     <table id="reclamations-table">
                         <thead>
@@ -720,17 +723,17 @@ try {
                         <tbody>
                             <?php foreach ($filteredReclamations as $reclamation): ?>
                                 <tr data-type="<?php echo htmlspecialchars($reclamation['type_probleme']); ?>" data-status="<?php echo htmlspecialchars($reclamation['statut']); ?>">
-                                <td><a href="views/detail.php?id=<?php echo $reclamation['id']; ?>" class="title-link"><?php echo htmlspecialchars($reclamation['titre']); ?></a></td>
+                                    <td><a href="../views/detail.php?id=<?php echo $reclamation['id']; ?>" class="title-link"><?php echo htmlspecialchars($reclamation['titre']); ?></a></td>
                                     <td><?php echo htmlspecialchars(substr($reclamation['description'], 0, 100)) . (strlen($reclamation['description']) > 100 ? '...' : ''); ?></td>
                                     <td><?php echo htmlspecialchars($reclamation['lieu']); ?></td>
                                     <td><?php echo htmlspecialchars(t(getTypeTranslationKey($reclamation['type_probleme']))); ?></td>
                                     <td><?php echo ucfirst(htmlspecialchars(t(getStatusTranslationKey($reclamation['statut'])))); ?></td>
                                     <td>
-                                        <a href="repondre_reclamation.php?id=<?php echo $reclamation['id']; ?>" class="btn"><?php echo t('respond'); ?></a>
+                                        <a href="../repondre_reclamation.php?id=<?php echo $reclamation['id']; ?>" class="btn"><?php echo t('respond'); ?></a>
                                     </td>
                                     <td>
-                                        <a href="modifier_reclamation.php?id=<?php echo $reclamation['id']; ?>" class="btn"><?php echo t('edit'); ?></a>
-                                        <a href="controllers/supprimer_reclamation.php?id=<?php echo $reclamation['id']; ?>" class="btn btn-danger" onclick="return confirm('<?php echo t('confirm_delete'); ?>');"><?php echo t('delete'); ?></a>
+                                        <a href="../views/modifier_reclamation.php?id=<?php echo $reclamation['id']; ?>" class="btn"><?php echo t('edit'); ?></a>
+                                        <a href="../controllers/supprimer_reclamation.php?id=<?php echo $reclamation['id']; ?>" class="btn btn-danger" onclick="return confirm('<?php echo t('confirm_delete'); ?>');"><?php echo t('delete'); ?></a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -739,11 +742,11 @@ try {
 
                     <!-- Pagination Controls -->
                     <div class="pagination">
-                        <a href="liste_reclamations.php?page=<?php echo $currentPage - 1; ?>" class="<?php echo $currentPage <= 1 ? 'disabled' : ''; ?>">
+                        <a href="../views/liste_reclamations.php?page=<?php echo $currentPage - 1; ?>" class="<?php echo $currentPage <= 1 ? 'disabled' : ''; ?>">
                             <?php echo t('previous'); ?>
                         </a>
                         <span><?php echo t('page') . ' ' . $currentPage . ' / ' . $totalPages; ?></span>
-                        <a href="liste_reclamations.php?page=<?php echo $currentPage + 1; ?>" class="<?php echo $currentPage >= $totalPages ? 'disabled' : ''; ?>">
+                        <a href="../views/liste_reclamations.php?page=<?php echo $currentPage + 1; ?>" class="<?php echo $currentPage >= $totalPages ? 'disabled' : ''; ?>">
                             <?php echo t('next'); ?>
                         </a>
                     </div>
@@ -756,38 +759,38 @@ try {
         <div class="footer-content">
             <div class="footer-left">
                 <div class="footer-logo">
-                    <img src="image/ho.png" alt="Green.tn Logo">
+                    <img src="../image/ho.png" alt="Green.tn Logo">
                 </div>
                 <div class="social-icons">
-                    <a href="https://instagram.com"><img src="image/insta.png" alt="Instagram"></a>
-                    <a href="https://facebook.com"><img src="image/fb.png" alt="Facebook"></a>
-                    <a href="https://twitter.com"><img src="image/x.png" alt="Twitter"></a>
+                    <a href="https://instagram.com"><img src="../image/insta.png" alt="Instagram"></a>
+                    <a href="https://facebook.com"><img src="../image/fb.png" alt="Facebook"></a>
+                    <a href="https://twitter.com"><img src="../image/x.png" alt="Twitter"></a>
                 </div>
             </div>
             <div class="footer-section">
                 <h3><?php echo t('navigation'); ?></h3>
                 <ul>
-                    <li><a href="views/index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../views/ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
                     <li><a href="#a-propos-de-nous"><?php echo t('about_us'); ?></a></li>
                     <li><a href="#contact"><?php echo t('contact'); ?></a></li>
-                    <li><a href="views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
+                    <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="../views/mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../views/chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h3><?php echo t('contact'); ?></h3>
                 <p>
-                    <img src="image/location.png" alt="Location Icon">
+                    <img src="../image/location.png" alt="Location Icon">
                     <?php echo t('address'); ?>
                 </p>
                 <p>
-                    <img src="image/telephone.png" alt="Phone Icon">
+                    <img src="../image/telephone.png" alt="Phone Icon">
                     <?php echo t('phone'); ?>
                 </p>
                 <p>
-                    <img src="image/mail.png" alt="Email Icon">
+                    <img src="../image/mail.png" alt="Email Icon">
                     <a href="mailto:Green@green.com"><?php echo t('email'); ?></a>
                 </p>
             </div>
@@ -877,15 +880,15 @@ try {
                 tr.setAttribute('data-type', reclamation.type_probleme);
                 tr.setAttribute('data-status', reclamation.statut);
                 tr.innerHTML = `
-                    <td><a href="views/detail.php?id=${reclamation.id}" class="title-link">${reclamation.titre}</a></td>
+                    <td><a href="../views/detail.php?id=${reclamation.id}" class="title-link">${reclamation.titre}</a></td>
                     <td>${reclamation.description.substring(0, 100)}${reclamation.description.length > 100 ? '...' : ''}</td>
                     <td>${reclamation.lieu}</td>
                     <td>${translations[normalizedType] || reclamation.type_probleme}</td>
                     <td>${translations[normalizedStatus] ? translations[normalizedStatus].charAt(0).toUpperCase() + translations[normalizedStatus].slice(1) : reclamation.statut.charAt(0).toUpperCase() + reclamation.statut.slice(1)}</td>
-                    <td><a href="repondre_reclamation.php?id=${reclamation.id}" class="btn">${translations.respond}</a></td>
+                    <td><a href="../repondre_reclamation.php?id=${reclamation.id}" class="btn">${translations.respond}</a></td>
                     <td>
-                        <a href="modifier_reclamation.php?id=${reclamation.id}" class="btn">${translations.edit}</a>
-                        <a href="controllers/supprimer_reclamation.php?id=${reclamation.id}" class="btn btn-danger" onclick="return confirm(translations.confirm_delete);">${translations.delete}</a>
+                        <a href="../views/modifier_reclamation.php?id=${reclamation.id}" class="btn">${translations.edit}</a>
+                        <a href="../controllers/supprimer_reclamation.php?id=${reclamation.id}" class="btn btn-danger" onclick="return confirm(translations.confirm_delete);">${translations.delete}</a>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -904,8 +907,8 @@ try {
 
             prevLink.classList.toggle('disabled', currentPage <= 1);
             nextLink.classList.toggle('disabled', currentPage >= totalPages);
-            prevLink.href = `liste_reclamations.php?page=${currentPage - 1}`;
-            nextLink.href = `liste_reclamations.php?page=${currentPage + 1}`;
+            prevLink.href = `../views/liste_reclamations.php?page=${currentPage - 1}`;
+            nextLink.href = `../views/liste_reclamations.php?page=${currentPage + 1}`;
             pageInfo.textContent = `<?php echo t('page'); ?> ${currentPage} / ${totalPages}`;
         }
 

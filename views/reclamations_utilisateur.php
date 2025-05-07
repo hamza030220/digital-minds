@@ -2,8 +2,11 @@
 // Start session if needed for admin checks later
 // session_start();
 
+// Définir le chemin racine du projet
+define('ROOT_PATH', realpath(__DIR__ . '/..'));
+
 // Connexion à la base de données using Database class
-require_once 'config/database.php';
+require_once ROOT_PATH . '/config/database.php';
 
 $database = new Database();
 $pdo = $database->getConnection();
@@ -102,7 +105,7 @@ if ($stmt) {
 <head>
     <meta charset="UTF-8">
     <title>Voir les réclamations - Green.tn</title>
-    <link rel="icon" href="image/ve.png" type="image/png">
+    <link rel="icon" href="../image/ve.png" type="image/png">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -444,14 +447,14 @@ if ($stmt) {
     <!-- Sidebar Navigation -->
     <div class="sidebar">
         <div class="logo">
-            <img src="image/ve.png" alt="Green.tn Logo">
+            <img src="../image/ve.png" alt="Green.tn Logo">
         </div>
         <ul>
-        <li><a href="stats.php">🏠 Dashboard</a></li>
+            <li><a href="../views/stats.php">🏠 Dashboard</a></li>
             <li><a href="">🚲 Reservation</a></li>
-            <li><a href="reclamations_utilisateur.php">📋 Reclamation</a></li>
-            <li><a href="liste_avis.php">⭐ Avis</a></li>
-            <li><a href="logout.php">🔓 Déconnexion</a></li>
+            <li><a href="../views/reclamations_utilisateur.php">📋 Reclamation</a></li>
+            <li><a href="../views/liste_avis.php">⭐ Avis</a></li>
+            <li><a href="../logout.php">🔓 Déconnexion</a></li>
         </ul>
     </div>
 
@@ -486,7 +489,7 @@ if ($stmt) {
                 <option value="Autre" <?php echo $type_probleme === 'Autre' ? 'selected' : ''; ?>>Autre</option>
             </select>
             <button type="submit">Rechercher</button>
-            <a href="?" style="padding: 8px 15px; background-color:#f39c12; color:white; text-decoration:none; border-radius:5px; margin-left: 5px;">Reset</a>
+            <a href="../views/reclamations_utilisateur.php" style="padding: 8px 15px; background-color:#f39c12; color:white; text-decoration:none; border-radius:5px; margin-left: 5px;">Reset</a>
         </form>
 
         <!-- Table Display -->
@@ -511,8 +514,8 @@ if ($stmt) {
                         <td><?php echo htmlspecialchars($r['type_probleme']); ?></td>
                         <td><?php echo htmlspecialchars(ucfirst($r['statut'])); ?></td>
                         <td>
-                            <a href="voir_reclamation.php?id=<?php echo $r['id']; ?>" title="Voir détails">👁️Voir</a> |
-                            <a href="./controllers/supprimer_reclamation.php?id=<?php echo $r['id']; ?>" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette réclamation ?')" title="Supprimer">❌Supprimer</a>
+                            <a href="../views/voir_reclamation.php?id=<?php echo $r['id']; ?>" title="Voir détails">👁️Voir</a> |
+                            <a href="../controllers/supprimer_reclamation.php?id=<?php echo $r['id']; ?>" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette réclamation ?')" title="Supprimer">❌Supprimer</a>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -526,17 +529,17 @@ if ($stmt) {
 
         <!-- Pagination Controls -->
         <div class="pagination">
-            <a href="?page=<?php echo $currentPage - 1; ?>&lieu=<?php echo urlencode($lieu); ?>&type_probleme=<?php echo urlencode($type_probleme); ?>" class="<?php echo $currentPage <= 1 ? 'disabled' : ''; ?>">
+            <a href="../views/reclamations_utilisateur.php?page=<?php echo $currentPage - 1; ?>&lieu=<?php echo urlencode($lieu); ?>&type_probleme=<?php echo urlencode($type_probleme); ?>" class="<?php echo $currentPage <= 1 ? 'disabled' : ''; ?>">
                 Précédent
             </a>
             <span>Page <?php echo $currentPage; ?> / <?php echo $totalPages; ?></span>
-            <a href="?page=<?php echo $currentPage + 1; ?>&lieu=<?php echo urlencode($lieu); ?>&type_probleme=<?php echo urlencode($type_probleme); ?>" class="<?php echo $currentPage >= $totalPages ? 'disabled' : ''; ?>">
+            <a href="../views/reclamations_utilisateur.php?page=<?php echo $currentPage + 1; ?>&lieu=<?php echo urlencode($lieu); ?>&type_probleme=<?php echo urlencode($type_probleme); ?>" class="<?php echo $currentPage >= $totalPages ? 'disabled' : ''; ?>">
                 Suivant
             </a>
         </div>
 
         <!-- Export PDF Form -->
-        <form method="get" action="./controllers/export_pdf.php" class="export-form">
+        <form method="get" action="../controllers/export_pdf.php" class="export-form">
             <input type="text" name="lieu" placeholder="Lieu" value="<?php echo htmlspecialchars($lieu); ?>">
             <select name="type_probleme">
                 <option value="">Tous les types</option>

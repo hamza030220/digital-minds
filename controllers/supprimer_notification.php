@@ -37,7 +37,7 @@ try {
 
     // Check if a row was deleted
     if ($stmt->rowCount() > 0) {
-        header('Location: ../notifications.php?delete_status=success');
+        header('Location: ../views/notifications.php?delete_status=success');
     } else {
         header('Location: ../notifications.php?delete_status=error');
     }

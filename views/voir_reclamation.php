@@ -7,8 +7,9 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 // --- Dependencies ---
-require_once __DIR__ . '/config/database.php'; // Needed for Database class
-require_once __DIR__ . '/models/Reclamation.php'; // Needed for Reclamation model
+define('ROOT_PATH', realpath(__DIR__ . '/..'));
+require_once ROOT_PATH . '/config/database.php'; // Needed for Database class
+require_once ROOT_PATH . '/models/Reclamation.php'; // Needed for Reclamation model
 
 // --- Initialization ---
 $reclamation = null;
@@ -121,7 +122,7 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle); ?></title>
-    <link rel="icon" href="image/ve.png" type="image/png">
+    <link rel="icon" href="../image/ve.png" type="image/png">
     <style>
         * {
             margin: 0;
@@ -550,14 +551,14 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
     <!-- Sidebar Navigation -->
     <div class="sidebar">
         <div class="logo">
-            <img src="image/ve.png" alt="Green.tn Logo">
+            <img src="../image/ve.png" alt="Green.tn Logo">
         </div>
         <ul>
-        <li><a href="stats.php">🏠 Dashboard</a></li>
+            <li><a href="../views/stats.php">🏠 Dashboard</a></li>
             <li><a href="">🚲 Reservation</a></li>
-            <li><a href="reclamations_utilisateur.php">📋 Reclamation</a></li>
-            <li><a href="liste_avis.php">⭐ Avis</a></li>
-            <li><a href="logout.php">🔓 Déconnexion</a></li>
+            <li><a href="../views/reclamations_utilisateur.php">📋 Reclamation</a></li>
+            <li><a href="../views/liste_avis.php">⭐ Avis</a></li>
+            <li><a href="../logout.php">🔓 Déconnexion</a></li>
         </ul>
     </div>
 
@@ -589,7 +590,7 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
             <!-- Section de changement de statut pour admin -->
             <?php if ($role === 'admin'): ?>
                 <section class="changer-statut">
-                    <form method="post" action="controllers/changer_statut.php">
+                    <form method="post" action="../controllers/changer_statut.php">
                         <input type="hidden" name="reclamation_id" value="<?php echo htmlspecialchars($reclamation['id']); ?>">
                         <label for="statut"><strong>Changer le statut :</strong></label>
                         <select name="statut" id="statut">
@@ -622,17 +623,17 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
                     <!-- Pagination for responses -->
                     <div class="pagination">
                         <?php if ($page > 1): ?>
-                            <a href="?id=<?php echo $reclamation_id; ?>&page=<?php echo $page - 1; ?>">Précédent</a>
+                            <a href="../views/voir_reclamation.php?id=<?php echo $reclamation_id; ?>&page=<?php echo $page - 1; ?>">Précédent</a>
                         <?php else: ?>
                             <a href="#" class="disabled">Précédent</a>
                         <?php endif; ?>
 
                         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                            <a href="?id=<?php echo $reclamation_id; ?>&page=<?php echo $i; ?>" class="<?php echo $i == $page ? 'current' : ''; ?>"><?php echo $i; ?></a>
+                            <a href="../views/voir_reclamation.php?id=<?php echo $reclamation_id; ?>&page=<?php echo $i; ?>" class="<?php echo $i == $page ? 'current' : ''; ?>"><?php echo $i; ?></a>
                         <?php endfor; ?>
 
                         <?php if ($page < $total_pages): ?>
-                            <a href="?id=<?php echo $reclamation_id; ?>&page=<?php echo $page + 1; ?>">Suivant</a>
+                            <a href="../views/voir_reclamation.php?id=<?php echo $reclamation_id; ?>&page=<?php echo $page + 1; ?>">Suivant</a>
                         <?php else: ?>
                             <a href="#" class="disabled">Suivant</a>
                         <?php endif; ?>
@@ -643,7 +644,7 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
             <!-- Formulaire pour répondre -->
             <section class="formulaire-reponse">
                 <h3>Ajouter une réponse :</h3>
-                <form method="post" action="ajouter_reponse.php" id="responseForm" novalidate>
+                <form method="post" action="../views/ajouter_reponse.php" id="responseForm" novalidate>
                     <input type="hidden" name="reclamation_id" value="<?php echo htmlspecialchars($reclamation['id']); ?>">
                     <textarea name="contenu" id="contenu" rows="4" placeholder="Votre réponse ici..."></textarea>
                     <div class="error-message" id="contenu-error"></div>
@@ -653,7 +654,7 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
             </section>
 
             <p>
-                <a href="reclamations_utilisateur.php">← Retour au tableau de bord</a>
+                <a href="../views/reclamations_utilisateur.php">← Retour au tableau de bord</a>
             </p>
 
             <script>
@@ -717,10 +718,8 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
 
         <?php elseif (!$feedback_message): ?>
             <p>Les détails de cette réclamation ne sont pas disponibles.</p>
-            <p><a href="index.php">← Retour à l'accueil</a></p>
+            <p><a href="../views/index.php">← Retour à l'accueil</a></p>
         <?php endif; ?>
     </div>
-
-    
 </body>
 </html>

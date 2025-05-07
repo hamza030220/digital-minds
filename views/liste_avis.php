@@ -2,7 +2,12 @@
 // liste_avis.php
 
 session_start();
-require_once __DIR__ . '/config/database.php';
+
+// Définir le chemin racine du projet
+define('ROOT_PATH', realpath(__DIR__ . '/..'));
+
+// Include database configuration
+require_once ROOT_PATH . '/config/database.php';
 
 // Connexion à la base de données
 $database = new Database();
@@ -75,7 +80,7 @@ $pageTitle = "Voir les avis";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle); ?> - Green.tn</title>
-    <link rel="icon" href="image/ve.png" type="image/png">
+    <link rel="icon" href="../image/ve.png" type="image/png">
     <style>
         * {
             margin: 0;
@@ -409,14 +414,14 @@ $pageTitle = "Voir les avis";
 <body>
     <div class="sidebar">
         <div class="logo">
-            <img src="image/ve.png" alt="Green.tn Logo">
+            <img src="../image/ve.png" alt="Green.tn Logo">
         </div>
         <ul>
-            <li><a href="stats.php">🏠 Dashboard</a></li>
-            <li><a href="">🚲 Reservation</a></li>
-            <li><a href="reclamations_utilisateur.php">📋 Reclamation</a></li>
-            <li><a href="liste_avis.php">⭐ Avis</a></li>
-            <li><a href="logout.php">🔓 Déconnexion</a></li>
+            <li><a href="../views/stats.php">🏠 Dashboard</a></li>
+            <li><a href="#">🚲 Reservation</a></li>
+            <li><a href="../views/reclamations_utilisateur.php">📋 Reclamation</a></li>
+            <li><a href="../views/liste_avis.php">⭐ Avis</a></li>
+            <li><a href="../logout.php">🔓 Déconnexion</a></li>
         </ul>
     </div>
 
@@ -424,7 +429,7 @@ $pageTitle = "Voir les avis";
         <div class="container">
             <h2><?php echo htmlspecialchars($pageTitle); ?></h2>
             <?php if (!$isLoggedIn): ?>
-                <p class="message error">Vous devez vous connecter pour accéder à cette page. <a href="login.php">Connexion</a>.</p>
+                <p class="message error">Vous devez vous connecter pour accéder à cette page. <a href="../login.php">Connexion</a>.</p>
             <?php elseif (!$isAdmin): ?>
                 <p class="message error">Accès refusé. Réservé aux admins.</p>
             <?php else: ?>
@@ -462,17 +467,17 @@ $pageTitle = "Voir les avis";
                     <!-- Pagination -->
                     <div class="pagination">
                         <?php if ($page > 1): ?>
-                            <a href="?page=<?php echo $page - 1; ?>">Précédent</a>
+                            <a href="../views/liste_avis.php?page=<?php echo $page - 1; ?>">Précédent</a>
                         <?php else: ?>
                             <a href="#" class="disabled">Précédent</a>
                         <?php endif; ?>
 
                         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                            <a href="?page=<?php echo $i; ?>" class="<?php echo $i == $page ? 'current' : ''; ?>"><?php echo $i; ?></a>
+                            <a href="../views/liste_avis.php?page=<?php echo $i; ?>" class="<?php echo $i == $page ? 'current' : ''; ?>"><?php echo $i; ?></a>
                         <?php endfor; ?>
 
                         <?php if ($page < $total_pages): ?>
-                            <a href="?page=<?php echo $page + 1; ?>">Suivant</a>
+                            <a href="../views/liste_avis.php?page=<?php echo $page + 1; ?>">Suivant</a>
                         <?php else: ?>
                             <a href="#" class="disabled">Suivant</a>
                         <?php endif; ?>
@@ -481,7 +486,5 @@ $pageTitle = "Voir les avis";
             <?php endif; ?>
         </div>
     </main>
-
-   
 </body>
 </html>

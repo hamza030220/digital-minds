@@ -6,17 +6,20 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Définir le chemin racine du projet
+define('ROOT_PATH', realpath(__DIR__ . '/..'));
+
 // Include translation helper
-require_once __DIR__ . '/translate.php';
+require_once ROOT_PATH . '/translate.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php?error=' . urlencode(t('error_session_required')));
+    header('Location: ../login.php?error=' . urlencode(t('error_session_required')));
     exit;
 }
 
-require_once './controllers/ResponseController.php';
-require_once 'config/database.php';
+require_once ROOT_PATH . '/controllers/ResponseController.php';
+require_once ROOT_PATH . '/config/database.php';
 
 // Initialize database and controller
 $database = new Database();
@@ -116,7 +119,7 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle); ?></title>
-    <link rel="icon" href="image/ve.png" type="image/png">
+    <link rel="icon" href="../image/ve.png" type="image/png">
     <style>
         * {
             margin: 0;
@@ -559,26 +562,27 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
     <header>
         <div class="logo-nav-container">
             <div class="logo">
-                <img src="image/ve.png" alt="Green.tn Logo">
+                <img src="../image/ve.png" alt="Green.tn Logo">
             </div>
             <nav class="nav-left">
                 <ul>
-                    <li><a href="views/index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../views/ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../views/liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="../views/mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
                 </ul>
             </nav>
         </div>
         <nav class="nav-right">
             <ul>
                 <li>
-                    <form action="repondre_reclamation.php?id=<?php echo htmlspecialchars($reclamation['id']); ?>" method="POST" id="lang-toggle-form">
-                        
+                    <form action="../views/repondre_reclamation.php?id=<?php echo htmlspecialchars($reclamation['id']); ?>" method="POST" id="lang-toggle-form">
+                        <input type="hidden" name="lang" value="<?php echo $_SESSION['lang'] === 'en' ? 'fr' : 'en'; ?>">
+                        <button type="submit" class="lang-toggle"><?php echo $_SESSION['lang'] === 'en' ? t('toggle_language') : t('toggle_language_en'); ?></button>
                     </form>
                 </li>
-                <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
+                <li><a href="../logout.php" class="login"><?php echo t('logout'); ?></a></li>
             </ul>
         </nav>
     </header>
@@ -598,7 +602,7 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
             <p><strong><?php echo t('description'); ?>:</strong> <?php echo nl2br(htmlspecialchars($reclamation['description'])); ?></p>
 
             <?php if ($user_role === 'admin' || $admin_has_responded): ?>
-                <form action="repondre_reclamation.php?id=<?php echo htmlspecialchars($reclamation['id']); ?>" method="POST" id="responseForm" novalidate>
+                <form action="../views/repondre_reclamation.php?id=<?php echo htmlspecialchars($reclamation['id']); ?>" method="POST" id="responseForm" novalidate>
                     <label for="reponse"><?php echo t('your_response'); ?>:</label>
                     <textarea id="reponse" name="reponse"></textarea>
                     <div class="error-message form-error" id="reponse-error"></div>
@@ -623,24 +627,24 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
                 <!-- Pagination for responses -->
                 <div class="pagination">
                     <?php if ($page > 1): ?>
-                        <a href="?id=<?php echo $reclamation_id; ?>&page=<?php echo $page - 1; ?>"><?php echo t('previous', 'Précédent'); ?></a>
+                        <a href="../views/repondre_reclamation.php?id=<?php echo $reclamation_id; ?>&page=<?php echo $page - 1; ?>"><?php echo t('previous', 'Précédent'); ?></a>
                     <?php else: ?>
                         <a href="#" class="disabled"><?php echo t('previous', 'Précédent'); ?></a>
                     <?php endif; ?>
 
                     <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                        <a href="?id=<?php echo $reclamation_id; ?>&page=<?php echo $i; ?>" class="<?php echo $i == $page ? 'current' : ''; ?>"><?php echo $i; ?></a>
+                        <a href="../views/repondre_reclamation.php?id=<?php echo $reclamation_id; ?>&page=<?php echo $i; ?>" class="<?php echo $i == $page ? 'current' : ''; ?>"><?php echo $i; ?></a>
                     <?php endfor; ?>
 
                     <?php if ($page < $total_pages): ?>
-                        <a href="?id=<?php echo $reclamation_id; ?>&page=<?php echo $page + 1; ?>"><?php echo t('next', 'Suivant'); ?></a>
+                        <a href="../views/repondre_reclamation.php?id=<?php echo $reclamation_id; ?>&page=<?php echo $page + 1; ?>"><?php echo t('next', 'Suivant'); ?></a>
                     <?php else: ?>
                         <a href="#" class="disabled"><?php echo t('next', 'Suivant'); ?></a>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
 
-            <p><a href="liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>
+            <p><a href="../views/liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>
         </div>
     </main>
 
@@ -648,19 +652,19 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
         <div class="footer-content">
             <div class="footer-left">
                 <div class="footer-logo">
-                    <img src="image/ho.png" alt="Green.tn Logo">
+                    <img src="../image/ho.png" alt="Green.tn Logo">
                 </div>
                 <div class="social-icons">
-                    <a href="https://instagram.com"><img src="image/insta.png" alt="Instagram"></a>
-                    <a href="https://facebook.com"><img src="image/fb.png" alt="Facebook"></a>
-                    <a href="https://twitter.com"><img src="image/x.png" alt="Twitter"></a>
+                    <a href="https://instagram.com"><img src="../image/insta.png" alt="Instagram"></a>
+                    <a href="https://facebook.com"><img src="../image/fb.png" alt="Facebook"></a>
+                    <a href="https://twitter.com"><img src="../image/x.png" alt="Twitter"></a>
                 </div>
             </div>
             <div class="footer-section">
                 <h3><?php echo t('navigation'); ?></h3>
                 <ul>
-                    <li><a href="views/index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../views/ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
                     <li><a href="#a-propos-de-nous"><?php echo t('about_us'); ?></a></li>
                     <li><a href="#contact"><?php echo t('contact'); ?></a></li>
                 </ul>
@@ -668,15 +672,15 @@ $pageTitle = t('respond_reclamation') . ' - Green.tn';
             <div class="footer-section">
                 <h3><?php echo t('contact'); ?></h3>
                 <p>
-                    <img src="image/location.png" alt="Location Icon">
+                    <img src="../image/location.png" alt="Location Icon">
                     <?php echo t('address'); ?>
                 </p>
                 <p>
-                    <img src="image/telephone.png" alt="Phone Icon">
+                    <img src="../image/telephone.png" alt="Phone Icon">
                     <?php echo t('phone'); ?>
                 </p>
                 <p>
-                    <img src="image/mail.png" alt="Email Icon">
+                    <img src="../image/mail.png" alt="Email Icon">
                     <a href="mailto:Green@green.com"><?php echo t('email'); ?></a>
                 </p>
             </div>

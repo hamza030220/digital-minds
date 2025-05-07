@@ -7,15 +7,18 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Définir le chemin racine du projet
+define('ROOT_PATH', realpath(__DIR__ . '/..'));
+
 // Include translation helper
-require_once __DIR__ . '/translate.php';
+require_once ROOT_PATH . '/translate.php';
 
 // Include Database connection
-require_once __DIR__ . '/config/database.php';
+require_once ROOT_PATH . '/config/database.php';
 
 // Authentication Check: Ensure user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ./login.php?error=' . urlencode(t('error_session_required')));
+    header('Location: ../login.php?error=' . urlencode(t('error_session_required')));
     exit;
 }
 
@@ -70,7 +73,7 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle); ?></title>
-    <link rel="icon" href="image/ve.png" type="image/png">
+    <link rel="icon" href="../image/ve.png" type="image/png">
     <style>
         * {
             margin: 0;
@@ -333,32 +336,33 @@ try {
     <header>
         <div class="logo-nav-container">
             <div class="logo">
-                <img src="image/ve.png" alt="Green.tn Logo">
+                <img src="../image/ve.png" alt="Green.tn Logo">
             </div>
             <nav class="nav-left">
                 <ul>
-                    <li><a href="index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../views/ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../views/liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="../views/mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../views/chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
             </nav>
         </div>
         <nav class="nav-right">
             <ul>
                 <li>
-                    <a href="notifications.php" class="notification">
+                    <a href="../views/notifications.php" class="notification">
                         🔔
                     </a>
                 </li>
                 <li>
-                    <form action="notifications.php" method="POST" id="lang-toggle-form">
+                    <form action="../views/notifications.php" method="POST" id="lang-toggle-form">
                         <input type="hidden" name="lang" value="<?php echo $_SESSION['lang'] === 'en' ? 'fr' : 'en'; ?>">
                         <button type="submit" class="lang-toggle"><?php echo $_SESSION['lang'] === 'en' ? t('toggle_language') : t('toggle_language_en'); ?></button>
                     </form>
                 </li>
-                <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
+                <li><a href="../logout.php" class="login"><?php echo t('logout'); ?></a></li>
             </ul>
         </nav>
     </header>
@@ -381,18 +385,18 @@ try {
                 <ul class="notification-list">
                     <?php foreach ($notifications as $notification): ?>
                         <li>
-                            <a href="repondre_reclamation.php?id=<?php echo $notification['reclamation_id']; ?>">
+                            <a href="../views/repondre_reclamation.php?id=<?php echo $notification['reclamation_id']; ?>">
                                 <?php echo htmlspecialchars(t($notification['message'])); ?> (<?php echo htmlspecialchars($notification['titre']); ?>)
                             </a>
                             <div>
                                 <span class="date"><?php echo date('d/m/Y H:i', strtotime($notification['created_at'])); ?></span>
-                                <a href="controllers/supprimer_notification.php?id=<?php echo $notification['id']; ?>" class="delete-btn">✖</a>
+                                <a href="../controllers/supprimer_notification.php?id=<?php echo $notification['id']; ?>" class="delete-btn">✖</a>
                             </div>
                         </li>
                     <?php endforeach; ?>
                 </ul>
             <?php endif; ?>
-            <a href="liste_reclamations.php" class="back-button"><?php echo t('back_to_list'); ?></a>
+            <a href="../views/liste_reclamations.php" class="back-button"><?php echo t('back_to_list'); ?></a>
         </div>
     </main>
 </body>

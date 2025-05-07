@@ -1,7 +1,9 @@
 <?php
 session_start();
 
-require_once 'config/database.php';
+// Define the root path for consistent includes
+define('ROOT_PATH', realpath(__DIR__ . '/..'));
+require_once ROOT_PATH . '/config/database.php';
 
 $database = new Database();
 $pdo = $database->getConnection();
@@ -9,7 +11,6 @@ $pdo = $database->getConnection();
 if (!$pdo) {
     die("Erreur: Impossible de se connecter à la base de données pour le moment.");
 }
-
 
 // Fetch statistics
 $stmt_total = $pdo->query("SELECT COUNT(*) AS total FROM reclamations");
@@ -35,7 +36,7 @@ $reclamations_resolues = (int)$reclamations_resolues;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Statistiques - Green.tn</title>
-    <link rel="icon" href="image/ve.png" type="image/png">
+    <link rel="icon" href="../image/ve.png" type="image/png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -172,14 +173,14 @@ $reclamations_resolues = (int)$reclamations_resolues;
 <body>
     <div class="sidebar">
         <div class="logo">
-            <img src="image/ve.png" alt="Green.tn Logo">
+            <img src="../image/ve.png" alt="Green.tn Logo">
         </div>
         <ul>
-            <li><a href="stats.php">🏠 Dashboard</a></li>
+            <li><a href="../views/stats.php">🏠 Dashboard</a></li>
             <li><a href="">🚲 Reservation</a></li>
-            <li><a href="reclamations_utilisateur.php">📋 Reclamation</a></li>
-            <li><a href="liste_avis.php">⭐ Avis</a></li>
-            <li><a href="logout.php">🔓 Déconnexion</a></li>
+            <li><a href="../views/reclamations_utilisateur.php">📋 Reclamation</a></li>
+            <li><a href="../views/liste_avis.php">⭐ Avis</a></li>
+            <li><a href="../logout.php">🔓 Déconnexion</a></li>
         </ul>
     </div>
     <main>
@@ -187,11 +188,9 @@ $reclamations_resolues = (int)$reclamations_resolues;
             <h3>Statistiques des réclamations</h3>
             <div class="stats">
                 <div class="chart-container">
-                   
                     <canvas id="statusChart" width="300" height="300"></canvas>
                 </div>
                 <div class="chart-container">
-                    
                     <canvas id="typeChart" width="300" height="300"></canvas>
                 </div>
             </div>

@@ -1,41 +1,146 @@
 <?php
-// ajouter_reclamation.php (View - Now also the entry point)
+// modifier_reclamation.php
 
-// Start session at the very beginning
+// Start session
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Définir le chemin racineSweet du projet
+define('ROOT_PATH', realpath(__DIR__ . '/..'));
+
 // Include translation helper
-require_once __DIR__ . '/translate.php';
+require_once ROOT_PATH . '/translate.php';
 
-// --- Retrieve Flash Message and Form Data (if any) ---
-$message = '';
-$message_type = 'error'; // Default
-$form_data = []; // Default empty form data
-
-// Check for flash message from session
-if (isset($_SESSION['flash_message'])) {
-    $message = $_SESSION['flash_message'];
-    $message_type = $_SESSION['flash_message_type'] ?? 'error';
-    // Clear the flash message from session
-    unset($_SESSION['flash_message']);
-    unset($_SESSION['flash_message_type']);
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../login.php?error=' . urlencode(t('error_session_required')));
+    exit;
 }
 
-// Check for form data from session (used on validation errors)
-if (isset($_SESSION['form_data_flash'])) {
-    $form_data = $_SESSION['form_data_flash'];
-    // Clear the saved form data
-    unset($_SESSION['form_data_flash']);
+// Connexion à la base de données using Database class
+require_once ROOT_PATH . '/config/database.php';
+
+$database = new Database();
+$pdo = $database->getConnection();
+
+if (!$pdo) {
+    die(t('error_database_connection'));
 }
-// --- End Flash Message/Data Retrieval ---
 
-// Check login status
-$isLoggedIn = isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+// Initialize variables
+$reclamation_id = null;
+$reclamation = null;
+$feedback_message = '';
+$feedback_type = ''; // 'success' or 'error'
+$can_modify = true; // Flag to determine if modification is allowed
 
-// Define page title
-$pageTitle = t('new_reclamation');
+if (isset($_GET['id'])) {
+    $reclamation_id_temp = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT, ["options" => ["min_range" => 1]]);
+
+    if ($reclamation_id_temp !== false) {
+        $reclamation_id = $reclamation_id_temp;
+
+        try {
+            // Fetch reclamation details
+            $stmt = $pdo->prepare("SELECT * FROM reclamations WHERE id = ?");
+            $stmt->execute([$reclamation_id]);
+            $reclamation = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$reclamation) {
+                $feedback_message = t('reclamation_not_found');
+                $feedback_type = 'error';
+            } else {
+                // Check if an admin has responded
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM reponses WHERE reclamation_id = ? AND role = 'admin'");
+                $stmt->execute([$reclamation_id]);
+                $admin_response_count = $stmt->fetchColumn();
+
+                if ($admin_response_count > 0) {
+                    $can_modify = false;
+                    $feedback_message = t('modification_not_allowed');
+                    $feedback_type = 'error';
+                }
+            }
+        } catch (PDOException $e) {
+            error_log("Error fetching reclamation ID {$reclamation_id}: " . $e->getMessage());
+            $feedback_message = t('error_fetching_reclamation');
+            $feedback_type = 'error';
+            $reclamation = null;
+        }
+
+        // Handle form submission if modification is allowed
+        if ($can_modify && $reclamation && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $titre = trim($_POST['titre'] ?? '');
+            $description = trim($_POST['description'] ?? '');
+            $lieu = trim($_POST['lieu'] ?? '');
+            $type_probleme = $_POST['type_probleme'] ?? '';
+
+            $errors = [];
+            if (empty($titre)) {
+                $errors['titre'] = t('titre_required');
+            } elseif (strlen($titre) < 5 || strlen($titre) > 100) {
+                $errors['titre'] = t('titre_length');
+            }
+
+            if (empty($description)) {
+                $errors['description'] = t('description_required');
+            } elseif (strlen($description) < 10 || strlen($description) > 500) {
+                $errors['description'] = t('description_length');
+            }
+
+            if (empty($lieu)) {
+                $errors['lieu'] = t('lieu_required');
+            } elseif (strlen($lieu) < 3 || strlen($lieu) > 100) {
+                $errors['lieu'] = t('lieu_length');
+            } elseif (!preg_match('/^[a-zA-Z\s]+$/', $lieu)) {
+                $errors['lieu'] = t('lieu_invalid');
+            }
+
+            $valid_types = ['mecanique', 'batterie', 'ecran', 'pneu', 'infrastructure', 'autre'];
+            if (!in_array($type_probleme, $valid_types)) {
+                $errors['type_probleme'] = t('type_required');
+            }
+
+            if (empty($errors)) {
+                try {
+                    $stmt = $pdo->prepare("UPDATE reclamations SET titre = ?, description = ?, lieu = ?, type_probleme = ? WHERE id = ?");
+                    $success = $stmt->execute([$titre, $description, $lieu, $type_probleme, $reclamation_id]);
+
+                    if ($success) {
+                        $feedback_message = t('reclamation_updated');
+                        $feedback_type = 'success';
+                        $stmt = $pdo->prepare("SELECT * FROM reclamations WHERE id = ?");
+                        $stmt->execute([$reclamation_id]);
+                        $reclamation = $stmt->fetch(PDO::FETCH_ASSOC);
+                    } else {
+                        $feedback_message = t('error_updating_reclamation');
+                        $feedback_type = 'error';
+                    }
+                } catch (PDOException $e) {
+                    error_log("Error updating reclamation ID {$reclamation_id}: " . $e->getMessage());
+                    $feedback_message = t('error_database_update');
+                    $feedback_type = 'error';
+                }
+            } else {
+                $feedback_message = t('validation_errors') . implode(', ', $errors);
+                $feedback_type = 'error';
+            }
+        }
+    } else {
+        $feedback_message = t('invalid_reclamation_id');
+        $feedback_type = 'error';
+    }
+} else {
+    $feedback_message = t('missing_reclamation_id');
+    $feedback_type = 'error';
+}
+
+$titre_value = $reclamation ? htmlspecialchars($reclamation['titre']) : '';
+$description_value = $reclamation ? htmlspecialchars($reclamation['description']) : '';
+$lieu_value = $reclamation ? htmlspecialchars($reclamation['lieu']) : '';
+$type_probleme_value = $reclamation ? $reclamation['type_probleme'] : '';
+$pageTitle = t('edit_reclamation') . ' - Green.tn';
 ?>
 
 <!DOCTYPE html>
@@ -43,8 +148,8 @@ $pageTitle = t('new_reclamation');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($pageTitle); ?> - Green.tn</Title>
-    <link rel="icon" href="image/ve.png" type="image/png">
+    <title><?php echo htmlspecialchars($pageTitle); ?></title>
+    <link rel="icon" href="../image/ve.png" type="image/png">
     <style>
         * {
             margin: 0;
@@ -150,17 +255,26 @@ $pageTitle = t('new_reclamation');
             border-radius: 5px;
         }
 
-        .container {
-            max-width: 500px;
+        .content-container {
+            max-width: 1200px;
             margin: 0 auto;
             background-color: #F9F5E8;
             border: 1px solid #4CAF50;
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: left;
         }
 
-        .message {
+        p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .success-message,
+        .error-message,
+        .info-message {
             padding: 10px;
             margin-bottom: 20px;
             border-radius: 4px;
@@ -169,76 +283,89 @@ $pageTitle = t('new_reclamation');
             text-align: center;
         }
 
-        .message.success {
+        .success-message {
             background-color: #d4edda;
             color: #155724;
             border-color: #c3e6cb;
         }
 
-        .message.error {
+        .error-message {
             background-color: #f8d7da;
             color: #721c24;
             border-color: #f5c6cb;
         }
 
-        .message.error a {
-            color: #2e7d32;
-            text-decoration: none;
+        .info-message {
+            background-color: #e7f3fe;
+            color: #31708f;
+            border-color: #d6e9f7;
         }
 
-        .message.error a:hover {
-            text-decoration: underline;
+        .form-group {
+            margin-bottom: 20px;
         }
 
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        form label {
-            color: #2e7d32;
+        .form-group label {
+            display: block;
             font-weight: bold;
-            font-size: 16px;
-            text-align: left;
+            margin-bottom: 8px;
+            color: #2e7d32;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
 
-        form input,
-        form textarea,
-        form select {
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
             padding: 10px;
             border: 1px solid #4CAF50;
             border-radius: 5px;
             background-color: #fff;
-            width: 100%;
-            box-sizing: border-box;
+            font-size: 14px;
+            transition: border-color 0.2s;
         }
 
-        form input::placeholder,
-        form textarea::placeholder,
-        form select::placeholder {
-            color: transparent;
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
         }
 
-        form textarea {
-            height: 150px;
-            resize: none;
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: #2e7d32;
+            outline: none;
         }
 
-        form button {
+        button {
             padding: 10px 20px;
             background-color: #2e7d32;
             color: #fff;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            align-self: flex-end;
             font-size: 16px;
             font-weight: bold;
             font-family: "Bauhaus 93", Arial, sans-serif;
+            transition: background-color 0.3s ease;
         }
 
-        .error-message {
+        button:hover {
+            background-color: #1b5e20;
+        }
+
+        a {
+            color: #2e7d32;
+            text-decoration: none;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #1b5e20;
+        }
+
+        .error-message.form-error {
             color: #721c24;
             font-size: 0.85em;
             margin-top: 5px;
@@ -251,7 +378,7 @@ $pageTitle = t('new_reclamation');
         }
 
         .input-valid {
-            border-color: #28a745;
+            border-color: #155724;
         }
 
         footer {
@@ -385,7 +512,7 @@ $pageTitle = t('new_reclamation');
                 margin-top: 150px;
             }
 
-            .container {
+            .content-container {
                 padding: 15px;
             }
 
@@ -410,86 +537,87 @@ $pageTitle = t('new_reclamation');
     <header>
         <div class="logo-nav-container">
             <div class="logo">
-                <img src="image/ve.png" alt="Green.tn Logo">
+                <img src="../image/ve.png" alt="Green.tn Logo">
             </div>
             <nav class="nav-left">
                 <ul>
-                    <li><a href="views/index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../views/ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../views/liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="../views/mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../views/chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
             </nav>
         </div>
         <nav class="nav-right">
             <ul>
                 <li>
-                    <form action="ajouter_reclamation.php" method="POST" id="lang-toggle-form">
+                    <form action="../views/modifier_reclamation.php?id=<?php echo htmlspecialchars($reclamation_id); ?>" method="POST" id="lang-toggle-form">
                         <input type="hidden" name="lang" value="<?php echo $_SESSION['lang'] === 'en' ? 'fr' : 'en'; ?>">
                         <button type="submit" class="lang-toggle"><?php echo $_SESSION['lang'] === 'en' ? t('toggle_language') : t('toggle_language_en'); ?></button>
                     </form>
                 </li>
-                <?php if ($isLoggedIn): ?>
-                    <li><a href="logout.php" class="login"><?php echo t('logout'); ?></a></li>
-                <?php else: ?>
-                    <li><a href="login.php" class="login"><?php echo t('login'); ?></a></li>
-                    <li><a href="signup.php" class="signin"><?php echo t('signup'); ?></a></li>
-                <?php endif; ?>
+                <li><a href="../logout.php" class="login"><?php echo t('logout'); ?></a></li>
             </ul>
         </nav>
     </header>
 
     <main>
-        <h2><?php echo htmlspecialchars($pageTitle); ?></h2>
-        <div class="container">
-            <?php
-            // Display feedback message if it exists
-            if (!empty($message)) {
-                $msg_class = ($message_type === 'success') ? 'success' : 'error';
-                echo "<div class='message " . $msg_class . "'>" . htmlspecialchars($message) . "</div>";
-            }
-            ?>
+        <h2><?php echo t('edit_reclamation'); ?></h2>
 
-            <?php if ($isLoggedIn): ?>
-                <form action="./controllers/ReclamationController.php" method="POST" id="reclamationForm" novalidate>
-                    <label for="titre"><?php echo t('Title'); ?>:</label>
-                    <input type="text" id="titre" name="titre" value="<?php echo htmlspecialchars($form_data['titre'] ?? ''); ?>">
-                    <span class="error-message" id="titre-error"></span>
+        <div class="content-container">
+            <?php if ($feedback_message): ?>
+                <div class="<?php echo $feedback_type === 'success' ? 'success-message' : 'error-message'; ?>">
+                    <?php echo htmlspecialchars($feedback_message); ?>
+                </div>
+            <?php endif; ?>
 
-                    <label for="description"><?php echo t('description'); ?>:</label>
-                    <textarea id="description" name="description"><?php echo htmlspecialchars($form_data['description'] ?? ''); ?></textarea>
-                    <span class="error-message" id="description-error"></span>
+            <?php if ($reclamation && $can_modify): ?>
+                <form action="../views/modifier_reclamation.php?id=<?php echo htmlspecialchars($reclamation_id); ?>" method="POST" id="reclamationForm" novalidate>
+                    <div class="form-group">
+                        <label for="titre"><?php echo t('title'); ?>:</label>
+                        <input type="text" id="titre" name="titre" value="<?php echo $titre_value; ?>">
+                        <div class="error-message form-error" id="titre-error"></div>
+                    </div>
 
-                    <label for="lieu"><?php echo t('location'); ?>:</label>
-                    <input type="text" id="lieu" name="lieu" value="<?php echo htmlspecialchars($form_data['lieu'] ?? ''); ?>">
-                    <span class="error-message" id="lieu-error"></span>
+                    <div class="form-group">
+                        <label for="description"><?php echo t('description'); ?>:</label>
+                        <textarea id="description" name="description"><?php echo $description_value; ?></textarea>
+                        <div class="error-message form-error" id="description-error"></div>
+                    </div>
 
-                    <label for="type_probleme"><?php echo t('type'); ?>:</label>
-                    <select id="type_probleme" name="type_probleme">
-                        <option value=""><?php echo t('select_option'); ?></option>
-                        <?php
-                        $current_type = $form_data['type_probleme'] ?? '';
-                        $options = [
-                            'mecanique' => t('mechanical'),
-                            'batterie' => t('battery'),
-                            'ecran' => t('screen'),
-                            'pneu' => t('tire'),
-                            'autre' => t('other')
-                        ];
-                        foreach ($options as $value => $label) {
-                            $selected = ($value === $current_type) ? ' selected' : '';
-                            echo "<option value=\"" . htmlspecialchars($value) . "\"$selected>" . htmlspecialchars($label) . "</option>";
-                        }
-                        ?>
-                    </select>
-                    <span class="error-message" id="type_probleme-error"></span>
+                    <div class="form-group">
+                        <label for="lieu"><?php echo t('location'); ?>:</label>
+                        <input type="text" id="lieu" name="lieu" value="<?php echo $lieu_value; ?>">
+                        <div class="error-message form-error" id="lieu-error"></div>
+                    </div>
 
-                    <button type="submit"><?php echo t('submit_reclamation'); ?></button>
+                    <div class="form-group">
+                        <label for="type_probleme"><?php echo t('type'); ?>:</label>
+                        <select id="type_probleme" name="type_probleme">
+                            <option value=""><?php echo t('select_option'); ?></option>
+                            <option value="mecanique" <?php if ($type_probleme_value == 'mecanique') echo 'selected'; ?>><?php echo t('mechanical'); ?></option>
+                            <option value="batterie" <?php if ($type_probleme_value == 'batterie') echo 'selected'; ?>><?php echo t('battery'); ?></option>
+                            <option value="ecran" <?php if ($type_probleme_value == 'ecran') echo 'selected'; ?>><?php echo t('screen'); ?></option>
+                            <option value="pneu" <?php if ($type_probleme_value == 'pneu') echo 'selected'; ?>><?php echo t('tire'); ?></option>
+                            <option value="infrastructure" <?php if ($type_probleme_value == 'infrastructure' || $type_probleme_value == 'Infrastructure') echo 'selected'; ?>><?php echo t('infrastructure'); ?></option>
+                            <option value="autre" <?php if ($type_probleme_value == 'autre' || $type_probleme_value == 'Autre') echo 'selected'; ?>><?php echo t('other'); ?></option>
+                        </select>
+                        <div class="error-message form-error" id="type_probleme-error"></div>
+                    </div>
+
+                    <button type="submit"><?php echo t('update_reclamation'); ?></button>
+                    <a href="../liste_reclamations.php" style="margin-left: 10px;"><?php echo t('cancel'); ?></a>
+                    <p><a href="../liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>
                 </form>
-            <?php elseif (empty($message)): ?>
-                <p class="message error"><?php echo t('login_required'); ?> <a href="login.php"><?php echo t('login'); ?></a>.</p>
+            <?php elseif ($reclamation && !$can_modify): ?>
+                <p class="error-message"><a href="../liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>
+            <?php elseif (!$feedback_message): ?>
+                <p class="info-message"><?php echo t('loading'); ?></p>
+            <?php endif; ?>
+            <?php if ($reclamation === null && $feedback_message): ?>
+                <p class="error-message"><a href="../liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>
             <?php endif; ?>
         </div>
     </main>
@@ -498,37 +626,37 @@ $pageTitle = t('new_reclamation');
         <div class="footer-content">
             <div class="footer-left">
                 <div class="footer-logo">
-                    <img src="image/ho.png" alt="Green.tn Logo">
+                    <img src="../image/ho.png" alt="Green.tn Logo">
                 </div>
                 <div class="social-icons">
-                    <a href="https://instagram.com"><img src="image/insta.png" alt="Instagram"></a>
-                    <a href="https://facebook.com"><img src="image/fb.png" alt="Facebook"></a>
-                    <a href="https://twitter.com"><img src="image/x.png" alt="Twitter"></a>
+                    <a href="https://instagram.com"><img src="../image/insta.png" alt="Instagram"></a>
+                    <a href="https://facebook.com"><img src="../image/fb.png" alt="Facebook"></a>
+                    <a href="https://twitter.com"><img src="../image/x.png" alt="Twitter"></a>
                 </div>
             </div>
             <div class="footer-section">
                 <h3><?php echo t('navigation'); ?></h3>
                 <ul>
-                    <li><a href="views/index.php"><?php echo t('home'); ?></a></li>
-                    <li><a href="ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
-                    <li><a href="liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
-                    <li><a href="views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
-                    <li><a href="mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
-                    <li><a href="chatbot.php"><?php echo t('chatbot'); ?></a></li>
+                    <li><a href="../views/index.php"><?php echo t('home'); ?></a></li>
+                    <li><a href="../views/ajouter_reclamation.php"><?php echo t('new_reclamation'); ?></a></li>
+                    <li><a href="../views/liste_reclamations.php"><?php echo t('view_reclamations'); ?></a></li>
+                    <li><a href="../views/ajouter_avis.php"><?php echo t('submit_review'); ?></a></li>
+                    <li><a href="../views/mes_avis.php"><?php echo t('my_reviews'); ?></a></li>
+                    <li><a href="../views/chatbot.php"><?php echo t('chatbot'); ?></a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h3><?php echo t('contact'); ?></h3>
                 <p>
-                    <img src="image/location.png" alt="Location Icon">
+                    <img src="../image/location.png" alt="Location Icon">
                     <?php echo t('address'); ?>
                 </p>
                 <p>
-                    <img src="image/telephone.png" alt="Phone Icon">
+                    <img src="../image/telephone.png" alt="Phone Icon">
                     <?php echo t('phone'); ?>
                 </p>
                 <p>
-                    <img src="image/mail.png" alt="Email Icon">
+                    <img src="../image/mail.png" alt="Email Icon">
                     <a href="mailto:Green@green.com"><?php echo t('email'); ?></a>
                 </p>
             </div>
@@ -548,7 +676,7 @@ $pageTitle = t('new_reclamation');
             type_required: '<?php echo t('type_required'); ?>'
         };
 
-        document.getElementById('reclamationForm').addEventListener('submit', function(event) {
+        document.getElementById('reclamationForm')?.addEventListener('submit', function(event) {
             event.preventDefault();
             let isValid = true;
             const errors = {};
@@ -584,8 +712,8 @@ $pageTitle = t('new_reclamation');
             }
 
             const typeProbleme = document.getElementById('type_probleme').value;
-            const validTypes = ['mecanique', 'batterie', 'ecran', 'pneu', 'autre'];
-            if (!typeProbleme || !validTypes.includes(typeProbleme)) {
+            const validTypes = ['mecanique', 'batterie', 'ecran', 'pneu', 'infrastructure', 'autre'];
+            if (!validTypes.includes(typeProbleme)) {
                 errors.type_probleme = translations.type_required;
                 isValid = false;
             }
@@ -618,7 +746,7 @@ $pageTitle = t('new_reclamation');
         });
 
         ['titre', 'description', 'lieu', 'type_probleme'].forEach(field => {
-            document.getElementById(field).addEventListener('input', function() {
+            document.getElementById(field)?.addEventListener('input', function() {
                 const errorElement = document.getElementById(`${field}-error`);
                 let error = '';
 
@@ -637,8 +765,8 @@ $pageTitle = t('new_reclamation');
                     else if (!/^[a-zA-Z\s]+$/.test(value)) error = translations.lieu_invalid;
                 } else if (field === 'type_probleme') {
                     const value = this.value;
-                    const validTypes = ['mecanique', 'batterie', 'ecran', 'pneu', 'autre'];
-                    if (!value || !validTypes.includes(value)) error = translations.type_required;
+                    const validTypes = ['mecanique', 'batterie', 'ecran', 'pneu', 'infrastructure', 'autre'];
+                    if (!validTypes.includes(value)) error = translations.type_required;
                 }
 
                 if (error) {
