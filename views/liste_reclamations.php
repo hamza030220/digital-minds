@@ -729,7 +729,7 @@ try {
                                     <td><?php echo htmlspecialchars(t(getTypeTranslationKey($reclamation['type_probleme']))); ?></td>
                                     <td><?php echo ucfirst(htmlspecialchars(t(getStatusTranslationKey($reclamation['statut'])))); ?></td>
                                     <td>
-                                        <a href="../repondre_reclamation.php?id=<?php echo $reclamation['id']; ?>" class="btn"><?php echo t('respond'); ?></a>
+                                        <a href="../views/repondre_reclamation.php?id=<?php echo $reclamation['id']; ?>" class="btn"><?php echo t('respond'); ?></a>
                                     </td>
                                     <td>
                                         <a href="../views/modifier_reclamation.php?id=<?php echo $reclamation['id']; ?>" class="btn"><?php echo t('edit'); ?></a>
@@ -885,7 +885,7 @@ try {
                     <td>${reclamation.lieu}</td>
                     <td>${translations[normalizedType] || reclamation.type_probleme}</td>
                     <td>${translations[normalizedStatus] ? translations[normalizedStatus].charAt(0).toUpperCase() + translations[normalizedStatus].slice(1) : reclamation.statut.charAt(0).toUpperCase() + reclamation.statut.slice(1)}</td>
-                    <td><a href="../repondre_reclamation.php?id=${reclamation.id}" class="btn">${translations.respond}</a></td>
+                    <td><a href="../views/repondre_reclamation.php?id=${reclamation.id}" class="btn">${translations.respond}</a></td>
                     <td>
                         <a href="../views/modifier_reclamation.php?id=${reclamation.id}" class="btn">${translations.edit}</a>
                         <a href="../controllers/supprimer_reclamation.php?id=${reclamation.id}" class="btn btn-danger" onclick="return confirm(translations.confirm_delete);">${translations.delete}</a>

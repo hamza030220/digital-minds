@@ -21,7 +21,6 @@ $form_data = []; // Default empty form data
 if (isset($_SESSION['flash_message'])) {
     $message = $_SESSION['flash_message'];
     $message_type = $_SESSION['flash_message_type'] ?? 'error';
-    // Clear the flash message from session
     unset($_SESSION['flash_message']);
     unset($_SESSION['flash_message_type']);
 }
@@ -29,13 +28,16 @@ if (isset($_SESSION['flash_message'])) {
 // Check for form data from session (used on validation errors)
 if (isset($_SESSION['form_data_flash'])) {
     $form_data = $_SESSION['form_data_flash'];
-    // Clear the saved form data
     unset($_SESSION['form_data_flash']);
 }
 // --- End Flash Message/Data Retrieval ---
 
 // Check login status
 $isLoggedIn = isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
+
+// Configuration de l'API Gemini
+$api_key = "AIzaSyABlV8PDgpUhcUV9GLGD_w_s8dpQ6LAeHQ"; // Clé API fournie
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" . urlencode($api_key);
 
 // Define page title
 $pageTitle = t('new_reclamation');
@@ -55,12 +57,10 @@ $pageTitle = t('new_reclamation');
             box-sizing: border-box;
             font-family: Arial, sans-serif;
         }
-
         body {
             background-color: #60BA97;
             color: #333;
         }
-
         header {
             position: fixed;
             top: 0;
@@ -75,18 +75,15 @@ $pageTitle = t('new_reclamation');
             padding: 20px 50px;
             border-bottom: none;
         }
-
         .logo-nav-container {
             display: flex;
             align-items: center;
         }
-
         .logo img {
             width: 200px;
             height: auto;
             margin-right: 20px;
         }
-
         .nav-left ul {
             list-style: none;
             display: flex;
@@ -95,14 +92,12 @@ $pageTitle = t('new_reclamation');
             margin: 0;
             padding: 0;
         }
-
         .nav-left ul li a {
             text-decoration: none;
             color: #2e7d32;
             font-weight: 500;
             font-family: "Bauhaus 93", Arial, sans-serif;
         }
-
         .nav-right ul {
             list-style: none;
             display: flex;
@@ -111,7 +106,6 @@ $pageTitle = t('new_reclamation');
             margin: 0;
             padding: 0;
         }
-
         .nav-right ul li a.login,
         .nav-right ul li a.signin,
         .nav-right ul li button.lang-toggle {
@@ -123,24 +117,20 @@ $pageTitle = t('new_reclamation');
             font-family: "Bauhaus 93", Arial, sans-serif;
             cursor: pointer;
         }
-
         .nav-right ul li button.lang-toggle {
             background-color: #4CAF50;
             border-color: #4CAF50;
         }
-
         .nav-right ul li button.lang-toggle:hover {
             background-color: #1b5e20;
             border-color: #1b5e20;
         }
-
         main {
             padding: 50px;
             text-align: center;
             background-color: #60BA97;
             margin-top: 100px;
         }
-
         main h2 {
             margin-bottom: 30px;
             color: #2e7d32;
@@ -152,7 +142,6 @@ $pageTitle = t('new_reclamation');
             display: inline-block;
             border-radius: 5px;
         }
-
         .container {
             max-width: 500px;
             margin: 0 auto;
@@ -162,7 +151,6 @@ $pageTitle = t('new_reclamation');
             border-radius: 15px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-
         .message {
             padding: 10px;
             margin-bottom: 20px;
@@ -171,41 +159,46 @@ $pageTitle = t('new_reclamation');
             border: 1px solid transparent;
             text-align: center;
         }
-
         .message.success {
             background-color: #d4edda;
             color: #155724;
             border-color: #c3e6cb;
         }
-
         .message.error {
             background-color: #f8d7da;
             color: #721c24;
             border-color: #f5c6cb;
         }
-
         .message.error a {
             color: #2e7d32;
             text-decoration: none;
         }
-
         .message.error a:hover {
             text-decoration: underline;
         }
-
         form {
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
-
         form label {
             color: #2e7d32;
             font-weight: bold;
             font-size: 16px;
             text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
-
+        .mic-icon {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+        .mic-icon:hover {
+            opacity: 0.7;
+        }
         form input,
         form textarea,
         form select {
@@ -216,18 +209,15 @@ $pageTitle = t('new_reclamation');
             width: 100%;
             box-sizing: border-box;
         }
-
         form input::placeholder,
         form textarea::placeholder,
         form select::placeholder {
             color: transparent;
         }
-
         form textarea {
             height: 150px;
             resize: none;
         }
-
         form button {
             padding: 10px 20px;
             background-color: #2e7d32;
@@ -240,7 +230,6 @@ $pageTitle = t('new_reclamation');
             font-weight: bold;
             font-family: "Bauhaus 93", Arial, sans-serif;
         }
-
         .error-message {
             color: #721c24;
             font-size: 0.85em;
@@ -248,56 +237,18 @@ $pageTitle = t('new_reclamation');
             display: none;
             text-align: left;
         }
-
         .input-error {
             border-color: #721c24;
         }
-
         .input-valid {
             border-color: #28a745;
         }
-
-        .voice-btn {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            font-family: "Bauhaus 93", Arial, sans-serif;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 15px;
-            transition: background-color 0.3s ease;
-        }
-
-        .voice-btn:hover {
-            background-color: #1b5e20;
-        }
-
-        .voice-btn img {
-            width: 20px;
-            height: 20px;
-        }
-
-        .voice-status {
-            margin-top: 10px;
-            font-style: italic;
-            color: #555;
-            text-align: center;
-        }
-
         footer {
             background-color: #F9F5E8;
             padding: 20px 0;
             border-top: none;
             font-family: "Berlin Sans FB", Arial, sans-serif;
         }
-
         .footer-content {
             display: flex;
             justify-content: space-between;
@@ -306,41 +257,34 @@ $pageTitle = t('new_reclamation');
             margin: 0 auto;
             padding: 0 20px;
         }
-
         .footer-left {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-
         .footer-logo img {
             width: 200px;
             height: auto;
             margin-bottom: 15px;
         }
-
         .social-icons {
             display: flex;
             justify-content: center;
             gap: 10px;
             margin-top: 10px;
         }
-
         .social-icons a img {
             width: 30px;
             height: 30px;
             border-radius: 50%;
             transition: opacity 0.3s ease;
         }
-
         .social-icons a img:hover {
             opacity: 0.8;
         }
-
         .footer-section {
             margin-left: 40px;
         }
-
         .footer-section h3 {
             font-size: 18px;
             color: #333;
@@ -348,27 +292,22 @@ $pageTitle = t('new_reclamation');
             margin-bottom: 15px;
             font-weight: bold;
         }
-
         .footer-section ul {
             list-style: none;
             padding: 0;
         }
-
         .footer-section ul li {
             margin-bottom: 8px;
         }
-
         .footer-section ul li a {
             text-decoration: none;
             color: #555;
             font-size: 20px;
             transition: color 0.3s ease;
         }
-
         .footer-section ul li a:hover {
             color: #4CAF50;
         }
-
         .footer-section p {
             margin: 5px 0;
             color: #555;
@@ -376,66 +315,54 @@ $pageTitle = t('new_reclamation');
             display: flex;
             align-items: center;
         }
-
         .footer-section p img {
             margin-right: 8px;
             width: 16px;
             height: 16px;
         }
-
         .footer-section p a {
             color: #555;
             text-decoration: none;
             transition: color 0.3s ease;
         }
-
         .footer-section p a:hover {
             color: #4CAF50;
         }
-
         @media (max-width: 768px) {
             header {
                 flex-direction: column;
                 gap: 10px;
                 padding: 15px 20px;
             }
-
             .logo-nav-container {
                 flex-direction: column;
                 align-items: center;
             }
-
             .logo img {
                 margin-right: 0;
                 margin-bottom: 10px;
             }
-
             .nav-left ul,
             .nav-right ul {
                 flex-direction: column;
                 align-items: center;
                 gap: 10px;
             }
-
             main {
                 padding: 20px;
                 margin-top: 150px;
             }
-
             .container {
                 padding: 15px;
             }
-
             .footer-content {
                 flex-direction: column;
                 align-items: center;
                 text-align: center;
             }
-
             .footer-left {
                 margin-bottom: 20px;
             }
-
             .footer-section {
                 margin-left: 0;
                 margin-bottom: 20px;
@@ -490,26 +417,32 @@ $pageTitle = t('new_reclamation');
             ?>
 
             <?php if ($isLoggedIn): ?>
-                <button class="voice-btn" onclick="startVoiceRecognition()">
-                    <img src="../image/mic.png" alt="Microphone Icon">
-                    <?php echo t('voice_submit'); ?>
-                </button>
-                <div class="voice-status" id="voiceStatus"><?php echo t('voice_status_ready'); ?></div>
-
                 <form action="../controllers/ReclamationController.php" method="POST" id="reclamationForm" novalidate>
-                    <label for="titre"><?php echo t('Title'); ?>:</label>
+                    <label for="titre">
+                        <img src="../image/mic.png" alt="Microphone Icon" class="mic-icon" onclick="startVoiceRecognition('titre')">
+                        <?php echo t('Title'); ?>:
+                    </label>
                     <input type="text" id="titre" name="titre" value="<?php echo htmlspecialchars($form_data['titre'] ?? ''); ?>">
                     <span class="error-message" id="titre-error"></span>
 
-                    <label for="description"><?php echo t('description'); ?>:</label>
+                    <label for="description">
+                        <img src="../image/mic.png" alt="Microphone Icon" class="mic-icon" onclick="startVoiceRecognition('description')">
+                        <?php echo t('description'); ?>:
+                    </label>
                     <textarea id="description" name="description"><?php echo htmlspecialchars($form_data['description'] ?? ''); ?></textarea>
                     <span class="error-message" id="description-error"></span>
 
-                    <label for="lieu"><?php echo t('location'); ?>:</label>
+                    <label for="lieu">
+                        <img src="../image/mic.png" alt="Microphone Icon" class="mic-icon" onclick="startVoiceRecognition('lieu')">
+                        <?php echo t('location'); ?>:
+                    </label>
                     <input type="text" id="lieu" name="lieu" value="<?php echo htmlspecialchars($form_data['lieu'] ?? ''); ?>">
                     <span class="error-message" id="lieu-error"></span>
 
-                    <label for="type_probleme"><?php echo t('type'); ?>:</label>
+                    <label for="type_probleme">
+                        <img src="../image/mic.png" alt="Microphone Icon" class="mic-icon" onclick="startVoiceRecognition('type_probleme')">
+                        <?php echo t('type'); ?>:
+                    </label>
                     <select id="type_probleme" name="type_probleme">
                         <option value=""><?php echo t('select_option'); ?></option>
                         <?php
@@ -593,12 +526,18 @@ $pageTitle = t('new_reclamation');
             voice_status_processing: '<?php echo t('voice_status_processing'); ?>',
             voice_status_completed: '<?php echo t('voice_status_completed'); ?>',
             voice_status_error: '<?php echo t('voice_status_error'); ?>',
-            voice_not_supported: '<?php echo t('voice_not_supported'); ?>'
+            voice_not_supported: '<?php echo t('voice_not_supported'); ?>',
+            voice_permission_denied: '<?php echo t('voice_permission_denied'); ?>',
+            api_error: '<?php echo t('api_error'); ?>'
         };
+
+        const apiUrl = '<?php echo $url; ?>';
 
         // Speech Recognition Setup
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
+        let currentField = null; // Champ actuellement en cours de remplissage
+        let isProcessing = false; // Indicateur de traitement en cours
 
         if (SpeechRecognition) {
             recognition = new SpeechRecognition();
@@ -607,85 +546,240 @@ $pageTitle = t('new_reclamation');
             recognition.maxAlternatives = 1;
 
             recognition.onstart = function() {
-                document.getElementById('voiceStatus').textContent = translations.voice_status_listening;
+                console.log('Speech recognition started for field:', currentField);
+                if (currentField) {
+                    const micIcon = document.querySelector(`label[for="${currentField}"] .mic-icon`);
+                    if (micIcon) {
+                        micIcon.style.opacity = '0.5'; // Indication visuelle de l'écoute
+                    }
+                }
             };
 
-            recognition.onresult = function(event) {
-                const transcript = event.results[0][0].transcript.toLowerCase();
-                document.getElementById('voiceStatus').textContent = translations.voice_status_processing;
+            recognition.onresult = async function(event) {
+                console.log('Speech recognition result received:', event.results);
+                if (!event.results || event.results.length === 0) {
+                    console.error('No speech results found');
+                    alert(translations.voice_status_error + ' No speech results');
+                    return;
+                }
 
-                // Simple parsing of the transcribed text
-                let titre = '';
-                let description = transcript;
-                let lieu = '';
-                let type_probleme = '';
+                const transcript = event.results[0][0].transcript;
+                console.log('Transcript received:', transcript);
+                if (!transcript) {
+                    console.warn('Transcript is empty');
+                    alert(translations.voice_status_error + ' Empty transcript');
+                    return;
+                }
 
-                // Detect location (e.g., "à Tunis" or "in Tunis")
-                const lieuKeywords = ['à', 'at', 'in'];
-                lieuKeywords.forEach(keyword => {
-                    const index = transcript.indexOf(keyword + ' ');
-                    if (index !== -1) {
-                        lieu = transcript.substring(index + keyword.length + 1).split(' ')[0];
-                        lieu = lieu.charAt(0).toUpperCase() + lieu.slice(1);
-                    }
-                });
-
-                // Detect type of problem
-                const types = ['mecanique', 'batterie', 'ecran', 'pneu', 'autre'];
-                types.forEach(type => {
-                    if (transcript.includes(type)) {
-                        type_probleme = type;
-                    }
-                });
-
-                // Create a simple title based on the description
-                titre = description.split(' ').slice(0, 3).join(' ');
-
-                // Fill the form fields
-                const titreField = document.getElementById('titre');
-                const descriptionField = document.getElementById('description');
-                const lieuField = document.getElementById('lieu');
-                const typeProblemeField = document.getElementById('type_probleme');
-
-                titreField.value = titre.charAt(0).toUpperCase() + titre.slice(1);
-                descriptionField.value = description.charAt(0).toUpperCase() + description.slice(1);
-                if (lieu) lieuField.value = lieu;
-                if (type_probleme) typeProblemeField.value = type_probleme;
-
-                // Trigger input events to validate fields
-                [titreField, descriptionField, lieuField, typeProblemeField].forEach(field => {
-                    field.dispatchEvent(new Event('input'));
-                });
-
-                document.getElementById('voiceStatus').textContent = translations.voice_status_completed;
+                try {
+                    isProcessing = true; // Marquer que le traitement commence
+                    const response = await processWithGemini(transcript, currentField);
+                    console.log('Gemini API response received:', response);
+                    updateFormField(response, currentField);
+                } catch (error) {
+                    console.error('Error processing with Gemini:', error);
+                    alert(translations.api_error + ' ' + error.message);
+                } finally {
+                    isProcessing = false; // Marquer que le traitement est terminé
+                }
             };
 
             recognition.onerror = function(event) {
-                document.getElementById('voiceStatus').textContent = translations.voice_status_error + ' ' + event.error;
+                console.error('Speech recognition error:', event.error);
+                if (event.error === 'no-speech') {
+                    alert(translations.voice_status_error + ' No speech detected.');
+                } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    alert(translations.voice_permission_denied);
+                } else {
+                    alert(translations.voice_status_error + ' ' + event.error);
+                }
+                if (currentField) {
+                    const micIcon = document.querySelector(`label[for="${currentField}"] .mic-icon`);
+                    if (micIcon) {
+                        micIcon.style.opacity = '1';
+                    }
+                }
+                isProcessing = false; // Réinitialiser en cas d'erreur
+                currentField = null; // Réinitialiser en cas d'erreur
             };
 
             recognition.onend = function() {
-                if (document.getElementById('voiceStatus').textContent === translations.voice_status_listening) {
-                    document.getElementById('voiceStatus').textContent = translations.voice_status_completed;
+                console.log('Speech recognition ended');
+                if (currentField && !isProcessing) {
+                    const micIcon = document.querySelector(`label[for="${currentField}"] .mic-icon`);
+                    if (micIcon) {
+                        micIcon.style.opacity = '1';
+                    }
+                    currentField = null; // Réinitialiser seulement si pas en traitement
                 }
             };
+        } else {
+            console.warn('SpeechRecognition API not supported in this browser.');
         }
 
-        function startVoiceRecognition() {
+        async function processWithGemini(transcript, field) {
+            console.log('Sending transcript to Gemini API for field:', field, 'Transcript:', transcript);
+            let prompt = '';
+            switch (field) {
+                case 'titre':
+                    prompt = `Extract a short title (summary) from this text for a reclamation form. Text: "${transcript}". Return a JSON object with a "title" field.`;
+                    break;
+                case 'description':
+                    prompt = `Extract a detailed description from this text for a reclamation form. Text: "${transcript}". Return a JSON object with a "description" field.`;
+                    break;
+                case 'lieu':
+                    prompt = `Extract the location (e.g., 'Tunis') from this text for a reclamation form. Text: "${transcript}". Return a JSON object with a "location" field.`;
+                    break;
+                case 'type_probleme':
+                    prompt = `Extract the type of problem (one of: mecanique, batterie, ecran, pneu, autre) from this text for a reclamation form. Text: "${transcript}". Return a JSON object with a "type" field.`;
+                    break;
+                default:
+                    throw new Error('Invalid field: ' + field);
+            }
+
+            const requestBody = {
+                contents: [{
+                    parts: [{ text: prompt }]
+                }]
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                console.log('Fetch response status:', response.status);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Fetch error response:', errorText);
+                    throw new Error('Failed to process with Gemini API: ' + response.status + ' ' + errorText);
+                }
+
+                const data = await response.json();
+                console.log('Gemini API raw response:', data);
+
+                if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+                    throw new Error('Invalid response structure from Gemini API');
+                }
+
+                const textResponse = data.candidates[0].content.parts[0].text;
+                console.log('Gemini API text response:', textResponse);
+
+                // Nettoyer la réponse pour extraire le JSON valide
+                let jsonString = textResponse.trim();
+                if (jsonString.startsWith('```json') && jsonString.endsWith('```')) {
+                    jsonString = jsonString.replace(/```json/, '').replace(/```/, '').trim();
+                } else if (jsonString.startsWith('{') && jsonString.endsWith('}')) {
+                    // Si c'est déjà un objet JSON brut, le prendre tel quel
+                } else {
+                    throw new Error('Unexpected response format: ' + jsonString);
+                }
+
+                let parsedResponse;
+                try {
+                    parsedResponse = JSON.parse(jsonString);
+                } catch (e) {
+                    console.error('Error parsing Gemini response as JSON:', e, 'Raw response:', jsonString);
+                    throw new Error('Failed to parse Gemini response as JSON: ' + jsonString);
+                }
+
+                return parsedResponse;
+            } catch (error) {
+                console.error('Error in processWithGemini:', error);
+                throw error;
+            }
+        }
+
+        function updateFormField(data, field) {
+            console.log('Updating field:', field, 'with data:', data);
+            if (!field) {
+                console.error('Field is null or undefined');
+                return;
+            }
+
+            const fieldElement = document.getElementById(field);
+            if (!fieldElement) {
+                console.error('Field element not found for ID:', field);
+                return;
+            }
+
+            let valueSet = false;
+            if (field === 'titre' && data.title) {
+                fieldElement.value = data.title;
+                console.log('Set titre:', data.title);
+                valueSet = true;
+            } else if (field === 'description' && data.description) {
+                fieldElement.value = data.description;
+                console.log('Set description:', data.description);
+                valueSet = true;
+            } else if (field === 'lieu' && data.location) {
+                fieldElement.value = data.location;
+                console.log('Set lieu:', data.location);
+                valueSet = true;
+            } else if (field === 'type_probleme' && data.type && ['mecanique', 'batterie', 'ecran', 'pneu', 'autre'].includes(data.type.toLowerCase())) {
+                fieldElement.value = data.type.toLowerCase();
+                console.log('Set type_probleme:', data.type.toLowerCase());
+                valueSet = true;
+            } else {
+                console.warn('Invalid or missing value for field:', field, 'Data:', data);
+                return;
+            }
+
+            if (valueSet) {
+                // Dispatch input event to trigger validation
+                fieldElement.dispatchEvent(new Event('input'));
+                console.log('Dispatched input event for field:', field);
+            }
+        }
+
+        function startVoiceRecognition(field) {
+            console.log('startVoiceRecognition called for field:', field);
             if (!SpeechRecognition) {
+                console.warn('SpeechRecognition not supported');
                 alert(translations.voice_not_supported);
                 return;
             }
 
-            try {
-                recognition.start();
-            } catch (e) {
-                console.error(e);
-                document.getElementById('voiceStatus').textContent = translations.voice_status_error;
-            }
+            const micIcons = document.querySelectorAll('.mic-icon');
+            micIcons.forEach(icon => (icon.style.opacity = '1')); // Réinitialiser tous les icônes
+
+            navigator.permissions.query({ name: 'microphone' }).then(permissionStatus => {
+                console.log('Microphone permission status:', permissionStatus.state);
+                if (permissionStatus.state === 'denied') {
+                    alert(translations.voice_permission_denied);
+                    return;
+                }
+
+                if (permissionStatus.state === 'prompt') {
+                    console.log('Microphone permission prompt will be shown');
+                }
+
+                try {
+                    currentField = field;
+                    console.log('Starting speech recognition for field:', field);
+                    recognition.start();
+                } catch (e) {
+                    console.error('Error starting speech recognition:', e);
+                    alert(translations.voice_status_error + ' ' + e.message);
+                    const micIcon = document.querySelector(`label[for="${field}"] .mic-icon`);
+                    if (micIcon) {
+                        micIcon.style.opacity = '1';
+                    }
+                }
+            }).catch(err => {
+                console.error('Error checking microphone permission:', err);
+                alert(translations.voice_status_error + ' ' + err.message);
+                const micIcon = document.querySelector(`label[for="${field}"] .mic-icon`);
+                if (micIcon) {
+                    micIcon.style.opacity = '1';
+                }
+            });
         }
 
-        // Form validation
         document.getElementById('reclamationForm').addEventListener('submit', function(event) {
             event.preventDefault();
             let isValid = true;

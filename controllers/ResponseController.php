@@ -5,12 +5,12 @@ class ResponseController {
 
     public function __construct() {
         // Initialize database connection
-        require_once 'config/database.php';
+        require_once __DIR__ . '/../config/database.php';
         $database = new Database();
         $this->db = $database->getConnection();
 
         // Initialize Response model
-        require_once 'models/Response.php';
+        require_once __DIR__ . '/../models/Response.php';
         $this->response = new Response($this->db);
     }
 
@@ -25,7 +25,7 @@ class ResponseController {
     
         // Fetch the role from the utilisateurs table using utilisateur_id
         $query = "SELECT role FROM utilisateurs WHERE id = :utilisateur_id";
-        $stmt = $this->db->prepare($query); // Use $this->db directly
+        $stmt = $this->db->prepare($query);
         $stmt->bindParam(':utilisateur_id', $utilisateur_id, PDO::PARAM_INT);
         $stmt->execute();
         $result = $stmt->fetch(PDO::FETCH_ASSOC);

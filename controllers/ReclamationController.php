@@ -72,7 +72,7 @@ class ReclamationController {
             $_SESSION['flash_message'] = "Erreur : Tous les champs sont obligatoires.";
             $_SESSION['flash_message_type'] = 'error';
             // Redirect back to the form page (form data is already in session)
-            header('Location: ../ajouter_reclamation.php');
+            header('Location: ../views/ajouter_reclamation.php');
             exit;
         }
         

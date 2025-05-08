@@ -608,16 +608,16 @@ $pageTitle = t('edit_reclamation') . ' - Green.tn';
                     </div>
 
                     <button type="submit"><?php echo t('update_reclamation'); ?></button>
-                    <a href="../liste_reclamations.php" style="margin-left: 10px;"><?php echo t('cancel'); ?></a>
-                    <p><a href="../liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>
+                    <a href="../views/liste_reclamations.php" style="margin-left: 10px;"><?php echo t('cancel'); ?></a>
+                    <p><a href="../views/liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>
                 </form>
             <?php elseif ($reclamation && !$can_modify): ?>
-                <p class="error-message"><a href="../liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>
+                <p class="error-message"><a href="../views/liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>
             <?php elseif (!$feedback_message): ?>
                 <p class="info-message"><?php echo t('loading'); ?></p>
             <?php endif; ?>
             <?php if ($reclamation === null && $feedback_message): ?>
-                <p class="error-message"><a href="../liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>
+                <p class="error-message"><a href="../views/liste_reclamations.php"><?php echo t('back_to_list'); ?></a></p>
             <?php endif; ?>
         </div>
     </main>
