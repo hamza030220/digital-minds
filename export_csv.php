@@ -1,6 +1,6 @@
 <?php
 // Inclure la connexion à la base de données
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
 
 // Définir les en-têtes pour télécharger un fichier HTML
 header('Content-Type: text/html');

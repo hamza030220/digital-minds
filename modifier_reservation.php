@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
 
 // Load translations
 $translations_file = __DIR__ . '/assets/translations.json';
@@ -209,379 +209,462 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($velos)) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Poppins', sans-serif;
-        }
-        body {
-            background-color: #e8f5e9;
-            color: #333;
-            min-height: 100vh;
-            animation: fadeIn 1s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .topbar {
-            width: 100%;
-            background-color: #f5f5f5;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 2rem;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-        .topbar.hidden {
-            transform: translateY(-100%);
-        }
-        .topbar .logo {
-            height: 40px;
-        }
-        .nav-links {
-            display: flex;
-            gap: 1rem;
-        }
-        .nav-links a {
-            color: #2e7d32;
-            text-decoration: none;
-            font-size: 0.95rem;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        .nav-links a:hover, .nav-links .active {
-            background-color: #e8f5e9;
-            color: #1b5e20;
-        }
-        .nav-links a#toggle-language {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .profile-icon {
-            position: relative;
-        }
-        .top-profile-pic {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #e8f5e9;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-        .top-profile-pic:hover {
-            transform: scale(1.1);
-        }
-        .profile-menu {
-            display: none;
-            position: absolute;
-            top: 50px;
-            right: 0;
-            background-color: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            min-width: 180px;
-            z-index: 999;
-        }
-        .profile-menu.show {
-            display: block;
-        }
-        .profile-menu-item {
-            padding: 0.75rem 1rem;
-            color: #2e7d32;
-            text-decoration: none;
-            display: block;
-            font-size: 0.9rem;
-            transition: background-color 0.3s;
-        }
-        .profile-menu-item:hover {
-            background-color: #f5f5f5;
-        }
-        .toggle-topbar {
-            cursor: pointer;
-            font-size: 1.2rem;
-            color: #2e7d32;
-            padding: 0.5rem;
-            border-radius: 4px;
-            transition: background-color 0.3s;
-        }
-        .toggle-topbar:hover {
-            background-color: #e8f5e9;
-        }
-        .show-topbar-btn {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            background-color: #f5f5f5;
-            padding: 0.5rem;
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            z-index: 1001;
-            display: none;
-        }
-        .show-topbar-btn.show {
-            display: block;
-        }
-        .show-topbar-btn span {
-            font-size: 1.5rem;
-            color: #2e7d32;
-        }
-        .hamburger-menu {
-            display: none;
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 1000;
-            cursor: pointer;
-        }
-        .hamburger-icon {
-            width: 30px;
-            height: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .hamburger-icon span {
-            width: 100%;
-            height: 3px;
-            background-color: #2e7d32;
-            transition: all 0.3s ease;
-        }
-        .hamburger-icon.active span:nth-child(1) {
-            transform: rotate(45deg) translate(5px, 5px);
-        }
-        .hamburger-icon.active span:nth-child(2) {
-            opacity: 0;
-        }
-        .hamburger-icon.active span:nth-child(3) {
-            transform: rotate(-45deg) translate(7px, -7px);
-        }
-        .nav-menu {
-            display: none;
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 250px;
-            height: 100%;
-            background-color: #f9fafb;
-            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
-            padding: 2rem 1rem;
-            z-index: 999;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .nav-menu.show {
-            display: flex;
-        }
-        .nav-menu a {
-            color: #2e7d32;
-            text-decoration: none;
-            font-size: 1rem;
-            font-weight: 500;
-            padding: 0.5rem;
-            border-radius: 4px;
-            transition: background-color 0.3s;
-        }
-        .nav-menu a:hover {
-            background-color: #e8f5e9;
-        }
-        .nav-menu a#toggle-language-mobile {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .main-content {
-            padding: 5rem 2rem 2rem;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-        .reservation-card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-        .reservation-card h2 {
-            color: #2e7d32;
-            font-size: 1.8rem;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-        .reservation-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .reservation-form label {
-            font-weight: 600;
-            color: #333;
-        }
-        .reservation-form select,
-        .reservation-form input {
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            font-size: 14px;
-            width: 100%;
-        }
-        .reservation-form .error-message {
-            color: #e74c3c;
-            font-size: 12px;
-            margin-top: 4px;
-            display: none;
-        }
-        .reservation-form .btn-container {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-        .reservation-form .btn {
-            padding: 10px 20px;
-            font-size: 14px;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .reservation-form .btn.submit {
-            background-color: #2e7d32;
-        }
-        .reservation-form .btn.submit:hover {
-            background-color: #1b5e20;
-        }
-        .reservation-form .btn.cancel {
-            background-color: #e74c3c;
-        }
-        .reservation-form .btn.cancel:hover {
-            background-color: #c0392b;
-        }
-        .alert-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 2000;
-            max-width: 400px;
-        }
-        .alert {
-            padding: 12px 20px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            animation: slideInAlert 0.3s ease;
-            color: white;
-        }
-        .alert.success {
-            background-color: #2e7d32;
-            border: 1px solid #1b5e20;
-        }
-        .alert.error {
-            background-color: #e74c3c;
-            border: 1px solid #c0392b;
-        }
-        @keyframes slideInAlert {
-            from { opacity: 0; transform: translateX(20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        .footer {
-            background-color: #f5f5f5;
-            color: #4b5563;
-            padding: 2rem;
-            text-align: center;
-        }
-        .footer-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-        }
-        .footer-column h3 {
-            font-size: 1.2rem;
-            color: #2e7d32;
-            margin-bottom: 0.5rem;
-        }
-        .footer-column p, .footer-column a {
-            font-size: 0.9rem;
-            color: #2e7d32;
-            text-decoration: none;
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-        .footer-column a:hover {
-            color: #1b5e20;
-        }
-        .footer-bottom {
-            margin-top: 1rem;
-            font-size: 0.9rem;
-        }
-        body.dark-mode {
-            background-color: #1a1a1a;
-            color: #e0e0e0;
-        }
-        body.dark-mode .topbar,
-        body.dark-mode .show-topbar-btn,
-        body.dark-mode .nav-menu,
-        body.dark-mode .footer {
-            background-color: #2a2a2a;
-        }
-        body.dark-mode .reservation-card {
-            background: rgba(50, 50, 50, 0.95);
-        }
-        body.dark-mode .reservation-card h2 {
-            color: #4caf50;
-        }
-        body.dark-mode .reservation-form label {
-            color: #e0e0e0;
-        }
-        body.dark-mode .reservation-form input,
-        body.dark-mode .reservation-form select {
-            background: #444;
-            color: #e0e0e0;
-            border-color: #666;
-        }
-        @media (max-width: 768px) {
-            .topbar {
-                display: none;
-            }
-            .hamburger-menu {
-                display: block;
-            }
-            .main-content {
-                padding: 4rem 1.5rem 1.5rem;
-            }
-            .reservation-card {
-                padding: 1.5rem;
-            }
-            .nav-menu {
-                width: 100%;
-            }
-            .show-topbar-btn {
-                top: 0.5rem;
-                right: 3.5rem;
-            }
-        }
-        @media (max-width: 480px) {
-            .reservation-card {
-                padding: 1rem;
-            }
-            .reservation-card h2 {
-                font-size: 1.5rem;
-            }
-        }
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif; /* Updated from Poppins */
+}
+
+body {
+    background-color: #60BA97; /* Updated from #e8f5e9 */
+    color: #333;
+    min-height: 100vh;
+    animation: fadeIn 1s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.topbar {
+    width: 100%;
+    background-color: #F9F5E8; /* Updated from #f5f5f5 */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.topbar.hidden {
+    transform: translateY(-100%);
+}
+
+.topbar .logo {
+    height: 40px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1rem;
+}
+
+.nav-links a {
+    color: #2e7d32;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color 0.3s, color 0.3s;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated from Poppins */
+}
+
+.nav-links a:hover, .nav-links .active {
+    background-color: #4CAF50; /* Updated from #e8f5e9 */
+    color: #fff; /* Updated from #1b5e20 */
+}
+
+.nav-links a#toggle-language {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.profile-icon {
+    position: relative;
+}
+
+.top-profile-pic {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #4CAF50; /* Updated from #e8f5e9 */
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+.top-profile-pic:hover {
+    transform: scale(1.1);
+}
+
+.profile-menu {
+    display: none;
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background-color: #F9F5E8; /* Updated from #fff */
+    border: 1px solid #4CAF50; /* Updated from #e0e0e0 */
+    border-radius: 6px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    min-width: 180px;
+    z-index: 999;
+}
+
+.profile-menu.show {
+    display: block;
+}
+
+.profile-menu-item {
+    padding: 0.75rem 1rem;
+    color: #2e7d32;
+    text-decoration: none;
+    display: block;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated from Poppins */
+}
+
+.profile-menu-item:hover {
+    background-color: #4CAF50; /* Updated from #f5f5f5 */
+    color: #fff;
+}
+
+.toggle-topbar {
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #2e7d32;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.toggle-topbar:hover {
+    background-color: #4CAF50; /* Updated from #e8f5e9 */
+    color: #fff;
+}
+
+.show-topbar-btn {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    background-color: #F9F5E8; /* Updated from #f5f5f5 */
+    padding: 0.5rem;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    z-index: 1001;
+    display: none;
+}
+
+.show-topbar-btn.show {
+    display: block;
+}
+
+.show-topbar-btn span {
+    font-size: 1.5rem;
+    color: #2e7d32;
+}
+
+.hamburger-menu {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+.hamburger-icon {
+    width: 30px;
+    height: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.hamburger-icon span {
+    width: 100%;
+    height: 3px;
+    background-color: #2e7d32;
+    transition: all 0.3s ease;
+}
+
+.hamburger-icon.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger-icon.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger-icon.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -7px);
+}
+
+.nav-menu {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 250px;
+    height: 100%;
+    background-color: #F9F5E8; /* Updated from #f9fafb */
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+    padding: 2rem 1rem;
+    z-index: 999;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.nav-menu.show {
+    display: flex;
+}
+
+.nav-menu a {
+    color: #2e7d32;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 500;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated from Poppins */
+}
+
+.nav-menu a:hover {
+    background-color: #4CAF50; /* Updated from #e8f5e9 */
+    color: #fff;
+}
+
+.nav-menu a#toggle-language-mobile {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.main-content {
+    padding: 5rem 2rem 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.reservation-card {
+    background: #F9F5E8; /* Updated from rgba(255, 255, 255, 0.95) */
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.reservation-card h2 {
+    color: #2e7d32;
+    font-size: 1.8rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated from Poppins */
+}
+
+.reservation-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.reservation-form label {
+    font-weight: 600;
+    color: #333;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated from Poppins */
+}
+
+.reservation-form select,
+.reservation-form input {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #4CAF50; /* Updated from #ccc */
+    font-size: 14px;
+    width: 100%;
+}
+
+.reservation-form .error-message {
+    color: #FF0000; /* Updated from #e74c3c */
+    font-size: 12px;
+    margin-top: 4px;
+    display: none;
+}
+
+.reservation-form .btn-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.reservation-form .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated from Poppins */
+}
+
+.reservation-form .btn.submit {
+    background-color: #2e7d32;
+}
+
+.reservation-form .btn.submit:hover {
+    background-color: #4CAF50; /* Updated from #1b5e20 */
+}
+
+.reservation-form .btn.cancel {
+    background-color: #FF0000; /* Updated from #e74c3c */
+}
+
+.reservation-form .btn.cancel:hover {
+    background-color: #CC0000; /* Updated from #c0392b */
+}
+
+.alert-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    max-width: 400px;
+}
+
+.alert {
+    padding: 12px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    animation: slideInAlert 0.3s ease;
+    color: white;
+}
+
+.alert.success {
+    background-color: #2e7d32;
+    border: 1px solid #4CAF50; /* Updated from #1b5e20 */
+}
+
+.alert.error {
+    background-color: #FF0000; /* Updated from #e74c3c */
+    border: 1px solid #CC0000; /* Updated from #c0392b */
+}
+
+@keyframes slideInAlert {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.footer {
+    background-color: #F9F5E8; /* Updated from #f5f5f5 */
+    color: #333; /* Updated from #4b5563 */
+    padding: 2rem;
+    text-align: center;
+    font-family: "Berlin Sans FB", Arial, sans-serif; /* Updated from Poppins */
+}
+
+.footer-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.footer-column h3 {
+    font-size: 1.2rem;
+    color: #2e7d32;
+    margin-bottom: 0.5rem;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated from Poppins */
+}
+
+.footer-column p, .footer-column a {
+    font-size: 0.9rem;
+    color: #555; /* Updated from #2e7d32 */
+    text-decoration: none;
+    margin-bottom: 0.5rem;
+    display: block;
+    font-family: "Berlin Sans FB", Arial, sans-serif; /* Updated from Poppins */
+}
+
+.footer-column a:hover {
+    color: #4CAF50; /* Updated from #1b5e20 */
+}
+
+.footer-bottom {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    font-family: "Berlin Sans FB", Arial, sans-serif; /* Updated from Poppins */
+}
+
+body.dark-mode {
+    background-color: #2e7d32; /* Updated from #1a1a1a */
+    color: #F9F5E8; /* Updated from #e0e0e0 */
+}
+
+body.dark-mode .topbar,
+body.dark-mode .show-topbar-btn,
+body.dark-mode .nav-menu,
+body.dark-mode .footer {
+    background-color: #F9F5E8; /* Updated from #2a2a2a */
+}
+
+body.dark-mode .reservation-card {
+    background: #F9F5E8; /* Updated from rgba(50, 50, 50, 0.95) */
+}
+
+body.dark-mode .reservation-card h2 {
+    color: #4CAF50;
+}
+
+body.dark-mode .reservation-form label {
+    color: #333; /* Updated from #e0e0e0 */
+}
+
+body.dark-mode .reservation-form input,
+body.dark-mode .reservation-form select {
+    background: #F9F5E8; /* Updated from #444 */
+    color: #333; /* Updated from #e0e0e0 */
+    border-color: #4CAF50; /* Updated from #666 */
+}
+
+@media (max-width: 768px) {
+    .topbar {
+        display: none;
+    }
+
+    .hamburger-menu {
+        display: block;
+    }
+
+    .main-content {
+        padding: 4rem 1.5rem 1.5rem;
+    }
+
+    .reservation-card {
+        padding: 1.5rem;
+    }
+
+    .nav-menu {
+        width: 100%;
+    }
+
+    .show-topbar-btn {
+        top: 0.5rem;
+        right: 3.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .reservation-card {
+        padding: 1rem;
+    }
+
+    .reservation-card h2 {
+        font-size: 1.5rem;
+    }
+}
     </style>
 </head>
 <body>

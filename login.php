@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
 session_start();
 
 // Enable error reporting for debugging

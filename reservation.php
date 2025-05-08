@@ -1,6 +1,20 @@
 <?php
 session_start();
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
+
+// Include PHPMailer
+$phpMailerPath = __DIR__ . '/PHPMailer-PHPMailer-19debc7/src/';
+if (!file_exists($phpMailerPath . 'PHPMailer.php') || !file_exists($phpMailerPath . 'SMTP.php') || !file_exists($phpMailerPath . 'Exception.php')) {
+    error_log("PHPMailer files not found in $phpMailerPath");
+    $_SESSION['alert'] = ['type' => 'error', 'message' => 'Erreur: PHPMailer non configuré correctement. Contactez l\'administrateur.'];
+}
+require_once $phpMailerPath . 'PHPMailer.php';
+require_once $phpMailerPath . 'SMTP.php';
+require_once $phpMailerPath . 'Exception.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
 
 // Enable error reporting for debugging
 ini_set('display_errors', 1);
@@ -28,7 +42,14 @@ if (isset($_GET['lang']) && in_array($_GET['lang'], ['fr', 'en'])) {
 // Inline translations
 $translations = [
     'fr' => [
+        'home' => 'Accueil',
+        'profile_management' => 'Gestion de votre profil',
         'reservations' => 'Réservations',
+        'complaints' => 'Réclamations',
+        'bikes_batteries' => 'Vélos',
+        'repair_issues' => 'Réparer les pannes',
+        'logout' => 'Déconnexion',
+        'dark_mode' => 'Mode Sombre',
         'id' => 'ID',
         'client_id' => 'ID Client',
         'bike' => 'Vélo',
@@ -46,13 +67,6 @@ $translations = [
         'accepted' => 'Acceptée',
         'refused' => 'Refusée',
         'no_reservations' => 'Aucune réservation trouvée.',
-        'home' => 'Accueil',
-        'profile_management' => 'Gestion de votre profil',
-        'complaints' => 'Réclamations',
-        'bikes_batteries' => 'Vélos',
-        'repair_issues' => 'Réparer les pannes',
-        'logout' => 'Déconnexion',
-        'dark_mode' => 'Mode Sombre',
         'search' => 'Rechercher',
         'sort_by' => 'Trier par :',
         'filter_by_status' => 'Filtrer par statut :',
@@ -67,10 +81,21 @@ $translations = [
         'error_notification' => 'Erreur lors de l\'envoi de la notification.',
         'notifications' => 'Notifications',
         'success_reservation_trashed' => 'Réservation déplacée vers la corbeille.',
-        'back' => 'Retour', // Added translation
+        'back' => 'Retour',
+        'success_email_sent' => 'Email d\'acceptation envoyé à l\'utilisateur.',
+        'error_email' => 'Erreur lors de l\'envoi de l\'email d\'acceptation : ',
+        'forum' => 'Forum',
+        'edit_profile' => 'Editer mon profil'
     ],
     'en' => [
+        'home' => 'Home',
+        'profile_management' => 'Profile Management',
         'reservations' => 'Reservations',
+        'complaints' => 'Complaints',
+        'bikes_batteries' => 'Bikes',
+        'repair_issues' => 'Repair Issues',
+        'logout' => 'Logout',
+        'dark_mode' => 'Dark Mode',
         'id' => 'ID',
         'client_id' => 'Client ID',
         'bike' => 'Bike',
@@ -88,13 +113,6 @@ $translations = [
         'accepted' => 'Accepted',
         'refused' => 'Rejected',
         'no_reservations' => 'No reservations found.',
-        'home' => 'Home',
-        'profile_management' => 'Profile Management',
-        'complaints' => 'Complaints',
-        'bikes_batteries' => 'Bikes',
-        'repair_issues' => 'Repair Issues',
-        'logout' => 'Logout',
-        'dark_mode' => 'Dark Mode',
         'search' => 'Search',
         'sort_by' => 'Sort by:',
         'filter_by_status' => 'Filter by status:',
@@ -109,7 +127,11 @@ $translations = [
         'error_notification' => 'Error sending notification.',
         'notifications' => 'Notifications',
         'success_reservation_trashed' => 'Reservation moved to trash.',
-        'back' => 'Back', // Added translation
+        'back' => 'Back',
+        'success_email_sent' => 'Acceptance email sent to the user.',
+        'error_email' => 'Error sending acceptance email: ',
+        'forum' => 'Forum',
+        'edit_profile' => 'Edit my profile'
     ]
 ];
 
@@ -207,10 +229,11 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     $action = $_GET['action'];
 
     try {
-        // Fetch reservation details for notification
-        $stmt = $pdo->prepare("SELECT r.id_client, r.date_debut, r.date_fin, v.nom_velo 
+        // Fetch reservation details for notification and email
+        $stmt = $pdo->prepare("SELECT r.id_client, r.date_debut, r.date_fin, v.nom_velo, u.email, u.prenom, u.nom 
                                FROM reservation r 
                                JOIN velos v ON r.id_velo = v.id_velo 
+                               LEFT JOIN users u ON r.id_client = u.id 
                                WHERE r.id_reservation = ?");
         $stmt->execute([$id]);
         $reservation = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -226,6 +249,8 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
         $bike_name = $reservation['nom_velo'];
         $date_debut = $reservation['date_debut'];
         $date_fin = $reservation['date_fin'];
+        $client_email = $reservation['email'];
+        $client_name = $reservation['prenom'] . ' ' . $reservation['nom'];
 
         if ($action === 'accept') {
             // Update reservation status
@@ -239,15 +264,68 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                 $id, $bike_name, $date_debut, $date_fin
             );
             try {
-                $stmt = $pdo->prepare("INSERT INTO notification_reservation (user_id, message, created_at, is_read) 
-                                       VALUES (?, ?, NOW(), 0)");
-                $stmt->execute([$client_id, $message]);
+                $stmt = $pdo->prepare("INSERT INTO notification_reservation (user_id, message, created_at, is_read, reservation_id) 
+                                       VALUES (?, ?, NOW(), 0, ?)");
+                $stmt->execute([$client_id, $message, $id]);
                 error_log("Notification créée pour l'utilisateur $client_id pour la réservation $id");
-                $_SESSION['alert'] = ['type' => 'success', 'message' => getTranslation('success_status_update', $language, $translations) . ' ' . getTranslation('success_notification_sent', $language, $translations)];
             } catch (PDOException $e) {
                 error_log("Erreur lors de la création de la notification pour l'utilisateur $client_id: " . $e->getMessage());
                 $_SESSION['alert'] = ['type' => 'error', 'message' => getTranslation('error_notification', $language, $translations)];
+                header("Location: reservation.php?id=$id");
+                exit();
             }
+
+            // Send acceptance email
+            if ($client_email && filter_var($client_email, FILTER_VALIDATE_EMAIL)) {
+                $mail = new PHPMailer(true);
+                try {
+                    // Enable SMTP debugging
+                    $mail->SMTPDebug = SMTP::DEBUG_SERVER; // Set to 0 in production
+                    $mail->Debugoutput = function($str, $level) { error_log("PHPMailer: $str"); };
+
+                    // Server settings
+                    $mail->isSMTP();
+                    $mail->Host = 'smtp.gmail.com';
+                    $mail->SMTPAuth = true;
+                    $mail->Username = 'your_email@gmail.com'; // REPLACE WITH YOUR GMAIL ADDRESS
+                    $mail->Password = 'your_app_password'; // REPLACE WITH YOUR GMAIL APP PASSWORD
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+                    $mail->Port = 465;
+
+                    // Recipients
+                    $mail->setFrom('your_email@gmail.com', 'Green.tn');
+                    $mail->addAddress($client_email, $client_name);
+
+                    // Content
+                    $mail->isHTML(true);
+                    $mail->Subject = getTranslation('reservations', $language, $translations) . ' - ' . getTranslation('accepted', $language, $translations);
+                    $mail->Body = '
+                        <h2>' . getTranslation('reservations', $language, $translations) . ' ' . getTranslation('accepted', $language, $translations) . '</h2>
+                        <p>' . ($language === 'fr' ? 'Cher(e)' : 'Dear') . ' ' . htmlspecialchars($client_name) . ',</p>
+                        <p>' . ($language === 'fr' ? 'Nous sommes ravis de vous informer que votre réservation a été acceptée :' : 'We are pleased to inform you that your reservation has been accepted:') . '</p>
+                        <ul>
+                            <li><strong>' . getTranslation('id', $language, $translations) . ':</strong> ' . $id . '</li>
+                            <li><strong>' . getTranslation('bike', $language, $translations) . ':</strong> ' . htmlspecialchars($bike_name) . '</li>
+                            <li><strong>' . getTranslation('start_date', $language, $translations) . ':</strong> ' . htmlspecialchars($date_debut) . '</li>
+                            <li><strong>' . getTranslation('end_date', $language, $translations) . ':</strong> ' . htmlspecialchars($date_fin) . '</li>
+                        </ul>
+                        <p>' . ($language === 'fr' ? 'Merci de nous avoir choisi !' : 'Thank you for choosing us!') . '</p>
+                        <p>' . ($language === 'fr' ? 'Cordialement,' : 'Best regards,') . '<br>' . ($language === 'fr' ? 'L\'équipe Green.tn' : 'The Green.tn Team') . '</p>
+                    ';
+                    $mail->AltBody = strip_tags(str_replace(['<p>', '</p>', '<ul>', '</ul>', '<li>', '</li>', '<strong>', '</strong>', '<br>'], ["\n", "\n", "", "", "- ", "\n", "", "", "\n"], $mail->Body));
+
+                    $mail->send();
+                    error_log("Email d'acceptation envoyé à $client_email pour la réservation $id");
+                    $_SESSION['alert'] = ['type' => 'success', 'message' => getTranslation('success_status_update', $language, $translations) . ' ' . getTranslation('success_notification_sent', $language, $translations) . ' ' . getTranslation('success_email_sent', $language, $translations)];
+                } catch (Exception $e) {
+                    error_log("Erreur lors de l'envoi de l'email à $client_email pour la réservation $id: " . $mail->ErrorInfo);
+                    $_SESSION['alert'] = ['type' => 'error', 'message' => getTranslation('success_status_update', $language, $translations) . ' ' . getTranslation('success_notification_sent', $language, $translations) . ' ' . getTranslation('error_email', $language, $translations) . $mail->ErrorInfo];
+                }
+            } else {
+                error_log("Email non envoyé pour la réservation $id: email client invalide ou manquant ($client_email)");
+                $_SESSION['alert'] = ['type' => 'error', 'message' => getTranslation('success_status_update', $language, $translations) . ' ' . getTranslation('success_notification_sent', $language, $translations) . ' ' . getTranslation('error_email', $language, $translations) . 'Email client invalide ou manquant.'];
+            }
+
             header("Location: reservation.php?id=$id");
             exit();
         } elseif ($action === 'refuse') {
@@ -263,9 +341,9 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                     $id, $bike_name, $date_debut, $date_fin
                 );
                 try {
-                    $stmt = $pdo->prepare("INSERT INTO notification_reservation (user_id, message, created_at, is_read) 
-                                           VALUES (?, ?, NOW(), 0)");
-                    $stmt->execute([$client_id, $message]);
+                    $stmt = $pdo->prepare("INSERT INTO notification_reservation (user_id, message, created_at, is_read, reservation_id) 
+                                           VALUES (?, ?, NOW(), 0, ?)");
+                    $stmt->execute([$client_id, $message, $id]);
                     error_log("Notification créée pour l'utilisateur $client_id pour la réservation $id");
                     $_SESSION['alert'] = ['type' => 'success', 'message' => getTranslation('success_reservation_trashed', $language, $translations) . ' ' . getTranslation('success_notification_sent', $language, $translations)];
                 } catch (PDOException $e) {
@@ -291,6 +369,9 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
         exit();
     }
 }
+
+// Définir le chemin de base pour les liens
+$basePath = '';
 ?>
 
 <!DOCTYPE html>
@@ -709,32 +790,32 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <a class="sidebar-brand" href="dashboard.php?section=stats">
-                <img src="logo.jpg" alt="Green.tn">
+            <a class="sidebar-brand" href="<?php echo $basePath; ?>dashboard.php?section=stats">
+                <img src="<?php echo $basePath; ?>logo.jpg" alt="Green.tn">
             </a>
         </div>
         <div class="sidebar-content">
             <ul class="sidebar-nav">
                 <li class="sidebar-nav-item">
-                    <a class="sidebar-nav-link" href="dashboard.php?section=stats" data-translate="home">
+                    <a class="sidebar-nav-link <?php echo basename($_SERVER['PHP_SELF']) === 'dashboard.php' ? 'active' : ''; ?>" href="<?php echo $basePath; ?>dashboard.php?section=stats" data-translate="home">
                         <span class="sidebar-nav-icon"><i class="bi bi-house-door"></i></span>
                         <span class="sidebar-nav-text">Accueil</span>
                     </a>
                 </li>
                 <li class="sidebar-nav-item">
-                    <a class="sidebar-nav-link" href="dashboard.php?page=gestion_utilisateurs" data-translate="profile_management">
+                    <a class="sidebar-nav-link <?php echo isset($_GET['page']) && $_GET['page'] === 'gestion_utilisateurs' ? 'active' : ''; ?>" href="?page=gestion_utilisateurs" data-translate="profile_management">
                         <span class="sidebar-nav-icon"><i class="bi bi-person"></i></span>
                         <span class="sidebar-nav-text">Gestion de votre profil</span>
                     </a>
                 </li>
                 <li class="sidebar-nav-item">
-                    <a class="sidebar-nav-link active" href="reservations.php?super_admin=1" data-translate="reservations">
+                    <a class="sidebar-nav-link <?php echo basename($_SERVER['PHP_SELF']) === 'reservations.php' ? 'active' : ''; ?>" href="<?php echo $basePath; ?>reservation.php" data-translate="reservations">
                         <span class="sidebar-nav-icon"><i class="bi bi-calendar"></i></span>
                         <span class="sidebar-nav-text">Voir réservations</span>
                     </a>
                 </li>
                 <li class="sidebar-nav-item">
-                    <a class="sidebar-nav-link" href="reclamation.php" data-translate="complaints">
+                    <a class="sidebar-nav-link" href="<?php echo $basePath; ?>reclamation.php" data-translate="complaints">
                         <span class="sidebar-nav-icon"><i class="bi bi-envelope"></i></span>
                         <span class="sidebar-nav-text">Réclamations</span>
                     </a>
@@ -742,30 +823,36 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                 <li class="sidebar-nav-item">
                     <a class="sidebar-nav-link" href="velos.php?super_admin=1" data-translate="bikes_batteries">
                         <span class="sidebar-nav-icon"><i class="bi bi-bicycle"></i></span>
-                        <span class="sidebar-nav-text">Vélos</span>
+                        <span class="sidebar-nav-text">Vélos & Batteries</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link <?php echo basename($_SERVER['PHP_SELF']) === 'forum_admin.php' ? 'active' : ''; ?>" href="<?php echo $basePath; ?>forum_admin.php" data-translate="forum">
+                        <span class="sidebar-nav-icon"><i class="bi bi-chat"></i></span>
+                        <span class="sidebar-nav-text">Forum</span>
                     </a>
                 </li>
                 <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'technicien')): ?>
                     <li class="sidebar-nav-item">
-                        <a class="sidebar-nav-link" href="repair_panne.php" data-translate="repair_issues">
+                        <a class="sidebar-nav-link" href="<?php echo $basePath; ?>repair_panne.php" data-translate="repair_issues">
                             <span class="sidebar-nav-icon"><i class="bi bi-tools"></i></span>
                             <span class="sidebar-nav-text">Réparer les pannes</span>
                         </a>
                     </li>
+                    <li class="sidebar-nav-item">
+                        <a class="sidebar-nav-link <?php echo basename($_SERVER['PHP_SELF']) === 'update_profil_admin.php' ? 'active' : ''; ?>" href="update_profil_admin.php" data-translate="edit_profile">
+                            <span class="sidebar-nav-icon"><i class="bi bi-person"></i></span>
+                            <span class="sidebar-nav-text">Editer mon profil</span>
+                        </a>
+                    </li>
                 <?php endif; ?>
-                <li class="sidebar-nav-item">
-                    <a class="sidebar-nav-link" href="notification_reservation.php" data-translate="notifications">
-                        <span class="sidebar-nav-icon"><i class="bi bi-bell"></i></span>
-                        <span class="sidebar-nav-text">Notifications</span>
-                    </a>
-                </li>
             </ul>
         </div>
         <div class="sidebar-footer">
             <div class="mb-2">
                 <span class="text-white">Bienvenue, <?php echo htmlspecialchars($user['prenom'] . ' ' . $user['nom']); ?></span>
             </div>
-            <a href="logout.php" class="btn btn-outline-light" data-translate="logout">
+            <a href="<?php echo $basePath; ?>logout.php" class="btn btn-outline-light" data-translate="logout">
                 <i class="bi bi-box-arrow-right"></i> Déconnexion
             </a>
             <a href="#" id="darkModeToggle" class="btn btn-outline-light mt-2" data-translate="dark_mode">
@@ -789,7 +876,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
         }
         ?>
         <div class="header-logo">
-            <img src="logo.jpg" alt="Logo Green.tn" class="logo-header">
+            <img src="<?php echo $basePath; ?>logo.jpg" alt="Logo Green.tn" class="logo-header">
         </div>
         <h1 data-translate="reservations">Réservations</h1>
 
@@ -819,7 +906,7 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                 <canvas id="reservationsChart"></canvas>
             </div>
 
-            <!-- Task Bar -->
+            <!-- Task Bar (Unchanged) -->
             <div class="task-bar">
                 <form method="get" class="search-container">
                     <label for="search" class="search-label" data-translate="search"><i class="bi bi-search"></i> Rechercher :</label>
@@ -837,7 +924,6 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
                         <option value="acceptee" <?php echo $status_filter == 'acceptee' ? 'selected' : ''; ?> data-translate="accepted">Acceptée</option>
                         <option value="refusee" <?php echo $status_filter == 'refusee' ? 'selected' : ''; ?> data-translate="refused">Refusée</option>
                     </select>
-                    
                     <button type="submit" class="btn" data-translate="search"><i class="bi bi-search"></i> Rechercher</button>
                     <a href="?status=refusee" class="btn trash" data-translate="trash"><i class="bi bi-trash"></i> Corbeille</a>
                     <a href="reservation.php" class="btn" data-translate="back"><i class="bi bi-arrow-left"></i> Retour</a>

@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
 session_start();
 
 header('Content-Type: application/json');

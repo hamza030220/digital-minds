@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
 
 // Load translations
 $translations_file = __DIR__ . '/assets/translations.json';

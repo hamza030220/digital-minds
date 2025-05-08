@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
 require_once __DIR__ . '/PHPMailer-PHPMailer-19debc7/src/Exception.php';
 require_once __DIR__ . '/PHPMailer-PHPMailer-19debc7/src/PHPMailer.php';
 require_once __DIR__ . '/PHPMailer-PHPMailer-19debc7/src/SMTP.php';

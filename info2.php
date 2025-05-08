@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
 
 // Load translations
 $translations_file = __DIR__ . '/assets/translations.json';
@@ -22,25 +22,26 @@ function getTranslation($key, $lang = 'fr', $translations) {
     return isset($translations[$lang][$key]) ? $translations[$lang][$key] : $key;
 }
 
-// Vérifier si l'utilisateur est connecté
+// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
 
-// Récupérer les informations de l'utilisateur connecté
+// Retrieve logged-in user information
 $user_id = $_SESSION['user_id'];
 $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch();
 
-// Vérifier si les données de l'utilisateur sont disponibles
+// Check if user data is available
 if (!$user) {
-    echo "Erreur : utilisateur introuvable.";
+    echo "Error: User not found.";
     exit();
 }
 
 // Handle user update form submission
+$errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['action'] === 'edit') {
     $nom = trim($_POST['nom']);
     $prenom = trim($_POST['prenom']);
@@ -50,32 +51,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
     $gouvernorats = $_POST['gouvernorats'];
 
     // Validation
-    $errors = [];
     if (empty($nom) || strlen($nom) < 2) {
-        $errors[] = getTranslation('error_name_short', $language, $translations);
+        $errors['nom'] = getTranslation('error_name_short', $language, $translations);
     }
     if (empty($prenom) || strlen($prenom) < 2) {
-        $errors[] = getTranslation('error_first_name_short', $language, $translations);
+        $errors['prenom'] = getTranslation('error_first_name_short', $language, $translations);
     }
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = getTranslation('error_email_invalid', $language, $translations);
+        $errors['email'] = getTranslation('error_email_invalid', $language, $translations);
     }
     if (!preg_match('/^[0-9]{8}$/', $telephone)) {
-        $errors[] = getTranslation('error_phone_invalid', $language, $translations);
+        $errors['telephone'] = getTranslation('error_phone_invalid', $language, $translations);
     }
     if ($age < 5 || $age > 80) {
-        $errors[] = getTranslation('error_age_invalid', $language, $translations);
+        $errors['age'] = getTranslation('error_age_invalid', $language, $translations);
     }
     $valid_gouvernorats = ['Ariana', 'Beja', 'Ben Arous', 'Bizerte', 'Gabes', 'Gafsa', 'Jendouba', 'Kairouan', 'Kasserine', 'Kebili', 'La Manouba', 'Mahdia', 'Manouba', 'Medenine', 'Monastir', 'Nabeul', 'Sfax', 'Sidi Bouzid', 'Siliana', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan'];
     if (!in_array($gouvernorats, $valid_gouvernorats)) {
-        $errors[] = getTranslation('error_gouvernorat_invalid', $language, $translations);
+        $errors['gouvernorats'] = getTranslation('error_gouvernorat_invalid', $language, $translations);
     }
 
     // Check email uniqueness (exclude current user)
     $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
     $stmt->execute([$email, $user_id]);
     if ($stmt->rowCount() > 0) {
-        $errors[] = getTranslation('error_email_taken', $language, $translations);
+        $errors['email'] = getTranslation('error_email_taken', $language, $translations);
     }
 
     // Handle photo upload
@@ -90,28 +90,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
             if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
             $photo_path = $photo_name;
             if (!move_uploaded_file($photo_tmp, $upload_dir . $photo_name)) {
-                $errors[] = getTranslation('error_photo_upload', $language, $translations);
+                $errors['photo'] = getTranslation('error_photo_upload', $language, $translations);
             }
         } else {
-            $errors[] = getTranslation('error_photo_type', $language, $translations);
+            $errors['photo'] = getTranslation('error_photo_type', $language, $translations);
         }
     }
 
     if (empty($errors)) {
         $stmt = $pdo->prepare("UPDATE users SET nom = ?, prenom = ?, email = ?, telephone = ?, photo = ?, age = ?, gouvernorats = ? WHERE id = ?");
         $stmt->execute([$nom, $prenom, $email, $telephone, $photo_path, $age, $gouvernorats, $user_id]);
-        $_SESSION['alert'] = ['type' => 'success', 'message' => getTranslation('success_update', $language, $translations)];
-    } else {
-        $_SESSION['alert'] = ['type' => 'error', 'message' => implode('<br>', $errors)];
+        header("Location: ?page=gestion_utilisateurs&action=infos");
+        exit();
     }
-    header("Location: ?page=gestion_utilisateurs&action=infos");
-    exit();
 }
 
-// Stocker les informations dans un tableau pour affichage
+// Store user information for display
 $users = [$user];
 
-// Requête SQL pour le graphique des gouvernorats
+// SQL query for governorates chart
 $stmtGouv = $pdo->query("SELECT gouvernorats, COUNT(*) as count FROM users GROUP BY gouvernorats");
 $gouvData = $stmtGouv->fetchAll(PDO::FETCH_ASSOC);
 
@@ -125,7 +122,7 @@ foreach ($gouvData as $row) {
     $colors[] = 'rgba(' . rand(50, 200) . ',' . rand(100, 200) . ',' . rand(100, 255) . ', 0.7)';
 }
 
-// Statistiques pour la section stats
+// Statistics for stats section
 $totalUsers = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 $totalAdmins = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
 $totalTechnicians = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'technicien'")->fetchColumn();
@@ -142,1089 +139,1094 @@ $totalTechnicians = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'techni
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        body {
-            background-color: #e8f5e9;
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            color: #333;
-            min-height: 100vh;
-            animation: fadeIn 1s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        /* Topbar */
-        .topbar {
-            width: 100%;
-            background-color: #f5f5f5;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 2rem;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .topbar.hidden {
-            transform: translateY(-100%);
-        }
-
-        .topbar .logo {
-            height: 40px;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .nav-links a {
-            color: #2e7d32;
-            text-decoration: none;
-            font-size: 0.95rem;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            transition: background-color 0.3s, color 0.3s;
-            font-family: 'Poppins', sans-serif;
-            font-size: 16px;
-        }
-
-        .nav-links a:hover, .nav-links .active {
-            background-color: #e8f5e9;
-            color: #1b5e20;
-        }
-
-        .nav-links a#toggle-language {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .profile-icon {
-            position: relative;
-        }
-
-        .top-profile-pic {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #e8f5e9;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .top-profile-pic:hover {
-            transform: scale(1.1);
-        }
-
-        .profile-menu {
-            display: none;
-            position: absolute;
-            top: 50px;
-            right: 0;
-            background-color: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            min-width: 180px;
-            z-index: 999;
-        }
-
-        .profile-menu.show {
-            display: block;
-        }
-
-        .profile-menu-item {
-            padding: 0.75rem 1rem;
-            color: #2e7d32;
-            text-decoration: none;
-            display: block;
-            font-size: 0.9rem;
-            transition: background-color 0.3s;
-        }
-
-        .profile-menu-item:hover {
-            background-color: #f5f5f5;
-        }
-
-        .toggle-topbar {
-            cursor: pointer;
-            font-size: 1.2rem;
-            color: #2e7d32;
-            padding: 0.5rem;
-            border-radius: 4px;
-            transition: background-color 0.3s;
-        }
-
-        .toggle-topbar:hover {
-            background-color: #e8f5e9;
-        }
-
-        /* Show Topbar Button */
-        .show-topbar-btn {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            background-color: #f5f5f5;
-            padding: 0.5rem;
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            z-index: 1001;
-            display: none;
-        }
-
-        .show-topbar-btn.show {
-            display: block;
-        }
-
-        .show-topbar-btn span {
-            font-size: 1.5rem;
-            color: #2e7d32;
-        }
-
-        /* Hamburger Menu */
-        .hamburger-menu {
-            display: none;
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 1000;
-            cursor: pointer;
-        }
-
-        .hamburger-icon {
-            width: 30px;
-            height: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .hamburger-icon span {
-            width: 100%;
-            height: 3px;
-            background-color: #2e7d32;
-            transition: all 0.3s ease;
-        }
-
-        .hamburger-icon.active span:nth-child(1) {
-            transform: rotate(45deg) translate(5px, 5px);
-        }
-
-        .hamburger-icon.active span:nth-child(2) {
-            opacity: 0;
-        }
-
-        .hamburger-icon.active span:nth-child(3) {
-            transform: rotate(-45deg) translate(7px, -7px);
-        }
-
-        .nav-menu {
-            display: none;
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 250px;
-            height: 100%;
-            background-color: #f9fafb;
-            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
-            padding: 2rem 1rem;
-            z-index: 999;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .nav-menu.show {
-            display: flex;
-        }
-
-        .nav-menu a {
-            color: #2e7d32;
-            text-decoration: none;
-            font-size: 1rem;
-            font-weight: 500;
-            padding: 0.5rem;
-            border-radius: 4px;
-            transition: background-color 0.3s;
-        }
-
-        .nav-menu a:hover {
-            background-color: #e8f5e9;
-        }
-
-        .nav-menu a#toggle-language-mobile {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* Main Content */
-        .main-content {
-            padding: 5rem 2rem 2rem;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        /* Hero Section (Dashboard) */
-        .hero-section {
-            text-align: center;
-            padding: 3rem 2rem;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .hero-section img {
-            width: 120px;
-            margin-bottom: 1rem;
-        }
-
-        .hero-section h1 {
-            color: #2e7d32;
-            font-size: 2.5rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-
-        .hero-section p {
-            font-size: 1.2rem;
-            color: #4b5563;
-            max-width: 600px;
-            margin: 0 auto 1.5rem;
-            line-height: 1.6;
-        }
-
-        .hero-section .cta-button {
-            display: inline-block;
-            padding: 0.8rem 2rem;
-            background-color: #2e7d32;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 500;
-            transition: background-color 0.3s, transform 0.2s;
-        }
-
-        .hero-section .cta-button:hover {
-            background-color: #1b5e20;
-            transform: translateY(-2px);
-        }
-
-        /* Card Sections */
-        .section-card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-
-        .section-card h2 {
-            color: #2e7d32;
-            font-size: 1.6rem;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-
-        /* Features Grid */
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1rem;
-        }
-
-        .feature-card {
-            background: #f9fafb;
-            padding: 1rem;
-            border-radius: 8px;
-            text-align: center;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .feature-card i {
-            font-size: 2rem;
-            color: #2e7d32;
-            margin-bottom: 0.5rem;
-        }
-
-        .feature-card h3 {
-            font-size: 1.1rem;
-            color: #2e7d32;
-            margin-bottom: 0.5rem;
-        }
-
-        .feature-card p {
-            font-size: 0.9rem;
-            color: #4b5563;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
-        }
-
-        .stat-card {
-            background: #f9fafb;
-            padding: 1rem;
-            border-radius: 8px;
-            text-align: center;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-card h3 {
-            font-size: 0.95rem;
-            color: #2e7d32;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-card p {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #1a1a1a;
-        }
-
-        /* Chart Section */
-        .chart-container {
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        .chart-container canvas {
-            background: #f9fafb;
-            border-radius: 8px;
-            padding: 1rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Profile Section */
-        .profile-box {
-            display: flex;
-            padding: 1.5rem;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.95);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-
-        .profile-pic {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            margin-right: 1.5rem;
-            object-fit: cover;
-            border: 2px solid #e8f5e9;
-        }
-
-        .profile-details {
-            max-width: 600px;
-            flex-grow: 1;
-        }
-
-        .profile-info {
-            margin-top: 1rem;
-        }
-
-        .info-item {
-            margin-bottom: 0.5rem;
-            font-size: 0.95rem;
-        }
-
-        .info-item strong {
-            color: #2e7d32;
-        }
-
-        .edit-profile-btn {
-            padding: 8px 16px;
-            background-color: #2e7d32;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
-            margin-top: 1rem;
-        }
-
-        .edit-profile-btn:hover {
-            background-color: #1b5e20;
-            transform: translateY(-2px);
-        }
-
-        /* Edit User Form */
-        .edit-user-card {
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .edit-user-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .edit-user-form label {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .edit-user-form input,
-        .edit-user-form select {
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            font-size: 14px;
-            width: 100%;
-        }
-
-        .edit-user-form input[type="file"] {
-            padding: 5px;
-        }
-
-        .edit-user-form .btn-container {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        .edit-user-form .btn {
-            padding: 10px 20px;
-            font-size: 14px;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .edit-user-form .btn.submit {
-            background-color: #2e7d32;
-        }
-
-        .edit-user-form .btn.submit:hover {
-            background-color: #1b5e20;
-        }
-
-        .edit-user-form .btn.cancel {
-            background-color: #e74c3c;
-        }
-
-        .edit-user-form .btn.cancel:hover {
-            background-color: #c0392b;
-        }
-
-        /* Alerts */
-        .alert-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 2000;
-            max-width: 400px;
-        }
-
-        .alert {
-            padding: 12px 20px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            animation: slideInAlert 0.3s ease;
-            color: white;
-        }
-
-        .alert.success {
-            background-color: #2e7d32;
-            border: 1px solid #1b5e20;
-        }
-
-        .alert.error {
-            background-color: #e74c3c;
-            border: 1px solid #c0392b;
-        }
-
-        @keyframes slideInAlert {
-            from { opacity: 0; transform: translateX(20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        /* Footer (Dashboard) */
-        .footer {
-            background-color: #f5f5f5;
-            color: #4b5563;
-            padding: 2rem;
-            text-align: center;
-        }
-
-        .footer-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-        }
-
-        .footer-column h3 {
-            font-size: 1.2rem;
-            color: #2e7d32;
-            margin-bottom: 0.5rem;
-        }
-
-        .footer-column p, .footer-column a {
-            font-size: 0.9rem;
-            color: #2e7d32;
-            text-decoration: none;
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-
-        .footer-column a:hover {
-            color: #1b5e20;
-        }
-
-        .footer-bottom {
-            margin-top: 1rem;
-            font-size: 0.9rem;
-        }
-
-        /* Styles de green.css pour la section accueil */
-        <?php if (!isset($_GET['page']) || $_GET['page'] == 'accueil'): ?>
-        /* General Reset */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        /* Hero Section */
-        .hero {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 60px 10%;
-            background-color: #f4f4f4;
-            min-height: 500px;
-            gap: 20px;
-        }
-
-        .hero-box {
-            flex: 1;
-            max-width: 50%;
-        }
-
-        .hero-box h1 {
-            font-size: 48px;
-            color: #2e7d32;
-            margin-bottom: 20px;
-        }
-
-        .hero-box p {
-            font-size: 18px;
-            color: #555;
-        }
-
-        .hero-image {
-            flex: 1;
-            max-width: 50%;
-            text-align: right;
-        }
-
-        .hero-image img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 10px;
-        }
-
-        .hero.about {
-            background-color: #e8f5e9;
-        }
-
-        /* Nos vélos Section */
-        #a-nos-velos {
-            padding: 60px 10%;
-            background-color: #fff;
-        }
-
-        #a-nos-velos h2 {
-            font-size: 36px;
-            color: #2e7d32;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .bike-section {
-            margin-bottom: 60px;
-        }
-
-        .bike-section h3 {
-            font-size: 28px;
-            color: #2e7d32;
-            margin-bottom: 20px;
-        }
-
-        .bike-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .bike-card {
-            background-color: #f9f9f9;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .bike-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .bike-card img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .bike-card .buttons {
-            display: flex;
-            justify-content: space-between;
-            padding: 15px;
-        }
-
-        .bike-card .buttons button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s ease;
-        }
-
-        .bike-card .buttons .detail {
-            background-color: #4caf50;
-            color: #fff;
-        }
-
-        .bike-card .buttons .detail:hover {
-            background-color: #388e3c;
-        }
-
-        .bike-card .buttons .reserve {
-            background-color: #1E90FF;
-            color: #fff;
-        }
-
-        .bike-card .buttons .reserve:hover {
-            background-color: #32CD32;
-        }
-
-        /* Tarifs Section */
-        .pricing {
-            padding: 60px 10%;
-            background-color: #f4f4f4;
-            text-align: center;
-        }
-
-        .pricing h2 {
-            font-size: 36px;
-            color: #2e7d32;
-            margin-bottom: 40px;
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .pricing-card {
-            background-color: #fff;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .pricing-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .pricing-card h3 {
-            font-size: 24px;
-            color: #2e7d32;
-            margin-bottom: 10px;
-        }
-
-        .pricing-card .price {
-            font-size: 18px;
-            color: #555;
-            margin-bottom: 10px;
-        }
-
-        /* Contact Section */
-        .contact {
-            padding: 60px 10%;
-            background-color: #fff;
-        }
-
-        .contact h2 {
-            font-size: 36px;
-            color: #2e7d32;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .contact form {
-            max-width: 600px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .name-row {
-            display: flex;
-            gap: 20px;
-        }
-
-        .name-field {
-            flex: 1;
-        }
-
-        .contact label {
-            font-size: 16px;
-            color: #2e7d32;
-            margin-bottom: 5px;
-            display: block;
-        }
-
-        .contact input,
-        .contact textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        .contact textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .contact button {
-            padding: 10px 20px;
-            background-color: #4caf50;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
-        }
-
-        .contact button:hover {
-            background-color: #388e3c;
-        }
-
-        /* Footer (from green.css) */
-        footer.green-footer {
-            background-color: #2e7d32;
-            color: #fff;
-            padding: 40px 10%;
-        }
-
-        .footer-content {
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .footer-left {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .footer-logo img {
-            max-width: 150px;
-            height: auto;
-        }
-
-        .social-icons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .social-icons a img {
-            width: 30px;
-            height: 30px;
-        }
-
-        .footer-section {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .footer-section h3 {
-            font-size: 20px;
-            margin-bottom: 20px;
-        }
-
-        .footer-section ul {
-            list-style: none;
-        }
-
-        .footer-section ul li {
-            margin-bottom: 10px;
-        }
-
-        .footer-section ul li a {
-            color: #d0f0d6;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .footer-section ul li a:hover {
-            color: #fff;
-        }
-
-        .footer-section p {
-            font-size: 16px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .footer-section p img {
-            width: 20px;
-            height: 20px;
-        }
-
-        /* Dark Mode Adjustments for green.css */
-        body.dark-mode .hero,
-        body.dark-mode .pricing {
-            background-color: #2c3e50;
-            color: #e0e0e0;
-        }
-
-        body.dark-mode #a-nos-velos,
-        body.dark-mode .contact {
-            background-color: #34495e;
-            color: #e0e0e0;
-        }
-
-        body.dark-mode .bike-card,
-        body.dark-mode .pricing-card {
-            background-color: #3a506b;
-            color: #e0e0e0;
-        }
-
-        body.dark-mode .contact input,
-        body.dark-mode .contact textarea {
-            background-color: #444;
-            color: #e0e0e0;
-            border-color: #666;
-        }
-
-        body.dark-mode footer.green-footer {
-            background-color: #1a3c34;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .hero {
-                flex-direction: column;
-                text-align: center;
-                padding: 40px 5%;
-            }
-
-            .hero-box,
-            .hero-image {
-                max-width: 100%;
-            }
-
-            .hero-image {
-                text-align: center;
-                margin-top: 20px;
-            }
-
-            .name-row {
-                flex-direction: column;
-            }
-
-            .footer-content {
-                flex-direction: column;
-            }
-        }
-        <?php endif; ?>
-
-        /* Dark Mode (Dashboard) */
-        body.dark-mode {
-            background-image: linear-gradient(135deg, rgba(30, 30, 30, 0.8), rgba(50, 100, 50, 0.4)),
-                url('https://images.unsplash.com/photo-1507035896870-6b3f96e439ee?auto=format&fit=crop&w=1920&q=80');
-            color: #e0e0e0;
-        }
-
-        body.dark-mode .topbar,
-        body.dark-mode .show-topbar-btn,
-        body.dark-mode .nav-menu,
-        body.dark-mode .footer {
-            background-color: #2a2a2a;
-        }
-
-        body.dark-mode .hero-section,
-        body.dark-mode .section-card,
-        body.dark-mode .profile-box {
-            background: rgba(50, 50, 50, 0.95);
-        }
-
-        body.dark-mode .feature-card,
-        body.dark-mode .stat-card,
-        body.dark-mode .chart-container canvas {
-            background: #3a3a3a;
-        }
-
-        body.dark-mode .profile-info strong,
-        body.dark-mode .section-card h2,
-        body.dark-mode .hero-section h1,
-        body.dark-mode .stat-card h3,
-        body.dark-mode .feature-card h3,
-        body.dark-mode .footer-column h3 {
-            color: #4caf50;
-        }
-
-        body.dark-mode .hero-section p,
-        body.dark-mode .feature-card p,
-        body.dark-mode .footer {
-            color: #b0b0b0;
-        }
-
-        body.dark-mode .edit-user-card {
-            background: rgba(50, 50, 50, 0.95);
-        }
-
-        body.dark-mode .edit-user-form label {
-            color: #e0e0e0;
-        }
-
-        body.dark-mode .edit-user-form input,
-        body.dark-mode .edit-user-form select {
-            background: #444;
-            color: #e0e0e0;
-            border-color: #666;
-        }
-
-        body.dark-mode .edit-profile-btn {
-            background-color: #4caf50;
-        }
-
-        body.dark-mode .edit-profile-btn:hover {
-            background-color: #388e3c;
-        }
-
-        /* Responsive Design (Dashboard) */
-        @media (max-width: 768px) {
-            .topbar {
-                display: none;
-            }
-
-            .hamburger-menu {
-                display: block;
-            }
-
-            .main-content {
-                padding: 4rem 1.5rem 1.5rem;
-            }
-
-            .hero-section h1 {
-                font-size: 2rem;
-            }
-
-            .hero-section p {
-                font-size: 1rem;
-            }
-
-            .features-grid,
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .profile-box {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-            }
-
-            .profile-pic {
-                margin-bottom: 1rem;
-            }
-
-            .nav-menu {
-                width: 100%;
-            }
-
-            .show-topbar-btn {
-                top: 0.5rem;
-                right: 3.5rem;
-            }
-
-            .edit-user-card {
-                padding: 15px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .hero-section {
-                padding: 2rem 1rem;
-            }
-
-            .hero-section img {
-                width: 100px;
-            }
-
-            .section-card {
-                padding: 1rem;
-            }
-
-            .chart-container canvas {
-                padding: 0.5rem;
-            }
-        }
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif; /* Updated fallback font */
+}
+
+body {
+    background-color: #60BA97; /* Updated from #e8f5e9 */
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    color: #333;
+    min-height: 100vh;
+    animation: fadeIn 1s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Topbar */
+.topbar {
+    width: 100%;
+    background-color: #F9F5E8; /* Updated from #f5f5f5 */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.topbar.hidden {
+    transform: translateY(-100%);
+}
+
+.topbar .logo {
+    height: 40px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1rem;
+}
+
+.nav-links a {
+    color: #2e7d32;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color 0.3s, color 0.3s;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated from Poppins */
+    font-size: 16px;
+}
+
+.nav-links a:hover, .nav-links .active {
+    background-color: #4CAF50; /* Updated from #e8f5e9 */
+    color: #fff; /* Updated from #1b5e20 */
+}
+
+.nav-links a#toggle-language {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.profile-icon {
+    position: relative;
+}
+
+.top-profile-pic {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #4CAF50; /* Updated from #e8f5e9 */
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+.top-profile-pic:hover {
+    transform: scale(1.1);
+}
+
+.profile-menu {
+    display: none;
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background-color: #F9F5E8; /* Updated from #fff */
+    border: 1px solid #4CAF50; /* Updated from #e0e0e0 */
+    border-radius: 6px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    min-width: 180px;
+    z-index: 999;
+}
+
+.profile-menu.show {
+    display: block;
+}
+
+.profile-menu-item {
+    padding: 0.75rem 1rem;
+    color: #2e7d32;
+    text-decoration: none;
+    display: block;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.profile-menu-item:hover {
+    background-color: #4CAF50; /* Updated from #f5f5f5 */
+    color: #fff;
+}
+
+.toggle-topbar {
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #2e7d32;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.toggle-topbar:hover {
+    background-color: #4CAF50; /* Updated from #e8f5e9 */
+    color: #fff;
+}
+
+/* Show Topbar Button */
+.show-topbar-btn {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    background-color: #F9F5E8; /* Updated from #f5f5f5 */
+    padding: 0.5rem;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    z-index: 1001;
+    display: none;
+}
+
+.show-topbar-btn.show {
+    display: block;
+}
+
+.show-topbar-btn span {
+    font-size: 1.5rem;
+    color: #2e7d32;
+}
+
+/* Hamburger Menu */
+.hamburger-menu {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+.hamburger-icon {
+    width: 30px;
+    height: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.hamburger-icon span {
+    width: 100%;
+    height: 3px;
+    background-color: #2e7d32;
+    transition: all 0.3s ease;
+}
+
+.hamburger-icon.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger-icon.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger-icon.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -7px);
+}
+
+.nav-menu {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 250px;
+    height: 100%;
+    background-color: #F9F5E8; /* Updated from #f9fafb */
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+    padding: 2rem 1rem;
+    z-index: 999;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.nav-menu.show {
+    display: flex;
+}
+
+.nav-menu a {
+    color: #2e7d32;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 500;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated from Poppins */
+}
+
+.nav-menu a:hover {
+    background-color: #4CAF50; /* Updated from #e8f5e9 */
+    color: #fff;
+}
+
+.nav-menu a#toggle-language-mobile {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Main Content */
+.main-content {
+    padding: 5rem 2rem 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+/* Hero Section (Dashboard) */
+.hero-section {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: #F9F5E8; /* Updated from rgba(255, 255, 255, 0.95) */
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.hero-section img {
+    width: 120px;
+    margin-bottom: 1rem;
+}
+
+.hero-section h1 {
+    color: #2e7d32;
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.hero-section p {
+    font-size: 1.2rem;
+    color: #333; /* Updated from #4b5563 */
+    max-width: 600px;
+    margin: 0 auto 1.5rem;
+    line-height: 1.6;
+}
+
+.hero-section .cta-button {
+    display: inline-block;
+    padding: 0.8rem 2rem;
+    background-color: #2e7d32;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.3s, transform 0.2s;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.hero-section .cta-button:hover {
+    background-color: #4CAF50; /* Updated from #1b5e20 */
+    transform: translateY(-2px);
+}
+
+/* Card Sections */
+.section-card {
+    background: #F9F5E8; /* Updated from rgba(255, 255, 255, 0.95) */
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.section-card h2 {
+    color: #2e7d32;
+    font-size: 1.6rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+/* Features Grid */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.feature-card {
+    background: #F9F5E8; /* Updated from #f9fafb */
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.feature-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.feature-card i {
+    font-size: 2rem;
+    color: #2e7d32;
+    margin-bottom: 0.5rem;
+}
+
+.feature-card h3 {
+    font-size: 1.1rem;
+    color: #2e7d32;
+    margin-bottom: 0.5rem;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.feature-card p {
+    font-size: 0.9rem;
+    color: #333; /* Updated from #4b5563 */
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.stat-card {
+    background: #F9F5E8; /* Updated from #f9fafb */
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+    font-size: 0.95rem;
+    color: #2e7d32;
+    margin-bottom: 0.5rem;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.stat-card p {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333; /* Updated from #1a1a1a */
+}
+
+/* Chart Section */
+.chart-container {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.chart-container canvas {
+    background: #F9F5E8; /* Updated from #f9fafb */
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Profile Section */
+.profile-box {
+    display: flex;
+    padding: 1.5rem;
+    border-radius: 8px;
+    background: #F9F5E8; /* Updated from rgba(255, 255, 255, 0.95) */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.profile-pic {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin-right: 1.5rem;
+    object-fit: cover;
+    border: 2px solid #4CAF50; /* Updated from #e8f5e9 */
+}
+
+.profile-details {
+    max-width: 600px;
+    flex-grow: 1;
+}
+
+.profile-info {
+    margin-top: 1rem;
+}
+
+.info-item {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.info-item strong {
+    color: #2e7d32;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.edit-profile-btn {
+    padding: 8px 16px;
+    background-color: #2e7d32;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.edit-profile-btn:hover {
+    background-color: #4CAF50; /* Updated from #1b5e20 */
+    transform: translateY(-2px);
+}
+
+/* Edit User Form */
+.edit-user-card {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #F9F5E8; /* Updated from no background */
+}
+
+.edit-user-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.edit-user-form label {
+    font-weight: 600;
+    color: #333;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.edit-user-form input,
+.edit-user-form select {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #4CAF50; /* Updated from #ccc */
+    font-size: 14px;
+    width: 100%;
+}
+
+.edit-user-form input[type="file"] {
+    padding: 5px;
+}
+
+.edit-user-form .error {
+    color: #FF0000; /* Updated from #e74c3c for consistency */
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.edit-user-form .btn-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.edit-user-form .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.edit-user-form .btn.submit {
+    background-color: #2e7d32;
+}
+
+.edit-user-form .btn.submit:hover {
+    background-color: #4CAF50; /* Updated from #1b5e20 */
+}
+
+.edit-user-form .btn.cancel {
+    background-color: #FF0000; /* Updated from #e74c3c */
+}
+
+.edit-user-form .btn.cancel:hover {
+    background-color: #CC0000; /* Updated from #c0392b */
+}
+
+/* Footer (Dashboard) */
+.footer {
+    background-color: #F9F5E8; /* Updated from #f5f5f5 */
+    color: #333; /* Updated from #4b5563 */
+    padding: 2rem;
+    text-align: center;
+    font-family: "Berlin Sans FB", Arial, sans-serif; /* Updated font */
+}
+
+.footer-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.footer-column h3 {
+    font-size: 1.2rem;
+    color: #2e7d32;
+    margin-bottom: 0.5rem;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.footer-column p, .footer-column a {
+    font-size: 0.9rem;
+    color: #2e7d32;
+    text-decoration: none;
+    margin-bottom: 0.5rem;
+    display: block;
+    font-family: "Berlin Sans FB", Arial, sans-serif; /* Updated font */
+}
+
+.footer-column a:hover {
+    color: #4CAF50; /* Updated from #1b5e20 */
+}
+
+.footer-bottom {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    font-family: "Berlin Sans FB", Arial, sans-serif; /* Updated font */
+}
+
+/* Styles de green.css pour la section accueil */
+<?php if (!isset($_GET['page']) || $_GET['page'] == 'accueil'): ?>
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Hero Section */
+.hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 60px 10%;
+    background-color: #F9F5E8; /* Updated from #f4f4f4 */
+    min-height: 500px;
+    gap: 20px;
+}
+
+.hero-box {
+    flex: 1;
+    max-width: 50%;
+}
+
+.hero-box h1 {
+    font-size: 48px;
+    color: #2e7d32;
+    margin-bottom: 20px;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.hero-box p {
+    font-size: 18px;
+    color: #333; /* Updated from #555 */
+}
+
+.hero-image {
+    flex: 1;
+    max-width: 50%;
+    text-align: right;
+}
+
+.hero-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+}
+
+.hero.about {
+    background-color: #60BA97; /* Updated from #e8f5e9 */
+}
+
+/* Nos vélos Section */
+#a-nos-velos {
+    padding: 60px 10%;
+    background-color: #60BA97; /* Updated from #fff */
+}
+
+#a-nos-velos h2 {
+    font-size: 36px;
+    color: #2e7d32;
+    text-align: center;
+    margin-bottom: 40px;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.bike-section {
+    margin-bottom: 60px;
+}
+
+.bike-section h3 {
+    font-size: 28px;
+    color: #2e7d32;
+    margin-bottom: 20px;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.bike-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.bike-card {
+    background-color: #F9F5E8; /* Updated from #f9f9f9 */
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.bike-card:hover {
+    transform: translateY(-5px);
+}
+
+.bike-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.bike-card .buttons {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px;
+}
+
+.bike-card .buttons button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.bike-card .buttons .detail {
+    background-color: #4CAF50;
+    color: #fff;
+}
+
+.bike-card .buttons .detail:hover {
+    background-color: #2e7d32; /* Updated from #388e3c */
+}
+
+.bike-card .buttons .reserve {
+    background-color: #2e7d32; /* Updated from #1E90FF */
+    color: #fff;
+}
+
+.bike-card .buttons .reserve:hover {
+    background-color: #4CAF50; /* Updated from #32CD32 */
+}
+
+/* Tarifs Section */
+.pricing {
+    padding: 60px 10%;
+    background-color: #F9F5E8; /* Updated from #f4f4f4 */
+    text-align: center;
+}
+
+.pricing h2 {
+    font-size: 36px;
+    color: #2e7d32;
+    margin-bottom: 40px;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.pricing-card {
+    background-color: #F9F5E8; /* Updated from #fff */
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.pricing-card:hover {
+    transform: translateY(-5px);
+}
+
+.pricing-card h3 {
+    font-size: 24px;
+    color: #2e7d32;
+    margin-bottom: 10px;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.pricing-card .price {
+    font-size: 18px;
+    color: #333; /* Updated from #555 */
+    margin-bottom: 10px;
+}
+
+/* Contact Section */
+.contact {
+    padding: 60px 10%;
+    background-color: #60BA97; /* Updated from #fff */
+}
+
+.contact h2 {
+    font-size: 36px;
+    color: #2e7d32;
+    text-align: center;
+    margin-bottom: 40px;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.contact form {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.name-row {
+    display: flex;
+    gap: 20px;
+}
+
+.name-field {
+    flex: 1;
+}
+
+.contact label {
+    font-size: 16px;
+    color: #2e7d32;
+    margin-bottom: 5px;
+    display: block;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.contact input,
+.contact textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #4CAF50; /* Updated from #ccc */
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.contact textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.contact button {
+    padding: 10px 20px;
+    background-color: #2e7d32; /* Updated from #4caf50 */
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+}
+
+.contact button:hover {
+    background-color: #4CAF50; /* Updated from #388e3c */
+}
+
+/* Footer (from green.css) */
+footer.green-footer {
+    background-color: #F9F5E8; /* Updated from #2e7d32 */
+    color: #333; /* Updated from #fff */
+    padding: 40px 10%;
+    font-family: "Berlin Sans FB", Arial, sans-serif; /* Updated font */
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.footer-left {
+    flex: 1;
+    min-width: 200px;
+}
+
+.footer-logo img {
+    max-width: 150px;
+    height: auto;
+}
+
+.social-icons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.social-icons a img {
+    width: 30px;
+    height: 30px;
+}
+
+.footer-section {
+    flex: 1;
+    min-width: 200px;
+}
+
+.footer-section h3 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    font-family: "Bauhaus 93", Arial, sans-serif; /* Updated font */
+    color: #2e7d32; /* Updated from inherited #fff */
+}
+
+.footer-section ul {
+    list-style: none;
+}
+
+.footer-section ul li {
+    margin-bottom: 10px;
+}
+
+.footer-section ul li a {
+    color: #555; /* Updated from #d0f0d6 */
+    text-decoration: none;
+    transition: color 0.3s ease;
+    font-family: "Berlin Sans FB", Arial, sans-serif; /* Updated font */
+}
+
+.footer-section ul li a:hover {
+    color: #4CAF50; /* Updated from #fff */
+}
+
+.footer-section p {
+    font-size: 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #555; /* Updated from inherited #fff */
+    font-family: "Berlin Sans FB", Arial, sans-serif; /* Updated font */
+}
+
+.footer-section p img {
+    width: 20px;
+    height: 20px;
+}
+
+/* Dark Mode Adjustments for green.css */
+body.dark-mode .hero,
+body.dark-mode .pricing {
+    background-color: #2e7d32; /* Updated from #2c3e50 */
+    color: #F9F5E8; /* Updated from #e0e0e0 */
+}
+
+body.dark-mode #a-nos-velos,
+body.dark-mode .contact {
+    background-color: #2e7d32; /* Updated from #34495e */
+    color: #F9F5E8; /* Updated from #e0e0e0 */
+}
+
+body.dark-mode .bike-card,
+body.dark-mode .pricing-card {
+    background-color: #F9F5E8; /* Updated from #3a506b */
+    color: #333; /* Updated from #e0e0e0 */
+}
+
+body.dark-mode .contact input,
+body.dark-mode .contact textarea {
+    background-color: #F9F5E8; /* Updated from #444 */
+    color: #333; /* Updated from #e0e0e0 */
+    border-color: #4CAF50; /* Updated from #666 */
+}
+
+body.dark-mode footer.green-footer {
+    background-color: #2e7d32; /* Updated from #1a3c34 */
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 40px 5%;
+    }
+
+    .hero-box,
+    .hero-image {
+        max-width: 100%;
+    }
+
+    .hero-image {
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .name-row {
+        flex-direction: column;
+    }
+
+    .footer-content {
+        flex-direction: column;
+    }
+}
+<?php endif; ?>
+
+/* Dark Mode (Dashboard) */
+body.dark-mode {
+    background-color: #2e7d32; /* Updated from gradient */
+    color: #F9F5E8; /* Updated from #e0e0e0 */
+}
+
+body.dark-mode .topbar,
+body.dark-mode .show-topbar-btn,
+body.dark-mode .nav-menu,
+body.dark-mode .footer {
+    background-color: #F9F5E8; /* Updated from #2a2a2a */
+}
+
+body.dark-mode .hero-section,
+body.dark-mode .section-card,
+body.dark-mode .profile-box {
+    background: #F9F5E8; /* Updated from rgba(50, 50, 50, 0.95) */
+}
+
+body.dark-mode .feature-card,
+body.dark-mode .stat-card,
+body.dark-mode .chart-container canvas {
+    background: #F9F5E8; /* Updated from #3a3a3a */
+}
+
+body.dark-mode .profile-info strong,
+body.dark-mode .section-card h2,
+body.dark-mode .hero-section h1,
+body.dark-mode .stat-card h3,
+body.dark-mode .feature-card h3,
+body.dark-mode .footer-column h3 {
+    color: #4CAF50; /* Unchanged, matches bike site */
+}
+
+body.dark-mode .hero-section p,
+body.dark-mode .feature-card p,
+body.dark-mode .footer {
+    color: #333; /* Updated from #b0b0b0 */
+}
+
+body.dark-mode .edit-user-card {
+    background: #F9F5E8; /* Updated from rgba(50, 50, 50, 0.95) */
+}
+
+body.dark-mode .edit-user-form label {
+    color: #333; /* Updated from #e0e0e0 */
+}
+
+body.dark-mode .edit-user-form input,
+body.dark-mode .edit-user-form select {
+    background: #F9F5E8; /* Updated from #444 */
+    color: #333; /* Updated from #e0e0e0 */
+    border-color: #4CAF50; /* Updated from #666 */
+}
+
+body.dark-mode .edit-profile-btn {
+    background-color: #2e7d32; /* Updated from #4caf50 */
+}
+
+body.dark-mode .edit-profile-btn:hover {
+    background-color: #4CAF50; /* Updated from #388e3c */
+}
+
+/* Responsive Design (Dashboard) */
+@media (max-width: 768px) {
+    .topbar {
+        display: none;
+    }
+
+    .hamburger-menu {
+        display: block;
+    }
+
+    .main-content {
+        padding: 4rem 1.5rem 1.5rem;
+    }
+
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+
+    .hero-section p {
+        font-size: 1rem;
+    }
+
+    .features-grid,
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-box {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .profile-pic {
+        margin-bottom: 1rem;
+    }
+
+    .nav-menu {
+        width: 100%;
+    }
+
+    .show-topbar-btn {
+        top: 0.5rem;
+        right: 3.5rem;
+    }
+
+    .edit-user-card {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-section {
+        padding: 2rem 1rem;
+    }
+
+    .hero-section img {
+        width: 100px;
+    }
+
+    .section-card {
+        padding: 1rem;
+    }
+
+    .chart-container canvas {
+        padding: 0.5rem;
+    }
+}
     </style>
 </head>
 <body>
@@ -1238,6 +1240,7 @@ $totalTechnicians = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'techni
         <a href="#pricing" data-translate="pricing"><i class="fas fa-dollar-sign"></i> Tarifs</a>
         <a href="#contact" data-translate="contact"><i class="fas fa-envelope"></i> Contact</a>
         <a href="reservationuser.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'reservationuser.php' ? 'active' : ''; ?>" data-translate="reservations"><i class="fas fa-calendar"></i> Réservations</a>
+         <a href="forum.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'forum.php' ? 'active' : ''; ?>" data-translate="forum"><i class="fas fa-comments"></i> Forum</a>
         <a href="javascript:void(0)" id="toggle-dark-mode" data-translate="dark_mode"><i class="fas fa-moon"></i> Mode Sombre</a>
         <a href="javascript:void(0)" id="toggle-language" data-translate="language">🌐 Français</a>
     </div>
@@ -1273,6 +1276,8 @@ $totalTechnicians = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'techni
     <a href="#pricing" data-translate="pricing"><i class="fas fa-dollar-sign"></i> Tarifs</a>
     <a href="#contact" data-translate="contact"><i class="fas fa-envelope"></i> Contact</a>
     <a href="reservationuser.php" data-translate="reservations"><i class="fas fa-calendar"></i> Réservations</a>
+        <a href="forum.php" data-translate="forum"><i class="fas fa-comments"></i> Forum</a>
+
     <a href="login.php"><i class="fas fa-sign-in-alt"></i> Login</a>
     <a href="signin.php"><i class="fas fa-user-plus"></i> Signin</a>
     <a href="javascript:void(0)" id="toggle-dark-mode-mobile" data-translate="dark_mode"><i class="fas fa-moon"></i> Mode Sombre</a>
@@ -1281,19 +1286,9 @@ $totalTechnicians = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'techni
     <a href="logout.php" data-translate="logout">🚪 Déconnexion</a>
 </div>
 
-<!-- Alert Container -->
-<div class="alert-container"></div>
-
 <!-- Main Content -->
 <div class="main-content">
     <?php
-    // Display session-based alerts
-    if (isset($_SESSION['alert'])) {
-        $alert = $_SESSION['alert'];
-        echo "<script>showAlert('{$alert['type']}', '{$alert['message']}');</script>";
-        unset($_SESSION['alert']);
-    }
-
     $utilisateur = $user;
 
     if (!isset($_GET['page']) || $_GET['page'] == 'accueil') {
@@ -1442,19 +1437,19 @@ $totalTechnicians = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'techni
                     <div class="name-row">
                         <div class="name-field">
                             <label for="nom" data-translate="name">Nom</label>
-                            <input type="text" id="nom" placeholder="Nom" data-translate-placeholder="name" >
+                            <input type="text" id="nom" placeholder="Nom" data-translate-placeholder="name">
                         </div>
                         <div class="name-field">
                             <label for="prenom" data-translate="first_name">Prénom</label>
-                            <input type="text" id="prenom" placeholder="Prénom" data-translate-placeholder="first_name" >
+                            <input type="text" id="prenom" placeholder="Prénom" data-translate-placeholder="first_name">
                         </div>
                     </div>
                     <label for="mail" data-translate="email">Mail</label>
-                    <input type="email" id="mail" placeholder="Mail" data-translate-placeholder="email" >
+                    <input type="email" id="mail" placeholder="Mail" data-translate-placeholder="email">
                     <label for="telephone" data-translate="phone">Numéro téléphone</label>
-                    <input type="tel" id="telephone" placeholder="Numéro téléphone" data-translate-placeholder="phone" >
+                    <input type="tel" id="telephone" placeholder="Numéro téléphone" data-translate-placeholder="phone">
                     <label for="message" data-translate="message">Message</label>
-                    <textarea id="message" placeholder="Message" data-translate-placeholder="message" ></textarea>
+                    <textarea id="message" placeholder="Message" data-translate-placeholder="message"></textarea>
                     <button type="submit" data-translate="send">Envoyer</button>
                 </form>
             </section>
@@ -1527,28 +1522,63 @@ $totalTechnicians = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'techni
         <div class="section-card edit-user-card">
             <h2 data-translate="edit_title">Modifier mes informations</h2>
             <form method="POST" enctype="multipart/form-data" class="edit-user-form">
-                <label for="nom" data-translate="name">Nom</label>
-                <input type="text" id="nom" name="nom" value="<?php echo htmlspecialchars($user['nom']); ?>" >
-                <label for="prenom" data-translate="first_name">Prénom</label>
-                <input type="text" id="prenom" name="prenom" value="<?php echo htmlspecialchars($user['prenom']); ?>" >
-                <label for="email" data-translate="email">Email</label>
-                <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" >
-                <label for="telephone" data-translate="phone">Téléphone</label>
-                <input type="text" id="telephone" name="telephone" value="<?php echo htmlspecialchars($user['telephone']); ?>" pattern="[0-9]{8}" title="8 chiffres requis" >
-                <label for="age" data-translate="age">Âge</label>
-                <input type="number" id="age" name="age" value="<?php echo htmlspecialchars($user['age']); ?>" min="5" max="80" >
-                <label for="gouvernorats" data-translate="gouvernorat">Gouvernorat</label>
-                <select id="gouvernorats" name="gouvernorats" required>
-                    <?php
-                    $gouvernorats_list = ['Ariana', 'Beja', 'Ben Arous', 'Bizerte', 'Gabes', 'Gafsa', 'Jendouba', 'Kairouan', 'Kasserine', 'Kebili', 'La Manouba', 'Mahdia', 'Manouba', 'Medenine', 'Monastir', 'Nabeul', 'Sfax', 'Sidi Bouzid', 'Siliana', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan'];
-                    foreach ($gouvernorats_list as $gouv) {
-                        $selected = $gouv === $user['gouvernorats'] ? 'selected' : '';
-                        echo "<option value=\"$gouv\" $selected>$gouv</option>";
-                    }
-                    ?>
-                </select>
-                <label for="photo" data-translate="photo">Photo de profil</label>
-                <input type="file" id="photo" name="photo" accept="image/*">
+                <div>
+                    <label for="nom" data-translate="name">Nom</label>
+                    <input type="text" id="nom" name="nom" value="<?php echo htmlspecialchars($user['nom']); ?>">
+                    <?php if (isset($errors['nom'])): ?>
+                        <div class="error"><?php echo $errors['nom']; ?></div>
+                    <?php endif; ?>
+                </div>
+                <div>
+                    <label for="prenom" data-translate="first_name">Prénom</label>
+                    <input type="text" id="prenom" name="prenom" value="<?php echo htmlspecialchars($user['prenom']); ?>">
+                    <?php if (isset($errors['prenom'])): ?>
+                        <div class="error"><?php echo $errors['prenom']; ?></div>
+                    <?php endif; ?>
+                </div>
+                <div>
+                    <label for="email" data-translate="email">Email</label>
+                    <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>">
+                    <?php if (isset($errors['email'])): ?>
+                        <div class="error"><?php echo $errors['email']; ?></div>
+                    <?php endif; ?>
+                </div>
+                <div>
+                    <label for="telephone" data-translate="phone">Téléphone</label>
+                    <input type="text" id="telephone" name="telephone" value="<?php echo htmlspecialchars($user['telephone']); ?>" pattern="[0-9]{8}" title="8 chiffres requis">
+                    <?php if (isset($errors['telephone'])): ?>
+                        <div class="error"><?php echo $errors['telephone']; ?></div>
+                    <?php endif; ?>
+                </div>
+                <div>
+                    <label for="age" data-translate="age">Âge</label>
+                    <input type="number" id="age" name="age" value="<?php echo htmlspecialchars($user['age']); ?>" min="5" max="80">
+                    <?php if (isset($errors['age'])): ?>
+                        <div class="error"><?php echo $errors['age']; ?></div>
+                    <?php endif; ?>
+                </div>
+                <div>
+                    <label for="gouvernorats" data-translate="gouvernorat">Gouvernorat</label>
+                    <select id="gouvernorats" name="gouvernorats">
+                        <?php
+                        $gouvernorats_list = ['Ariana', 'Beja', 'Ben Arous', 'Bizerte', 'Gabes', 'Gafsa', 'Jendouba', 'Kairouan', 'Kasserine', 'Kebili', 'La Manouba', 'Mahdia', 'Manouba', 'Medenine', 'Monastir', 'Nabeul', 'Sfax', 'Sidi Bouzid', 'Siliana', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan'];
+                        foreach ($gouvernorats_list as $gouv) {
+                            $selected = $gouv === $user['gouvernorats'] ? 'selected' : '';
+                            echo "<option value=\"$gouv\" $selected>$gouv</option>";
+                        }
+                        ?>
+                    </select>
+                    <?php if (isset($errors['gouvernorats'])): ?>
+                        <div class="error"><?php echo $errors['gouvernorats']; ?></div>
+                    <?php endif; ?>
+                </div>
+                <div>
+                    <label for="photo" data-translate="photo">Photo de profil</label>
+                    <input type="file" id="photo" name="photo" accept="image/*">
+                    <?php if (isset($errors['photo'])): ?>
+                        <div class="error"><?php echo $errors['photo']; ?></div>
+                    <?php endif; ?>
+                </div>
                 <div class="btn-container">
                     <button type="submit" class="btn submit" data-translate="update">Mettre à jour</button>
                     <a href="?page=gestion_utilisateurs&action=infos" class="btn cancel" data-translate="cancel">Annuler</a>
@@ -1713,11 +1743,22 @@ $totalTechnicians = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'techni
             photo: "Photo de profil",
             update: "Mettre à jour",
             cancel: "Annuler",
-            edit_profile: "Modifier"
+            edit_profile: "Modifier",
+            forum: 'Forum',
+            error_name_short: "Le nom doit contenir au moins 2 caractères",
+            error_first_name_short: "Le prénom doit contenir au moins 2 caractères",
+            error_email_invalid: "L'email n'est pas valide",
+            error_phone_invalid: "Le numéro de téléphone doit contenir 8 chiffres",
+            error_age_invalid: "L'âge doit être compris entre 5 et 80 ans",
+            error_gouvernorat_invalid: "Gouvernorat invalide",
+            error_email_taken: "Cet email est déjà utilisé",
+            error_photo_upload: "Erreur lors du téléchargement de la photo",
+            error_photo_type: "Type de fichier non autorisé (JPEG, PNG, GIF uniquement)"
         },
         en: {
             home: "Home",
             bikes: "Bikes",
+            forum: "Forum",
             about: "About Us",
             pricing: "Pricing",
             contact: "Contact",
@@ -1760,7 +1801,16 @@ $totalTechnicians = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'techni
             photo: "Profile Photo",
             update: "Update",
             cancel: "Cancel",
-            edit_profile: "Edit Profile"
+            edit_profile: "Edit Profile",
+            error_name_short: "Name must be at least 2 characters long",
+            error_first_name_short: "First name must be at least 2 characters long",
+            error_email_invalid: "Invalid email address",
+            error_phone_invalid: "Phone number must be 8 digits",
+            error_age_invalid: "Age must be between 5 and 80",
+            error_gouvernorat_invalid: "Invalid governorate",
+            error_email_taken: "This email is already taken",
+            error_photo_upload: "Error uploading photo",
+            error_photo_type: "Invalid file type (JPEG, PNG, GIF only)"
         }
     };
 
@@ -1825,19 +1875,6 @@ $totalTechnicians = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'techni
 
     // Apply translations on page load
     applyTranslations(currentLanguage);
-
-    // Show alert
-    function showAlert(type, message) {
-        const alertContainer = document.querySelector('.alert-container');
-        const alert = document.createElement('div');
-        alert.className = `alert ${type}`;
-        alert.innerHTML = message;
-        alertContainer.appendChild(alert);
-        setTimeout(() => {
-            alert.style.opacity = '0';
-            setTimeout(() => alert.remove(), 300);
-        }, 5000);
-    }
 </script>
 </body>
 </html>

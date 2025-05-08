@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
 
 // Vérifier si l'utilisateur est connecté et est admin
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {

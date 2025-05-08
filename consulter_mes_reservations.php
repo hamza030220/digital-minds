@@ -1,6 +1,7 @@
+```php
 <?php
 session_start();
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
 
 // Load translations
 $translations_file = __DIR__ . '/assets/translations.json';
@@ -48,6 +49,81 @@ try {
     exit();
 }
 
+// Handle reservation acceptance (admin only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accept_reservation']) && $user['role'] === 'admin') {
+    $reservation_id = (int)$_POST['reservation_id'];
+    try {
+        $stmt = $pdo->prepare("UPDATE reservation SET statut = 'accepted' WHERE id_reservation = ? AND statut != 'accepted'");
+        $stmt->execute([$reservation_id]);
+        if ($stmt->rowCount() > 0) {
+            $_SESSION['alert'] = ['type' => 'success', 'message' => getTranslation('reservation_accepted', $language, $translations)];
+            // Ajouter une notification
+            $stmt = $pdo->prepare("INSERT INTO notification_reservation (user_id, message, reservation_id, created_at, is_read) VALUES (?, ?, ?, NOW(), 0)");
+            $message = getTranslation('reservation_accepted_notification', $language, $translations);
+            $stmt->execute([$user_id, $message, $reservation_id]);
+        } else {
+            $_SESSION['alert'] = ['type' => 'error', 'message' => getTranslation('error_reservation_not_found', $language, $translations)];
+        }
+    } catch (PDOException $e) {
+        error_log("Erreur lors de l'acceptation de la réservation: " . $e->getMessage());
+        $_SESSION['alert'] = ['type' => 'error', 'message' => getTranslation('error_database', $language, $translations)];
+    }
+    header("Location: consulter_mes_reservations.php");
+    exit();
+}
+
+// Handle reservation rejection (admin only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reject_reservation']) && $user['role'] === 'admin') {
+    $reservation_id = (int)$_POST['reservation_id'];
+    try {
+        $stmt = $pdo->prepare("UPDATE reservation SET statut = 'rejected' WHERE id_reservation = ? AND statut != 'rejected'");
+        $stmt->execute([$reservation_id]);
+        if ($stmt->rowCount() > 0) {
+            $_SESSION['alert'] = ['type' => 'success', 'message' => getTranslation('reservation_rejected', $language, $translations)];
+            // Ajouter une notification
+            $stmt = $pdo->prepare("INSERT INTO notification_reservation (user_id, message, reservation_id, created_at, is_read) VALUES (?, ?, ?, NOW(), 0)");
+            $message = getTranslation('reservation_rejected_notification', $language, $translations);
+            $stmt->execute([$user_id, $message, $reservation_id]);
+        } else {
+            $_SESSION['alert'] = ['type' => 'error', 'message' => getTranslation('error_reservation_not_found', $language, $translations)];
+        }
+    } catch (PDOException $e) {
+        error_log("Erreur lors du refus de la réservation: " . $e->getMessage());
+        $_SESSION['alert'] = ['type' => 'error', 'message' => getTranslation('error_database', $language, $translations)];
+    }
+    header("Location: consulter_mes_reservations.php");
+    exit();
+}
+
+// Handle marking notification as read
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_as_read']) && isset($_POST['notification_id'])) {
+    $notification_id = (int)$_POST['notification_id'];
+    try {
+        $stmt = $pdo->prepare("UPDATE notification_reservation SET is_read = 1 WHERE id = ? AND user_id = ?");
+        $stmt->execute([$notification_id, $user_id]);
+        $_SESSION['alert'] = ['type' => 'success', 'message' => getTranslation('notification_marked_read', $language, $translations)];
+    } catch (PDOException $e) {
+        error_log("Erreur lors du marquage de la notification comme lue: " . $e->getMessage());
+        $_SESSION['alert'] = ['type' => 'error', 'message' => getTranslation('error_database', $language, $translations)];
+    }
+    header("Location: consulter_mes_reservations.php");
+    exit();
+}
+
+// Handle marking all notifications as read
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_all_as_read'])) {
+    try {
+        $stmt = $pdo->prepare("UPDATE notification_reservation SET is_read = 1 WHERE user_id = ? AND is_read = 0");
+        $stmt->execute([$user_id]);
+        $_SESSION['alert'] = ['type' => 'success', 'message' => getTranslation('all_notifications_marked_read', $language, $translations)];
+    } catch (PDOException $e) {
+        error_log("Erreur lors du marquage de toutes les notifications comme lues: " . $e->getMessage());
+        $_SESSION['alert'] = ['type' => 'error', 'message' => getTranslation('error_database', $language, $translations)];
+    }
+    header("Location: consulter_mes_reservations.php");
+    exit();
+}
+
 // Handle sorting
 $allowed_columns = ['id_reservation', 'date_debut', 'date_fin', 'gouvernorat', 'date_reservation'];
 $sort_column = isset($_GET['sort']) && in_array($_GET['sort'], $allowed_columns) ? $_GET['sort'] : 'id_reservation';
@@ -65,6 +141,17 @@ try {
     $_SESSION['alert'] = ['type' => 'error', 'message' => getTranslation('error_database', $language, $translations)];
     $reservations = [];
 }
+
+// Fetch user notifications
+try {
+    $stmt = $pdo->prepare("SELECT * FROM notification_reservation WHERE user_id = ? ORDER BY created_at DESC");
+    $stmt->execute([$user_id]);
+    $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log("Erreur lors de la récupération des notifications: " . $e->getMessage());
+    $_SESSION['alert'] = ['type' => 'error', 'message' => getTranslation('error_database', $language, $translations)];
+    $notifications = [];
+}
 ?>
 
 <!DOCTYPE html>
@@ -80,21 +167,24 @@ try {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Poppins', sans-serif;
+            font-family: Arial, sans-serif;
         }
+
         body {
-            background-color: #e8f5e9;
+            background-color: #60BA97;
             color: #333;
             min-height: 100vh;
             animation: fadeIn 1s ease-in;
         }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
         }
+
         .topbar {
             width: 100%;
-            background-color: #f5f5f5;
+            background-color: #F9F5E8;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -106,16 +196,20 @@ try {
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease;
         }
+
         .topbar.hidden {
             transform: translateY(-100%);
         }
+
         .topbar .logo {
             height: 40px;
         }
+
         .nav-links {
             display: flex;
             gap: 1rem;
         }
+
         .nav-links a {
             color: #2e7d32;
             text-decoration: none;
@@ -124,46 +218,55 @@ try {
             padding: 0.5rem 1rem;
             border-radius: 4px;
             transition: background-color 0.3s, color 0.3s;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
+
         .nav-links a:hover, .nav-links .active {
-            background-color: #e8f5e9;
-            color: #1b5e20;
+            background-color: #4CAF50;
+            color: #fff;
         }
+
         .nav-links a#toggle-language {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
+
         .profile-icon {
             position: relative;
         }
+
         .top-profile-pic {
             width: 36px;
             height: 36px;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid #e8f5e9;
+            border: 2px solid #4CAF50;
             cursor: pointer;
             transition: transform 0.3s;
         }
+
         .top-profile-pic:hover {
             transform: scale(1.1);
         }
+
         .profile-menu {
             display: none;
             position: absolute;
             top: 50px;
             right: 0;
-            background-color: #fff;
-            border: 1px solid #e0e0e0;
+            background-color: #F9F5E8;
+            border: 1px solid #4CAF50;
             border-radius: 6px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             min-width: 180px;
             z-index: 999;
         }
+
         .profile-menu.show {
             display: block;
         }
+
         .profile-menu-item {
             padding: 0.75rem 1rem;
             color: #2e7d32;
@@ -171,10 +274,14 @@ try {
             display: block;
             font-size: 0.9rem;
             transition: background-color 0.3s;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
+
         .profile-menu-item:hover {
-            background-color: #f5f5f5;
+            background-color: #4CAF50;
+            color: #fff;
         }
+
         .toggle-topbar {
             cursor: pointer;
             font-size: 1.2rem;
@@ -183,14 +290,48 @@ try {
             border-radius: 4px;
             transition: background-color 0.3s;
         }
+
         .toggle-topbar:hover {
-            background-color: #e8f5e9;
+            background-color: #4CAF50;
+            color: #fff;
         }
+
+        .notification-icon {
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #2e7d32;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+            position: relative;
+        }
+
+        .notification-icon:hover {
+            background-color: #4CAF50;
+            color: #fff;
+        }
+
+        .notification-icon .badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: #FF0000;
+            color: white;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            display: none;
+        }
+
+        .notification-icon .badge.show {
+            display: block;
+        }
+
         .show-topbar-btn {
             position: fixed;
             top: 1rem;
             right: 1rem;
-            background-color: #f5f5f5;
+            background-color: #F9F5E8;
             padding: 0.5rem;
             border-radius: 50%;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -198,13 +339,16 @@ try {
             z-index: 1001;
             display: none;
         }
+
         .show-topbar-btn.show {
             display: block;
         }
+
         .show-topbar-btn span {
             font-size: 1.5rem;
             color: #2e7d32;
         }
+
         .hamburger-menu {
             display: none;
             position: fixed;
@@ -213,6 +357,7 @@ try {
             z-index: 1000;
             cursor: pointer;
         }
+
         .hamburger-icon {
             width: 30px;
             height: 20px;
@@ -220,21 +365,26 @@ try {
             flex-direction: column;
             justify-content: space-between;
         }
+
         .hamburger-icon span {
             width: 100%;
             height: 3px;
             background-color: #2e7d32;
             transition: all 0.3s ease;
         }
+
         .hamburger-icon.active span:nth-child(1) {
             transform: rotate(45deg) translate(5px, 5px);
         }
+
         .hamburger-icon.active span:nth-child(2) {
             opacity: 0;
         }
+
         .hamburger-icon.active span:nth-child(3) {
             transform: rotate(-45deg) translate(7px, -7px);
         }
+
         .nav-menu {
             display: none;
             position: fixed;
@@ -242,16 +392,18 @@ try {
             right: 0;
             width: 250px;
             height: 100%;
-            background-color: #f9fafb;
+            background-color: #F9F5E8;
             box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
             padding: 2rem 1rem;
             z-index: 999;
             flex-direction: column;
             gap: 1rem;
         }
+
         .nav-menu.show {
             display: flex;
         }
+
         .nav-menu a {
             color: #2e7d32;
             text-decoration: none;
@@ -260,60 +412,77 @@ try {
             padding: 0.5rem;
             border-radius: 4px;
             transition: background-color 0.3s;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
+
         .nav-menu a:hover {
-            background-color: #e8f5e9;
+            background-color: #4CAF50;
+            color: #fff;
         }
+
         .nav-menu a#toggle-language-mobile {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
+
         .main-content {
             padding: 5rem 2rem 2rem;
             max-width: 1000px;
             margin: 0 auto;
         }
+
         .reservation-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: #F9F5E8;
             padding: 2rem;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             margin-bottom: 2rem;
         }
+
         .reservation-card h2 {
             color: #2e7d32;
             font-size: 1.8rem;
             font-weight: 600;
             text-align: center;
             margin-bottom: 1.5rem;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
+
         .reservations-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 1rem;
         }
+
         .reservations-table th, .reservations-table td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #4CAF50;
         }
+
         .reservations-table th {
-            background-color: #f5f5f5;
+            background-color: #F9F5E8;
             color: #2e7d32;
             font-weight: 600;
             cursor: pointer;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
+
         .reservations-table th:hover {
-            background-color: #e8f5e9;
+            background-color: #4CAF50;
+            color: #fff;
         }
+
         .reservations-table td {
             color: #333;
         }
+
         .reservations-table .actions {
             display: flex;
             gap: 10px;
         }
+
         .reservations-table .btn {
             padding: 8px 12px;
             font-size: 14px;
@@ -325,21 +494,44 @@ try {
             text-decoration: none;
             display: inline-block;
             line-height: 1;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
+
         .reservations-table .btn.edit {
-            background-color: #0288d1;
+            background-color: #2e7d32;
         }
+
         .reservations-table .btn.edit:hover {
-            background-color: #01579b;
+            background-color: #4CAF50;
         }
+
         .reservations-table .btn.delete {
-            background-color: #e74c3c;
+            background-color: #FF0000;
         }
+
         .reservations-table .btn.delete:hover {
-            background-color: #c0392b;
+            background-color: #CC0000;
         }
+
+        .reservations-table .btn.accept {
+            background-color: #2e7d32;
+        }
+
+        .reservations-table .btn.accept:hover {
+            background-color: #4CAF50;
+        }
+
+        .reservations-table .btn.details {
+            background-color: #2e7d32;
+            padding: 8px;
+        }
+
+        .reservations-table .btn.details:hover {
+            background-color: #4CAF50;
+        }
+
         .back-btn {
-            background-color: #4caf50;
+            background-color: #2e7d32;
             color: white;
             padding: 8px 12px;
             font-size: 14px;
@@ -350,12 +542,15 @@ try {
             transition: background-color 0.3s;
             text-decoration: none;
             display: inline-block;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
+
         .back-btn:hover {
-            background-color: #388e3c;
+            background-color: #4CAF50;
         }
+
         .history-btn {
-            background-color: #7b1fa2;
+            background-color: #2e7d32;
             color: white;
             padding: 8px 12px;
             font-size: 14px;
@@ -367,26 +562,33 @@ try {
             transition: background-color 0.3s;
             text-decoration: none;
             display: inline-block;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
+
         .history-btn:hover {
-            background-color: #4a0072;
+            background-color: #4CAF50;
         }
+
         .sort-container {
             margin-bottom: 1rem;
             display: flex;
             gap: 10px;
             align-items: center;
         }
+
         .sort-container label {
             font-weight: 500;
             color: #2e7d32;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
+
         .sort-container select {
             padding: 8px;
             border-radius: 6px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #4CAF50;
             font-size: 14px;
         }
+
         .alert-container {
             position: fixed;
             top: 20px;
@@ -394,6 +596,7 @@ try {
             z-index: 2000;
             max-width: 400px;
         }
+
         .alert {
             padding: 12px 20px;
             margin-bottom: 10px;
@@ -402,24 +605,163 @@ try {
             animation: slideInAlert 0.3s ease;
             color: white;
         }
+
         .alert.success {
             background-color: #2e7d32;
-            border: 1px solid #1b5e20;
+            border: 1px solid #4CAF50;
         }
+
         .alert.error {
-            background-color: #e74c3c;
-            border: 1px solid #c0392b;
+            background-color: #FF0000;
+            border: 1px solid #CC0000;
         }
+
         @keyframes slideInAlert {
             from { opacity: 0; transform: translateX(20px); }
             to { opacity: 1; transform: translateX(0); }
         }
+
+        .notification-container {
+            background: #F9F5E8;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .notification-container.show {
+            display: block;
+            animation: slideDown 0.3s ease-in-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .notification-container h3 {
+            color: #2e7d32;
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .notification-container .mark-all-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+            margin-bottom: 1rem;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+        }
+
+        .notification-container .mark-all-btn:hover {
+            background-color: #2e7d32;
+        }
+
+        .notification-list {
+            list-style: none;
+        }
+
+        .notification-item {
+            background-color: #fff;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .notification-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .notification-item.unread {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .notification-item .icon {
+            font-size: 1.2rem;
+            color: #2e7d32;
+        }
+
+        .notification-item .content {
+            flex: 1;
+        }
+
+        .notification-item .content p {
+            margin: 0;
+            color: #333;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .notification-item .timestamp {
+            font-size: 12px;
+            color: #777;
+            margin-top: 4px;
+        }
+
+        .notification-item .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .notification-item .btn {
+            padding: 6px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        .notification-item .btn.dismiss {
+            background-color: #FF0000;
+        }
+
+        .notification-item .btn.dismiss:hover {
+            background-color: #CC0000;
+        }
+
+        .notification-item .btn.edit {
+            background-color: #2e7d32;
+        }
+
+        .notification-item .btn.edit:hover {
+            background-color: #4CAF50;
+        }
+
+        .no-notifications {
+            text-align: center;
+            color: #777;
+            font-size: 14px;
+            padding: 1rem;
+        }
+
         .footer {
-            background-color: #f5f5f5;
-            color: #4b5563;
+            background-color: #F9F5E8;
+            color: #333;
             padding: 2rem;
             text-align: center;
+            font-family: "Berlin Sans FB", Arial, sans-serif;
         }
+
         .footer-container {
             max-width: 1000px;
             margin: 0 auto;
@@ -427,71 +769,92 @@ try {
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
         }
+
         .footer-column h3 {
             font-size: 1.2rem;
             color: #2e7d32;
             margin-bottom: 0.5rem;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
+
         .footer-column p, .footer-column a {
             font-size: 0.9rem;
-            color: #2e7d32;
+            color: #555;
             text-decoration: none;
             margin-bottom: 0.5rem;
             display: block;
+            font-family: "Berlin Sans FB", Arial, sans-serif;
         }
+
         .footer-column a:hover {
-            color: #1b5e20;
+            color: #4CAF50;
         }
+
         .footer-bottom {
             margin-top: 1rem;
             font-size: 0.9rem;
+            font-family: "Berlin Sans FB", Arial, sans-serif;
         }
+
         body.dark-mode {
-            background-color: #1a1a1a;
-            color: #e0e0e0;
+            background-color: #2e7d32;
+            color: #F9F5E8;
         }
+
         body.dark-mode .topbar,
         body.dark-mode .show-topbar-btn,
         body.dark-mode .nav-menu,
         body.dark-mode .footer {
-            background-color: #2a2a2a;
+            background-color: #F9F5E8;
         }
+
         body.dark-mode .reservation-card {
-            background: rgba(50, 50, 50, 0.95);
+            background: #F9F5E8;
         }
+
         body.dark-mode .reservation-card h2 {
-            color: #4caf50;
+            color: #4CAF50;
         }
+
         body.dark-mode .reservations-table th {
-            background-color: #444;
-            color: #4caf50;
+            background-color: #F9F5E8;
+            color: #4CAF50;
         }
+
         body.dark-mode .reservations-table td {
-            color: #e0e0e0;
+            color: #333;
         }
+
         body.dark-mode .back-btn {
-            background-color: #4caf50;
+            background-color: #2e7d32;
         }
+
         body.dark-mode .back-btn:hover {
-            background-color: #388e3c;
+            background-color: #4CAF50;
         }
+
         body.dark-mode .history-btn {
-            background-color: #7b1fa2;
+            background-color: #2e7d32;
         }
+
         body.dark-mode .history-btn:hover {
-            background-color: #4a0072;
+            background-color: #4CAF50;
         }
+
         body.dark-mode .sort-container label {
-            color: #4caf50;
+            color: #4CAF50;
         }
+
         body.dark-mode .sort-container select {
-            background-color: #444;
-            color: #e0e0e0;
-            border-color: #666;
+            background-color: #F9F5E8;
+            color: #333;
+            border-color: #4CAF50;
         }
+
         body.dark-mode .page-indicator {
-            color: #e0e0e0;
+            color: #333;
         }
+
         .pagination {
             display: flex;
             justify-content: center;
@@ -499,71 +862,181 @@ try {
             margin-bottom: 1rem;
             align-items: center;
         }
+
         .pagination .btn {
             padding: 8px 12px;
             font-size: 14px;
             color: white;
-            background-color: #4caf50;
+            background-color: #2e7d32;
             border: none;
             border-radius: 6px;
             cursor: pointer;
             transition: background-color 0.3s;
             text-decoration: none;
             display: inline-block;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
+
         .pagination .btn:hover {
-            background-color: #388e3c;
+            background-color: #4CAF50;
         }
+
         .pagination .btn.disabled {
-            background-color: #ccc;
+            background-color: #4CAF50;
             opacity: 0.6;
             cursor: not-allowed;
         }
+
         .page-indicator {
             font-size: 14px;
             color: #2e7d32;
             font-weight: 500;
+            font-family: "Bauhaus 93", Arial, sans-serif;
         }
+
         body.dark-mode .pagination .btn {
-            background-color: #4caf50;
+            background-color: #2e7d32;
         }
+
         body.dark-mode .pagination .btn:hover {
-            background-color: #388e3c;
+            background-color: #4CAF "-"50;
         }
+
         body.dark-mode .pagination .btn.disabled {
-            background-color: #666;
+            background-color: #4CAF50;
         }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #F9F5E8;
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .modal-content h3 {
+            color: #2e7d32;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .modal-content p {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .modal-content .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 20px;
+            color: #2e7d32;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-content .close-btn:hover {
+            color: #4CAF50;
+        }
+
+        body.dark-mode .modal-content {
+            background-color: #F9F5E8;
+        }
+
+        body.dark-mode .modal-content h3 {
+            color: #4CAF50;
+        }
+
+        body.dark-mode .modal-content p {
+            color: #333;
+        }
+
+        body.dark-mode .modal-content .close-btn {
+            color: #4CAF50;
+        }
+
         @media (max-width: 768px) {
             .topbar {
                 display: none;
             }
+
             .hamburger-menu {
                 display: block;
             }
+
             .main-content {
                 padding: 4rem 1.5rem 1.5rem;
             }
+
             .reservation-card {
                 padding: 1.5rem;
             }
+
             .reservations-table {
                 display: block;
                 overflow-x: auto;
             }
+
             .nav-menu {
                 width: 100%;
             }
+
             .show-topbar-btn {
                 top: 0.5rem;
                 right: 3.5rem;
             }
+
+            .notification-container {
+                padding: 1rem;
+            }
+
+            .notification-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .notification-item .actions {
+                margin-top: 0.5rem;
+            }
         }
+
         @media (max-width: 480px) {
             .reservation-card {
                 padding: 1rem;
             }
+
             .reservation-card h2 {
                 font-size: 1.5rem;
+            }
+
+            .notification-container h3 {
+                font-size: 1.4rem;
+            }
+
+            .notification-item .content p {
+                font-size: 13px;
+            }
+
+            .notification-item .btn {
+                padding: 5px 8px;
+                font-size: 11px;
             }
         }
     </style>
@@ -579,8 +1052,13 @@ try {
             <a href="info2.php#pricing" data-translate="pricing"><i class="fas fa-dollar-sign"></i> Tarifs</a>
             <a href="info2.php#contact" data-translate="contact"><i class="fas fa-envelope"></i> Contact</a>
             <a href="consulter_mes_reservations.php" class="active" data-translate="reservations"><i class="fas fa-calendar"></i> Réservations</a>
+            <a href="forum.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'forum.php' ? 'active' : ''; ?>" data-translate="forum"><i class="fas fa-comments"></i> Forum</a>
             <a href="javascript:void(0)" id="toggle-dark-mode" data-translate="dark_mode"><i class="fas fa-moon"></i> Mode Sombre</a>
             <a href="javascript:void(0)" id="toggle-language" data-translate="language">🌐 <?php echo $language === 'fr' ? 'Français' : 'English'; ?></a>
+        </div>
+        <div class="notification-icon" onclick="toggleNotifications()">
+            <i class="fas fa-bell"></i>
+            <span class="badge" id="notification-badge"><?php echo count(array_filter($notifications, function($n) { return !$n['is_read']; })); ?></span>
         </div>
         <div class="profile-icon">
             <a href="javascript:void(0)">
@@ -614,6 +1092,7 @@ try {
         <a href="info2.php#pricing" data-translate="pricing"><i class="fas fa-dollar-sign"></i> Tarifs</a>
         <a href="info2.php#contact" data-translate="contact"><i class="fas fa-envelope"></i> Contact</a>
         <a href="consulter_mes_reservations.php" data-translate="reservations"><i class="fas fa-calendar"></i> Réservations</a>
+        <a href="forum.php" class="active" data-translate="forum"><i class="fas fa-comments"></i> Forum</a>
         <a href="javascript:void(0)" id="toggle-dark-mode-mobile" data-translate="dark_mode"><i class="fas fa-moon"></i> Mode Sombre</a>
         <a href="javascript:void(0)" id="toggle-language-mobile" data-translate="language">🌐 <?php echo $language === 'fr' ? 'Français' : 'English'; ?></a>
         <a href="info2.php?page=gestion_utilisateurs&action=infos" data-translate="profile_info">📄 Mes informations</a>
@@ -622,6 +1101,25 @@ try {
 
     <!-- Alert Container -->
     <div class="alert-container"></div>
+
+    <!-- Modal for Reservation Details -->
+    <div class="modal" id="reservation-details-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">×</span>
+            <h3 data-translate="reservation_details">Détails de la Réservation</h3>
+            <p><strong data-translate="reservation_id">ID Réservation:</strong> <span id="modal-reservation-id"></span></p>
+            <p><strong data-translate="client_id">ID Client:</strong> <span id="modal-client-id"></span></p>
+            <p><strong data-translate="bike_id">ID Vélo:</strong> <span id="modal-bike-id"></span></p>
+            <p><strong data-translate="bike">Vélo:</strong> <span id="modal-bike-name"></span></p>
+            <p><strong data-translate="start_date">Date de Début:</strong> <span id="modal-start-date"></span></p>
+            <p><strong data-translate="end_date">Date de Fin:</strong> <span id="modal-end-date"></span></p>
+            <p><strong data-translate="gouvernorat">Gouvernorat:</strong> <span id="modal-gouvernorat"></span></p>
+            <p><strong data-translate="telephone">Téléphone:</strong> <span id="modal-telephone"></span></p>
+            <p><strong data-translate="duration">Durée:</strong> <span id="modal-duration"></span></p>
+            <p><strong data-translate="reservation_date">Date de Réservation:</strong> <span id="modal-reservation-date"></span></p>
+            <p><strong data-translate="status">Statut:</strong> <span id="modal-status"></span></p>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <div class="main-content">
@@ -633,10 +1131,42 @@ try {
         }
         ?>
 
+        <!-- Notification Section -->
+        <div class="notification-container" id="notification-container">
+            <h3 data-translate="notifications"><i class="fas fa-bell"></i> Notifications</h3>
+            <?php if (empty($notifications)): ?>
+                <p class="no-notifications" data-translate="no_notifications">Aucune notification trouvée.</p>
+            <?php else: ?>
+                <form method="POST" style="display: inline;">
+                    <button type="submit" name="mark_all_as_read" class="mark-all-btn" data-translate="mark_all_as_read">Tout marquer comme lu</button>
+                </form>
+                <ul class="notification-list">
+                    <?php foreach ($notifications as $notification): ?>
+                        <li class="notification-item <?php echo $notification['is_read'] ? '' : 'unread'; ?>">
+                            <i class="fas fa-bell icon"></i>
+                            <div class="content">
+                                <p><?php echo htmlspecialchars($notification['message']); ?> (Réservation ID: <?php echo htmlspecialchars($notification['reservation_id']); ?>)</p>
+                                <div class="timestamp"><?php echo date('d/m/Y H:i', strtotime($notification['created_at'])); ?></div>
+                            </div>
+                            <div class="actions">
+                                <?php if (!$notification['is_read']): ?>
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="notification_id" value="<?php echo htmlspecialchars($notification['id']); ?>">
+                                        <button type="submit" name="mark_as_read" class="btn edit" data-translate="mark_as_read">Marquer comme lu</button>
+                                    </form>
+                                <?php endif; ?>
+                                <button class="btn dismiss" onclick="dismissNotification(this)" title="<?php echo getTranslation('dismiss', $language, $translations); ?>"><i class="fas fa-times"></i></button>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </div>
+
         <div class="reservation-card">
             <a href="reservationuser.php" class="back-btn" data-translate="back">Retour</a>
             <a href="history_reservations.php" class="history-btn" data-translate="history">Historique</a>
-            <input type="text" id="search-id" placeholder="<?php echo getTranslation('search_reservation_or_bike_id', $language, $translations); ?>" style="padding: 8px; border-radius: 6px; border: 1px solid #e0e0e0; font-size: 14px; margin-bottom: 1rem; margin-left: 10px;">
+            <input type="text" id="search-id" placeholder="<?php echo getTranslation('search_reservation_or_bike_id', $language, $translations); ?>" style="padding: 8px; border-radius: 6px; border: 1px solid #4CAF50; font-size: 14px; margin-bottom: 1rem; margin-left: 10px;">
             <h2 data-translate="my_reservations">Mes Réservations</h2>
             <div class="sort-container">
                 <label for="sort-column" data-translate="sort_by">Trier par :</label>
@@ -674,6 +1204,7 @@ try {
                             <th data-translate="telephone">Téléphone</th>
                             <th data-translate="duration">Durée</th>
                             <th data-sort="date_reservation" data-translate="reservation_date">Date de Réservation</th>
+                            <th data-translate="status">Statut</th>
                             <th data-translate="actions">Actions</th>
                         </tr>
                     </thead>
@@ -706,10 +1237,22 @@ try {
                                     ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($reservation['date_reservation']); ?></td>
+                                <td><?php echo htmlspecialchars(getTranslation($reservation['statut'] ?: 'pending', $language, $translations)); ?></td>
                                 <td class="actions">
                                     <?php if ($reservation['statut'] !== 'cancelled'): ?>
                                         <a href="modifier_reservation.php?id=<?php echo htmlspecialchars($reservation['id_reservation']); ?>" class="btn edit" title="<?php echo getTranslation('edit', $language, $translations); ?>"><i class="fas fa-edit"></i></a>
                                         <a href="supprimer_reservation.php?id=<?php echo htmlspecialchars($reservation['id_reservation']); ?>" class="btn delete" onclick="return confirmDelete();" title="<?php echo getTranslation('delete_reservation', $language, $translations); ?>"><i class="fas fa-trash"></i></a>
+                                        <button class="btn details" onclick="showReservationDetails(<?php echo htmlspecialchars(json_encode($reservation)); ?>)" title="<?php echo getTranslation('reservation_details', $language, $translations); ?>"><i class="fas fa-info-circle"></i></button>
+                                        <?php if ($user['role'] === 'admin' && $reservation['statut'] !== 'accepted' && $reservation['statut'] !== 'rejected'): ?>
+                                            <form method="POST" style="display: inline;">
+                                                <input type="hidden" name="reservation_id" value="<?php echo htmlspecialchars($reservation['id_reservation']); ?>">
+                                                <button type="submit" name="accept_reservation" class="btn accept" title="<?php echo getTranslation('accept_reservation', $language, $translations); ?>"><i class="fas fa-check"></i></button>
+                                            </form>
+                                            <form method="POST" style="display: inline;">
+                                                <input type="hidden" name="reservation_id" value="<?php echo htmlspecialchars($reservation['id_reservation']); ?>">
+                                                <button type="submit" name="reject_reservation" class="btn delete" title="<?php echo getTranslation('reservation_rejected', $language, $translations); ?>"><i class="fas fa-times"></i></button>
+                                            </form>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -743,7 +1286,7 @@ try {
         let isTopbarVisible = true;
         let currentPage = 1;
         const itemsPerPage = 3;
-        let filteredRows = []; // Stocke les lignes visibles après filtrage
+        let filteredRows = [];
 
         function toggleTopbar() {
             const topbar = document.querySelector('.topbar');
@@ -756,6 +1299,32 @@ try {
                 showBtn.classList.remove('show');
             }
             isTopbarVisible = !isTopbarVisible;
+        }
+
+        function toggleNotifications() {
+            const notificationContainer = document.getElementById('notification-container');
+            notificationContainer.classList.toggle('show');
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notification-badge');
+            const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+            badge.textContent = unreadCount;
+            badge.classList.toggle('show', unreadCount > 0);
+        }
+
+        function dismissNotification(button) {
+            const notificationItem = button.closest('.notification-item');
+            notificationItem.style.opacity = '0';
+            notificationItem.style.transform = 'translateX(20px)';
+            setTimeout(() => {
+                notificationItem.remove();
+                updateNotificationBadge();
+                if (!document.querySelector('.notification-item')) {
+                    const notificationContainer = document.getElementById('notification-container');
+                    notificationContainer.innerHTML += '<p class="no-notifications" data-translate="no_notifications">Aucune notification trouvée.</p>';
+                }
+            }, 300);
         }
 
         let lastScrollTop = 0;
@@ -837,11 +1406,17 @@ try {
                 telephone: "Téléphone",
                 duration: "Durée",
                 reservation_date: "Date de Réservation",
+                status: "Statut",
                 actions: "Actions",
                 back: "Retour",
                 history: "Historique",
                 edit: "Modifier",
                 delete_reservation: "Supprimer la réservation",
+                accept_reservation: "Accepter",
+                reservation_details: "Détails de la Réservation",
+                reservation_accepted: "Réservation acceptée",
+                reservation_rejected: "Réservation refusée",
+                error_reservation_not_found: "Réservation non trouvée ou déjà traitée",
                 delete_confirm: "Êtes-vous sûr de vouloir supprimer cette réservation ?",
                 footer_about: "À propos",
                 footer_about_text: "Green.tn promeut une mobilité durable à travers des solutions de location de vélos écologiques en Tunisie.",
@@ -854,7 +1429,9 @@ try {
                 month: "mois",
                 days: "jours",
                 no_history: "Aucun historique de réservation trouvé.",
-                status: "Statut",
+                pending: "En attente",
+                accepted: "Acceptée",
+                rejected: "Refusée",
                 cancelled: "Annulé",
                 completed: "Terminé",
                 sort_by: "Trier par",
@@ -863,7 +1440,16 @@ try {
                 previous: "Précédent",
                 next: "Suivant",
                 search_reservation_or_bike_id: "Rechercher par ID de réservation ou ID de vélo",
-                page_indicator: "Page {current} sur {total}"
+                page_indicator: "Page {current} sur {total}",
+                reservation_accepted_notification: "Votre réservation a été acceptée.",
+                reservation_rejected_notification: "Votre réservation a été refusée.",
+                mark_as_read: "Marquer comme lu",
+                mark_all_as_read: "Tout marquer comme lu",
+                dismiss: "Ignorer",
+                notifications: "Notifications",
+                no_notifications: "Aucune notification trouvée.",
+                notification_marked_read: "Notification marquée comme lue.",
+                all_notifications_marked_read: "Toutes les notifications marquées comme lues."
             },
             en: {
                 home: "Home",
@@ -889,11 +1475,17 @@ try {
                 telephone: "Phone",
                 duration: "Duration",
                 reservation_date: "Reservation Date",
+                status: "Status",
                 actions: "Actions",
                 back: "Back",
                 history: "History",
                 edit: "Edit",
                 delete_reservation: "Delete Reservation",
+                accept_reservation: "Accept",
+                reservation_details: "Reservation Details",
+                reservation_accepted: "Reservation accepted",
+                reservation_rejected: "Reservation rejected",
+                error_reservation_not_found: "Reservation not found or already processed",
                 delete_confirm: "Are you sure you want to delete this reservation?",
                 footer_about: "About",
                 footer_about_text: "Green.tn promotes sustainable mobility through eco-friendly bike rental solutions in Tunisia.",
@@ -906,7 +1498,9 @@ try {
                 month: "month",
                 days: "days",
                 no_history: "No reservation history found.",
-                status: "Status",
+                pending: "Pending",
+                accepted: "Accepted",
+                rejected: "Rejected",
                 cancelled: "Cancelled",
                 completed: "Completed",
                 sort_by: "Sort by",
@@ -915,7 +1509,16 @@ try {
                 previous: "Previous",
                 next: "Next",
                 search_reservation_or_bike_id: "Search by Reservation ID or Bike ID",
-                page_indicator: "Page {current} of {total}"
+                page_indicator: "Page {current} of {total}",
+                reservation_accepted_notification: "Your reservation has been accepted.",
+                reservation_rejected_notification: "Your reservation has been rejected.",
+                mark_as_read: "Mark as read",
+                mark_all_as_read: "Mark all as read",
+                dismiss: "Dismiss",
+                notifications: "Notifications",
+                no_notifications: "No notifications found.",
+                notification_marked_read: "Notification marked as read.",
+                all_notifications_marked_read: "All notifications marked as read."
             }
         };
 
@@ -924,12 +1527,14 @@ try {
             .then(data => {
                 translations = { ...translations, ...data };
                 applyTranslations(currentLanguage);
-                updatePageIndicator();
+                updatePagination();
+                updateNotificationBadge();
             })
             .catch(error => {
                 console.error('Error loading translations:', error);
                 applyTranslations(currentLanguage);
-                updatePageIndicator();
+                updatePagination();
+                updateNotificationBadge();
             });
 
         function applyTranslations(lang) {
@@ -937,7 +1542,7 @@ try {
                 const key = element.getAttribute('data-translate');
                 if (translations[lang] && translations[lang][key]) {
                     if (key === 'page_indicator') {
-                        const totalPages = Math.ceil(document.querySelectorAll('#reservations-table .reservation-row').length / itemsPerPage);
+                        const totalPages = Math.ceil((filteredRows.length || document.querySelectorAll('#reservations-table .reservation-row').length) / itemsPerPage);
                         element.textContent = translations[lang][key].replace('{current}', currentPage).replace('{total}', totalPages || 1);
                     } else {
                         element.textContent = translations[lang][key];
@@ -991,9 +1596,26 @@ try {
             window.location.href = `?sort=${sortColumn}&order=${sortOrder}${currentLanguage ? '&lang=' + currentLanguage : ''}`;
         }
 
-        function updatePageIndicator() {
-            const totalRows = filteredRows.length || document.querySelectorAll('#reservations-table .reservation-row').length;
+        function updatePagination() {
+            const rows = filteredRows.length ? filteredRows : Array.from(document.querySelectorAll('#reservations-table .reservation-row'));
+            const totalRows = rows.length;
             const totalPages = Math.ceil(totalRows / itemsPerPage);
+
+            // Hide all rows initially
+            rows.forEach(row => row.style.display = 'none');
+
+            // Show only the rows for the current page
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            rows.slice(startIndex, endIndex).forEach(row => row.style.display = 'table-row');
+
+            // Update button states
+            const prevBtn = document.querySelector('.prev-btn');
+            const nextBtn = document.querySelector('.next-btn');
+            if (prevBtn) prevBtn.classList.toggle('disabled', currentPage === 1);
+            if (nextBtn) nextBtn.classList.toggle('disabled', currentPage >= totalPages || totalRows <= itemsPerPage);
+
+            // Update page indicator
             const pageIndicator = document.querySelector('.page-indicator');
             if (pageIndicator) {
                 pageIndicator.textContent = translations[currentLanguage]['page_indicator'].replace('{current}', currentPage).replace('{total}', totalPages || 1);
@@ -1001,45 +1623,22 @@ try {
         }
 
         function changePage(direction) {
-            console.log('changePage called with direction:', direction); // Debug
-            const rows = filteredRows.length ? filteredRows : document.querySelectorAll('#reservations-table .reservation-row');
-            if (!rows.length) {
-                console.warn('No rows found'); // Debug
-                return;
-            }
-
+            const rows = filteredRows.length ? filteredRows : Array.from(document.querySelectorAll('#reservations-table .reservation-row'));
             const totalRows = rows.length;
             const totalPages = Math.ceil(totalRows / itemsPerPage);
 
+            // Update current page
             currentPage += direction;
             if (currentPage < 1) currentPage = 1;
             if (currentPage > totalPages) currentPage = totalPages;
 
-            console.log('Current Page:', currentPage, 'Total Pages:', totalPages); // Debug
-
-            // Masquer toutes les lignes
-            document.querySelectorAll('#reservations-table .reservation-row').forEach(row => {
-                row.style.display = 'none';
-            });
-
-            // Afficher uniquement les lignes de la page actuelle
-            rows.forEach((row, index) => {
-                if (index >= (currentPage - 1) * itemsPerPage && index < currentPage * itemsPerPage) {
-                    row.style.display = 'table-row';
-                }
-            });
-
-            const prevBtn = document.querySelector('.prev-btn');
-            const nextBtn = document.querySelector('.next-btn');
-            if (prevBtn) prevBtn.classList.toggle('disabled', currentPage === 1);
-            if (nextBtn) nextBtn.classList.toggle('disabled', currentPage === totalPages || totalRows <= itemsPerPage);
-
-            updatePageIndicator();
+            // Update pagination
+            updatePagination();
         }
 
         function searchById() {
             const searchValue = document.getElementById('search-id').value.trim().toLowerCase();
-            const rows = document.querySelectorAll('#reservations-table .reservation-row');
+            const rows = Array.from(document.querySelectorAll('#reservations-table .reservation-row'));
             filteredRows = [];
 
             rows.forEach(row => {
@@ -1051,7 +1650,7 @@ try {
             });
 
             currentPage = 1;
-            changePage(0); // Réinitialiser l'affichage
+            updatePagination();
         }
 
         function debounce(func, wait) {
@@ -1066,12 +1665,38 @@ try {
             };
         }
 
+        function showReservationDetails(reservation) {
+            document.getElementById('modal-reservation-id').textContent = reservation.id_reservation;
+            document.getElementById('modal-client-id').textContent = reservation.id_client;
+            document.getElementById('modal-bike-id').textContent = reservation.id_velo;
+            document.getElementById('modal-bike-name').textContent = reservation.bike_name || (reservation.type_velo || 'Vélo ' + reservation.id_velo);
+            document.getElementById('modal-start-date').textContent = reservation.date_debut;
+            document.getElementById('modal-end-date').textContent = reservation.date_fin;
+            document.getElementById('modal-gouvernorat').textContent = reservation.gouvernorat;
+            document.getElementById('modal-telephone').textContent = reservation.telephone;
+            document.getElementById('modal-duration').textContent = (() => {
+                switch (reservation.duree_reservation) {
+                    case '1': return translations[currentLanguage]['day'];
+                    case '7': return translations[currentLanguage]['week'];
+                    case '30': return translations[currentLanguage]['month'];
+                    default: return reservation.duree_reservation + ' ' + translations[currentLanguage]['days'];
+                }
+            })();
+            document.getElementById('modal-reservation-date').textContent = reservation.date_reservation;
+            document.getElementById('modal-status').textContent = translations[currentLanguage][reservation.statut] || reservation.statut || translations[currentLanguage]['pending'];
+            document.getElementById('reservation-details-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('reservation-details-modal').style.display = 'none';
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, initializing pagination'); // Debug
-            changePage(0);
-            updatePageIndicator();
+            updatePagination();
+            updateNotificationBadge();
             document.getElementById('search-id').addEventListener('input', debounce(searchById, 300));
         });
     </script>
 </body>
 </html>
+```

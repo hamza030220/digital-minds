@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
 
 // Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
@@ -1200,6 +1200,7 @@ $section = isset($_GET['section']) ? $_GET['section'] : '';
                     <span class="sidebar-nav-text">Gestion de votre profil</span>
                 </a>
             </li>
+
             <li class="sidebar-nav-item">
                 <a class="sidebar-nav-link" href="<?php echo $basePath; ?>reservation.php" data-translate="reservations">
                     <span class="sidebar-nav-icon"><i class="bi bi-calendar"></i></span>
@@ -1218,6 +1219,12 @@ $section = isset($_GET['section']) ? $_GET['section'] : '';
                     <span class="sidebar-nav-text">Vélos & Batteries</span>
                 </a>
             </li>
+            <li class="sidebar-nav-item">
+            <a class="sidebar-nav-link <?php echo basename($_SERVER['PHP_SELF']) === 'forum_admin.php' ? 'active' : ''; ?>" href="<?php echo $basePath; ?>forum_admin.php" data-translate="forum">
+                <span class="sidebar-nav-icon"><i class="bi bi-chat"></i></span>
+                <span class="sidebar-nav-text">Forum</span>
+            </a>
+        </li>
             <?php if (isset($_SESSION['role']) && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'technicien')): ?>
                 <li class="sidebar-nav-item">
                     <a class="sidebar-nav-link" href="<?php echo $basePath; ?>repair_panne.php" data-translate="repair_issues">
@@ -1225,6 +1232,10 @@ $section = isset($_GET['section']) ? $_GET['section'] : '';
                         <span class="sidebar-nav-text">Réparer les pannes</span>
                     </a>
                 </li>
+                <a class="sidebar-nav-link <?php echo basename($_SERVER['PHP_SELF']) === 'update_profil_admin.php' ? 'active' : ''; ?>" href="update_profil_admin.php" data-translate="profile_management">
+    <span class="sidebar-nav-icon"><i class="bi bi-person"></i></span>
+    <span class="sidebar-nav-text">Editer mon profil</span>
+</a>
             <?php endif; ?>
         </ul>
     </div>

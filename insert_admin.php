@@ -1,6 +1,6 @@
 <?php
 // Inclure db.php pour la connexion à la base de données
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
 
 // Vérifier si la requête est une insertion pour admin
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

@@ -1,13 +1,13 @@
 <?php
 session_start();
-require_once __DIR__ . '/models/db.php';
+require_once __DIR__ . '/CONFIG/db.php';
 
 // Enable error reporting for debugging
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Check admin access (likely line 12 area)
+// Check admin access
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin' || !isset($_SESSION['user_id'])) {
     error_log("Accès refusé: role=" . (isset($_SESSION['role']) ? $_SESSION['role'] : 'none') . ", user_id=" . (isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 'none'));
     header('Location: index.php');
@@ -46,7 +46,8 @@ $translations = [
         'language' => 'Français',
         'error_database' => 'Erreur de base de données. Veuillez réessayer plus tard.',
         'error_user_not_found' => 'Utilisateur non trouvé.',
-        'success_mark_read' => 'Notification marquée comme lue.'
+        'success_mark_read' => 'Notification marquée comme lue.',
+        'details' => 'Détails'
     ],
     'en' => [
         'notifications' => 'Notifications',
@@ -67,7 +68,8 @@ $translations = [
         'language' => 'English',
         'error_database' => 'Database error. Please try again later.',
         'error_user_not_found' => 'User not found.',
-        'success_mark_read' => 'Notification marked as read.'
+        'success_mark_read' => 'Notification marked as read.',
+        'details' => 'Details'
     ]
 ];
 
@@ -300,6 +302,14 @@ try {
         .notifications-table tr.unread {
             background-color: #e8f5e9;
         }
+        .notification-link {
+            color: #2e7d32;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .notification-link:hover {
+            text-decoration: underline;
+        }
         .btn {
             display: inline-flex;
             align-items: center;
@@ -368,6 +378,10 @@ try {
         }
         body.dark-mode .notifications-table tr.unread {
             background-color: #2e7d32;
+        }
+        body d
+        .dark-mode .notification-link {
+            color: #4caf50;
         }
         @media (max-width: 992px) {
             .sidebar { left: -250px; }
@@ -485,7 +499,15 @@ try {
                     <?php else: ?>
                         <?php foreach ($notifications as $notification): ?>
                             <tr class="<?php echo $notification['is_read'] ? '' : 'unread'; ?>">
-                                <td><?php echo htmlspecialchars($notification['message']); ?></td>
+                                <td>
+                                    <?php if (!empty($notification['reservation_id'])): ?>
+                                        <a href="#" class="notification-link" onclick="window.open('reservation_details.php?id=<?php echo htmlspecialchars($notification['reservation_id']); ?>', 'ReservationDetails', 'width=400,height=500,scrollbars=yes,resizable=yes')" title="<?php echo getTranslation('details', $language, $translations); ?>">
+                                            <?php echo htmlspecialchars($notification['message']); ?>
+                                        </a>
+                                    <?php else: ?>
+                                        <?php echo htmlspecialchars($notification['message']); ?>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo htmlspecialchars($notification['created_at']); ?></td>
                                 <td><?php echo $notification['is_read'] ? getTranslation('read', $language, $translations) : getTranslation('unread', $language, $translations); ?></td>
                                 <td>
