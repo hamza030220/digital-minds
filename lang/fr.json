@@ -138,7 +138,14 @@
 "chatbot_response": "Réponse du chatbot",
 "error_chatbot": "Désolé, une erreur s'est produite. Essayez à nouveau.",
 "send": "Envoyer",
-  "error_deleting_notification": "Erreur lors de la suppression de la notification."
+  "error_deleting_notification": "Erreur lors de la suppression de la notification.",
+  "voice_submit": "Soumettre par Voix",
+    "voice_status_ready": "Cliquez sur le bouton pour commencer à parler.",
+    "voice_status_listening": "Écoute en cours... Parlez maintenant.",
+    "voice_status_processing": "Traitement de votre discours...",
+    "voice_status_completed": "Discours traité. Vérifiez les champs et soumettez.",
+    "voice_status_error": "Erreur lors de la reconnaissance vocale :",
+    "voice_not_supported": "La reconnaissance vocale n'est pas prise en charge dans votre navigateur."
 
 
 

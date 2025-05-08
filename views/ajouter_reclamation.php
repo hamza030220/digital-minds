@@ -257,6 +257,40 @@ $pageTitle = t('new_reclamation');
             border-color: #28a745;
         }
 
+        .voice-btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+            transition: background-color 0.3s ease;
+        }
+
+        .voice-btn:hover {
+            background-color: #1b5e20;
+        }
+
+        .voice-btn img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .voice-status {
+            margin-top: 10px;
+            font-style: italic;
+            color: #555;
+            text-align: center;
+        }
+
         footer {
             background-color: #F9F5E8;
             padding: 20px 0;
@@ -456,6 +490,12 @@ $pageTitle = t('new_reclamation');
             ?>
 
             <?php if ($isLoggedIn): ?>
+                <button class="voice-btn" onclick="startVoiceRecognition()">
+                    <img src="../image/mic.png" alt="Microphone Icon">
+                    <?php echo t('voice_submit'); ?>
+                </button>
+                <div class="voice-status" id="voiceStatus"><?php echo t('voice_status_ready'); ?></div>
+
                 <form action="../controllers/ReclamationController.php" method="POST" id="reclamationForm" novalidate>
                     <label for="titre"><?php echo t('Title'); ?>:</label>
                     <input type="text" id="titre" name="titre" value="<?php echo htmlspecialchars($form_data['titre'] ?? ''); ?>">
@@ -548,9 +588,104 @@ $pageTitle = t('new_reclamation');
             lieu_required: '<?php echo t('lieu_required'); ?>',
             lieu_length: '<?php echo t('lieu_length'); ?>',
             lieu_invalid: '<?php echo t('lieu_invalid'); ?>',
-            type_required: '<?php echo t('type_required'); ?>'
+            type_required: '<?php echo t('type_required'); ?>',
+            voice_status_listening: '<?php echo t('voice_status_listening'); ?>',
+            voice_status_processing: '<?php echo t('voice_status_processing'); ?>',
+            voice_status_completed: '<?php echo t('voice_status_completed'); ?>',
+            voice_status_error: '<?php echo t('voice_status_error'); ?>',
+            voice_not_supported: '<?php echo t('voice_not_supported'); ?>'
         };
 
+        // Speech Recognition Setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = '<?php echo $_SESSION['lang'] === 'fr' ? 'fr-FR' : 'en-US'; ?>';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = function() {
+                document.getElementById('voiceStatus').textContent = translations.voice_status_listening;
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript.toLowerCase();
+                document.getElementById('voiceStatus').textContent = translations.voice_status_processing;
+
+                // Simple parsing of the transcribed text
+                let titre = '';
+                let description = transcript;
+                let lieu = '';
+                let type_probleme = '';
+
+                // Detect location (e.g., "à Tunis" or "in Tunis")
+                const lieuKeywords = ['à', 'at', 'in'];
+                lieuKeywords.forEach(keyword => {
+                    const index = transcript.indexOf(keyword + ' ');
+                    if (index !== -1) {
+                        lieu = transcript.substring(index + keyword.length + 1).split(' ')[0];
+                        lieu = lieu.charAt(0).toUpperCase() + lieu.slice(1);
+                    }
+                });
+
+                // Detect type of problem
+                const types = ['mecanique', 'batterie', 'ecran', 'pneu', 'autre'];
+                types.forEach(type => {
+                    if (transcript.includes(type)) {
+                        type_probleme = type;
+                    }
+                });
+
+                // Create a simple title based on the description
+                titre = description.split(' ').slice(0, 3).join(' ');
+
+                // Fill the form fields
+                const titreField = document.getElementById('titre');
+                const descriptionField = document.getElementById('description');
+                const lieuField = document.getElementById('lieu');
+                const typeProblemeField = document.getElementById('type_probleme');
+
+                titreField.value = titre.charAt(0).toUpperCase() + titre.slice(1);
+                descriptionField.value = description.charAt(0).toUpperCase() + description.slice(1);
+                if (lieu) lieuField.value = lieu;
+                if (type_probleme) typeProblemeField.value = type_probleme;
+
+                // Trigger input events to validate fields
+                [titreField, descriptionField, lieuField, typeProblemeField].forEach(field => {
+                    field.dispatchEvent(new Event('input'));
+                });
+
+                document.getElementById('voiceStatus').textContent = translations.voice_status_completed;
+            };
+
+            recognition.onerror = function(event) {
+                document.getElementById('voiceStatus').textContent = translations.voice_status_error + ' ' + event.error;
+            };
+
+            recognition.onend = function() {
+                if (document.getElementById('voiceStatus').textContent === translations.voice_status_listening) {
+                    document.getElementById('voiceStatus').textContent = translations.voice_status_completed;
+                }
+            };
+        }
+
+        function startVoiceRecognition() {
+            if (!SpeechRecognition) {
+                alert(translations.voice_not_supported);
+                return;
+            }
+
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('voiceStatus').textContent = translations.voice_status_error;
+            }
+        }
+
+        // Form validation
         document.getElementById('reclamationForm').addEventListener('submit', function(event) {
             event.preventDefault();
             let isValid = true;

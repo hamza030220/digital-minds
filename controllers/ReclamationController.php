@@ -75,6 +75,7 @@ class ReclamationController {
             header('Location: ../ajouter_reclamation.php');
             exit;
         }
+        
 
         // Validation passed, attempt to add using the model
         $success = $this->reclamationModel->ajouter($titre, $description, $lieu, $type_probleme, $this->userId);
@@ -90,7 +91,7 @@ class ReclamationController {
         }
 
         // Redirect back to the form page regardless of success or failure
-        header('Location: ../ajouter_reclamation.php');
+        header('Location: ../views/ajouter_reclamation.php');
         exit; // ALWAYS exit after a header redirect
 
     } // End handlePostRequest

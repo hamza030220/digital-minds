@@ -132,7 +132,14 @@
 "ask_chatbot": "Ask the chatbot a question",
 "chatbot_response": "Chatbot Response",
 "error_chatbot": "Sorry, an error occurred. Please try again.",
-"send": "Send"
+"send": "Send",
+"voice_submit": "Submit by Voice",
+    "voice_status_ready": "Click the button to start speaking.",
+    "voice_status_listening": "Listening... Speak now.",
+    "voice_status_processing": "Processing your speech...",
+    "voice_status_completed": "Speech processed. Verify the fields and submit.",
+    "voice_status_error": "Error during speech recognition:",
+    "voice_not_supported": "Speech recognition is not supported in your browser."
 
 
 

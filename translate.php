@@ -15,17 +15,21 @@ if (!isset($_SESSION['lang'])) {
     error_log('Default language set to fr');
 }
 
-// Change language if requested via POST
+// Define BASE_URL for redirects
+define('BASE_URL', '/green-tn/');
+
+// Change language if requested via POST, but avoid redirect loop
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['lang']) && in_array($_POST['lang'], ['fr', 'en'])) {
-    $_SESSION['lang'] = $_POST['lang'];
-    error_log('Language changed to: ' . $_POST['lang']);
-    // Dynamic redirect to current page
-    $base_url = 'http://' . $_SERVER['HTTP_HOST'];
-    $current_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    $redirect_url = $base_url . $current_path;
-    header('Location: ' . $redirect_url);
-    ob_end_flush();
-    exit;
+    if ($_SESSION['lang'] !== $_POST['lang']) { // Only redirect if lang changes
+        $_SESSION['lang'] = $_POST['lang'];
+        error_log('Language changed to: ' . $_POST['lang']);
+        // Redirect to the same page
+        $current_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $redirect_url = BASE_URL . ltrim(str_replace(BASE_URL, '', $current_path), '/');
+        header('Location: ' . $redirect_url);
+        ob_end_flush();
+        exit;
+    }
 }
 
 // Load translations from JSON file

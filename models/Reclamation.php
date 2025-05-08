@@ -246,6 +246,21 @@ class Reclamation {
         }
     }
     // ***** END OF NEW UPDATE METHOD *****
+ // Nouvelle méthode pour le total des réponses
+ public function getTotalResponses($reclamationId): int {
+    $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM reponses WHERE reclamation_id = ?");
+    $stmt->execute([$reclamationId]);
+    return (int) $stmt->fetchColumn();
+}
 
+// Nouvelle méthode pour récupérer les réponses paginées
+public function getResponses($reclamationId, $limit, $offset): array {
+    $stmt = $this->pdo->prepare("SELECT contenu, date_creation, role FROM reponses WHERE reclamation_id = ? ORDER BY date_creation ASC LIMIT ? OFFSET ?");
+    $stmt->bindValue(1, $reclamationId, PDO::PARAM_INT);
+    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+    $stmt->bindValue(3, $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
 } // End of class Reclamation
