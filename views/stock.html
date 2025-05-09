@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green.tn - Gestion du Stock</title>
+    <link rel="stylesheet" href="../public/css/admin.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a class="sidebar-brand" href="index.html">
+                <img src="../images/logo.png" alt="Green.tn Admin">
+            </a>
+        </div>
+        <div class="sidebar-content">
+            <ul class="sidebar-nav">
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" href="index.html">
+                        <span class="sidebar-nav-icon"><i class="bi bi-speedometer2"></i></span>
+                        <span class="sidebar-nav-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link active" href="stock.html">
+                        <span class="sidebar-nav-icon"><i class="bi bi-box"></i></span>
+                        <span class="sidebar-nav-text">Stock</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" href="repairs.html">
+                        <span class="sidebar-nav-icon"><i class="bi bi-tools"></i></span>
+                        <span class="sidebar-nav-text">Réparations</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" href="#">
+                        <span class="sidebar-nav-icon"><i class="bi bi-people"></i></span>
+                        <span class="sidebar-nav-text">Utilisateurs</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" href="#">
+                        <span class="sidebar-nav-icon"><i class="bi bi-gear"></i></span>
+                        <span class="sidebar-nav-text">Paramètres</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="sidebar-footer">
+            <div class="mb-2">
+                <span class="text-white">Bienvenue, Aziz miaoui</span>
+            </div>
+            <a href="#logout" class="btn btn-outline-light w-100">
+                <i class="bi bi-box-arrow-right"></i> Déconnexion
+            </a>
+        </div>
+    </div>
+    <button class="sidebar-toggler" type="button" id="sidebarToggle">
+        <i class="bi bi-list"></i>
+    </button>
+    <main class="main-content" id="main">
+        <header class="admin-header">
+            <h1>Gestion du Stock</h1>
+            <div class="user-profile">
+                <img src="../images/face.jpg" alt="User Avatar" class="avatar">
+                <span>Aziz miaoui</span>
+            </div>
+        </header>
+        <section class="management active" id="stock">
+            <h2>Stock</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nom de l'Article</th>
+                            <th>Catégorie</th>
+                            <th>Quantité</th>
+                            <th>Prix</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-body"></tbody>
+                </table>
+            </div>
+            <button class="btn add" onclick="addStockItem()">Ajouter un Article</button>
+            <button class="btn-export-pdf" onclick="openStockExportModal()">Exporter en PDF</button>
+            <div id="stock-form-container"></div>
+        </section>
+        <div id="stockExportOverlay" class="modal-overlay"></div>
+        <div id="stockExportBox" class="modal-box">
+            <div class="modal-header">
+                <h3>Exporter le Stock</h3>
+                <button class="close-btn" onclick="closeStockExportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p id="selectedCount">0 article(s) sélectionné(s)</p>
+                <div id="stockExportList"></div>
+                <span id="stockExportError" class="error-message"></span>
+            </div>
+            <div class="modal-footer">
+                <button onclick="exportStockToPDF()">Exporter</button>
+                <button onclick="closeStockExportModal()">Annuler</button>
+            </div>
+        </div>
+    </main>
+    <script defer src="../public/js/utile.js"></script>
+    <script defer src="../public/js/stock.js"></script>
+    <script defer src="../public/js/main.js"></script>
+</body>
+</html>

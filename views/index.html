@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green.tn - Admin Dashboard</title>
+    <link rel="stylesheet" href="../public/css/admin.css">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a class="sidebar-brand" href="index.html">
+                <img src="../images/logo.png" alt="Green.tn Admin">
+            </a>
+        </div>
+        <div class="sidebar-content">
+            <ul class="sidebar-nav">
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link active" href="index.html">
+                        <span class="sidebar-nav-icon"><i class="bi bi-speedometer2"></i></span>
+                        <span class="sidebar-nav-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" href="stock.html">
+                        <span class="sidebar-nav-icon"><i class="bi bi-box"></i></span>
+                        <span class="sidebar-nav-text">Stock</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" href="repairs.html">
+                        <span class="sidebar-nav-icon"><i class="bi bi-tools"></i></span>
+                        <span class="sidebar-nav-text">Réparations</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" href="#">
+                        <span class="sidebar-nav-icon"><i class="bi bi-people"></i></span>
+                        <span class="sidebar-nav-text">Utilisateurs</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a class="sidebar-nav-link" href="#">
+                        <span class="sidebar-nav-icon"><i class="bi bi-gear"></i></span>
+                        <span class="sidebar-nav-text">Paramètres</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="sidebar-footer">
+            <div class="mb-2">
+                <span class="text-white">Bienvenue, Aziz miaoui</span>
+            </div>
+            <a href="#logout" class="btn btn-outline-light w-100">
+                <i class="bi bi-box-arrow-right"></i> Déconnexion
+            </a>
+        </div>
+    </div>
+    <!-- Sidebar Toggle Button -->
+    <button class="sidebar-toggler" type="button" id="sidebarToggle">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main">
+        <!-- Header -->
+        <header class="admin-header">
+            <h1>Admin Dashboard</h1>
+            <div class="user-profile">
+                <img src="../images/face.jpg" alt="User Avatar" class="avatar">
+                <span>Aziz miaoui</span>
+            </div>
+        </header>
+
+        <!-- Dashboard Section -->
+        <section class="management active" id="dashboard">
+            <h2>Statistiques</h2>
+            <div class="chart-container">
+                <h3>Statistiques du Stock</h3>
+                <canvas id="stockStatsChart"></canvas>
+                <span id="stockStatsError" class="error-message"></span>
+            </div>
+            <div class="chart-container">
+                <h3>Statistiques des Réparations</h3>
+                <canvas id="repairsStatsChart"></canvas>
+                <p id="repairsTotal" class="no-data"></p>
+                <span id="repairsStatsError" class="error-message"></span>
+            </div>
+        </section>
+    </main>
+
+    <!-- Load JavaScript Files -->
+    <script defer src="../public/js/utils.js"></script>
+    <script defer src="../public/js/dashboard.js"></script>
+    <script defer src="../public/js/main.js"></script>
+</body>
+</html>
