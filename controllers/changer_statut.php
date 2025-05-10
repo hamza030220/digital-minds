@@ -69,22 +69,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if ($success) {
                     // Updated successfully
                     // Redirect path relative to the web root context
-                    $redirect_url = "../voir_reclamation.php?id=" . $reclamation_id . "&status_update=success";
+                    $redirect_url = "../views/voir_reclamation.php?id=" . $reclamation_id . "&status_update=success";
                 } else {
                     // execute() returned false (database error likely)
                     error_log("Database update failed for reclamation ID {$reclamation_id} with status '{$statut}'. PDO error info: " . implode(", ", $stmt->errorInfo()));
-                    $redirect_url = "../voir_reclamation.php?id=" . $reclamation_id . "&status_update=error_db";
+                    $redirect_url = "../views/voir_reclamation.php?id=" . $reclamation_id . "&status_update=error_db";
                 }
 
             } catch (PDOException $e) {
                 // Catch specific PDO exceptions during prepare/execute
                 error_log("PDOException in changer_statut.php for ID {$reclamation_id}: " . $e->getMessage());
-                $redirect_url = "../voir_reclamation.php?id=" . $reclamation_id . "&status_update=error_pdo";
+                $redirect_url = "../views/voir_reclamation.php?id=" . $reclamation_id . "&status_update=error_pdo";
             } catch (Exception $e) {
                  // Catch other exceptions (like connection failure)
                 error_log("General Exception in changer_statut.php for ID {$reclamation_id_raw}: " . $e->getMessage());
                 // Redirect using raw ID as validated one might not be available
-                 $redirect_url = "../voir_reclamation.php?id=" . $reclamation_id_raw . "&status_update=error_system";
+                 $redirect_url = "../views/voir_reclamation.php?id=" . $reclamation_id_raw . "&status_update=error_system";
             } finally {
                  // Close connection (optional, PDO usually handles this, but good practice for long scripts)
                  $stmt = null;
@@ -95,18 +95,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Input validation failed
             error_log("Invalid input for status update: ID='{$reclamation_id_raw}', Status='{$statut_raw}'");
             // Redirect using raw ID as validated one might not be available
-            $redirect_url = "../voir_reclamation.php?id=" . $reclamation_id_raw . "&status_update=error_input";
+            $redirect_url = "../views/voir_reclamation.php?id=" . $reclamation_id_raw . "&status_update=error_input";
         }
     } else {
         // Required POST fields missing
         error_log("Missing POST data in changer_statut.php request.");
         // Redirect using raw ID if available, otherwise to index
-        $redirect_url = $reclamation_id_raw ? "../voir_reclamation.php?id=" . $reclamation_id_raw . "&status_update=error_missing" : "../index.php?error=missing_data";
+        $redirect_url = $reclamation_id_raw ? "../views/voir_reclamation.php?id=" . $reclamation_id_raw . "&status_update=error_missing" : "../index.php?error=missing_data";
     }
 } else {
     // Request method was not POST
     error_log("Invalid request method used for changer_statut.php.");
-    $redirect_url = "../index.php?error=invalid_request"; // Redirect to a safe page
+    $redirect_url = "../views/index.php?error=invalid_request"; // Redirect to a safe page
 }
 
 // --- Final Redirect ---

@@ -1,104 +1,91 @@
 <?php
-// controllers/DetailController.php
+// controllers/AvisController.php
 
-// Set timezone to Tunisia (CET, UTC+1)
-date_default_timezone_set('Africa/Tunis');
-
-// Start session if not already started
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Include translation helper
+session_start();
+require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../translate.php';
 
-// Include the Model and Database
-require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../models/Reclamation.php';
-
-// Définir le chemin racine du projet
-define('ROOT_PATH', realpath(__DIR__ . '/..') . DIRECTORY_SEPARATOR);
-
-class DetailController {
-    private $reclamationModel;
+class AvisController {
+    private $db;
 
     public function __construct() {
         $database = new Database();
-        $this->reclamationModel = new Reclamation($database->getConnection());
+        $this->db = $database->getConnection();
     }
 
-    public function showDetail() {
-        // Initialisation des variables avant toute logique
-        $reclamation = [];
-        $reponses = [];
-        $errorMessage = null;
-        $total_reponses = 0;
-        $total_pages = 1;
-        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-        $reclamationId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        $pageTitle = t('reclamation_details') . ' - Green.tn';
-
-        // Authentication Check: Ensure user is logged in
-        if (!isset($_SESSION['user_id'])) {
-            header('Location: ' . ROOT_PATH . 'login.php?error=' . urlencode(t('error_session_required')));
-            exit;
+    public function addAvis() {
+        // Vérifier si l'utilisateur est connecté
+        if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) {
+            $_SESSION['flash_message'] = t('login_required');
+            header("Location: ../views/ajouter_avis.php");
+            exit();
         }
 
-        // Validate reclamation ID
-        if ($reclamationId <= 0) {
-            header('Location: ' . ROOT_PATH . 'views/liste_reclamations.php?error=' . urlencode(t('invalid_reclamation_id')));
-            exit;
+        // Vérifier si la requête est un POST
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: ../views/ajouter_avis.php");
+            exit();
         }
 
-        // Fetch data
-        try {
-            $user_id = $_SESSION['user_id'];
-            $reclamation = $this->reclamationModel->getParId($reclamationId);
-            error_log("Debug: Reclamation fetched for ID {$reclamationId}: " . print_r($reclamation, true));
-            if (!$reclamation || $reclamation['utilisateur_id'] != $user_id) {
-                header('Location: ' . ROOT_PATH . 'views/liste_reclamations.php?error=' . urlencode(t('reclamation_not_found')));
-                exit;
-            }
+        // Récupérer les données du formulaire
+        $titre = trim($_POST['titre'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $note = isset($_POST['note']) ? (int)$_POST['note'] : 0;
+        $user_id = $_SESSION['user_id'];
 
-            // Pagination for responses
-            $reponses_per_page = 3;
-            $offset = ($page - 1) * $reponses_per_page;
+        // Validation côté serveur
+        $errors = [];
 
-            $total_reponses = $this->reclamationModel->getTotalResponses($reclamationId);
-            $total_pages = ceil($total_reponses / $reponses_per_page);
-            $reponses = $this->reclamationModel->getResponses($reclamationId, $reponses_per_page, $offset);
-        } catch (PDOException $e) {
-            error_log("detail.php: Database error fetching reclamation ID {$reclamationId} or responses - " . $e->getMessage());
-            $errorMessage = t('error_database_reclamations');
-        } catch (Exception $e) {
-            error_log("detail.php: Unexpected error - " . $e->getMessage());
-            $errorMessage = t('error_unexpected_reclamations');
+        if (empty($titre)) {
+            $errors['titre'] = t('title_required');
+        } elseif (strlen($titre) < 5 || strlen($titre) > 100) {
+            $errors['titre'] = t('title_length');
         }
 
-        // Pass data to view
-        require_once __DIR__ . '/../views/detail.php';
+        if (empty($description)) {
+            $errors['description'] = t('description_required');
+        } elseif (strlen($description) < 10 || strlen($description) > 500) {
+            $errors['description'] = t('description_length');
+        }
+
+        if ($note < 1 || $note > 5) {
+            $errors['note'] = t('rating_required');
+        }
+
+        // Si des erreurs sont détectées, rediriger avec les données du formulaire
+        if (!empty($errors)) {
+            $_SESSION['form_data_flash'] = [
+                'titre' => $titre,
+                'description' => $description,
+                'note' => $note
+            ];
+            $_SESSION['flash_message'] = implode('<br>', array_values($errors));
+            $_SESSION['flash_message_type'] = 'error';
+            header("Location: ../views/ajouter_avis.php");
+            exit();
+        }
+
+        // Insérer l'avis dans la base de données
+        $query = "INSERT INTO avis (user_id, titre, description, note, date_creation) VALUES (:user_id, :titre, :description, :note, NOW())";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+        $stmt->bindParam(':titre', $titre, PDO::PARAM_STR);
+        $stmt->bindParam(':description', $description, PDO::PARAM_STR);
+        $stmt->bindParam(':note', $note, PDO::PARAM_INT);
+
+        if ($stmt->execute()) {
+            $_SESSION['flash_message'] = t('review_submitted');
+            $_SESSION['flash_message_type'] = 'success';
+        } else {
+            $_SESSION['flash_message'] = t('error_occurred');
+            $_SESSION['flash_message_type'] = 'error';
+        }
+
+        header("Location: ../views/ajouter_avis.php");
+        exit();
     }
 }
-// detail.php
-// Controller logic & view to display a single reclamation's details
 
-// Set timezone to Tunisia (CET, UTC+1)
-date_default_timezone_set('Africa/Tunis');
-
-// Start session if not already started
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Include translation helper
-require_once __DIR__ . '/../translate.php';
-
-// Authentication Check: Ensure user is logged in
-
-
-// --- View / Presentation Logic ---
-
-// --- Execution starts here ---
-$controller = new DetailController();
-$controller->showDetail();
-?>
+// Exécuter l'action
+$controller = new AvisController();
+$controller->addAvis();

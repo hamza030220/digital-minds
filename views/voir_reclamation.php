@@ -112,6 +112,10 @@ if ($reclamation_id) {
 // Determine the role safely
 $role = $_SESSION['user_role'] ?? 'utilisateur';
 
+// Configuration de l'API Gemini
+$api_key = "AIzaSyABlV8PDgpUhcUV9GLGD_w_s8dpQ6LAeHQ"; // Clé API fournie
+$api_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" . urlencode($api_key);
+
 // Set page title
 $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur - Green.tn';
 ?>
@@ -370,6 +374,23 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
 
         .formulaire-reponse button {
             margin-top: 10px;
+        }
+
+        .suggest-response-btn {
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: "Bauhaus 93", Arial, sans-serif;
+            transition: background-color 0.2s;
+            margin-top: 10px;
+        }
+
+        .suggest-response-btn:hover {
+            background-color: #2e7d32;
         }
 
         a {
@@ -649,6 +670,9 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
                     <textarea name="contenu" id="contenu" rows="4" placeholder="Votre réponse ici..."></textarea>
                     <div class="error-message" id="contenu-error"></div>
                     <input type="hidden" name="role" value="<?php echo htmlspecialchars($role); ?>">
+                    <?php if ($role === 'admin'): ?>
+                        <button type="button" class="suggest-response-btn" onclick="suggestResponse()">Suggérer une réponse</button>
+                    <?php endif; ?>
                     <button type="submit">Répondre</button>
                 </form>
             </section>
@@ -658,6 +682,81 @@ $pageTitle = $reclamation ? 'Détails de la réclamation - Green.tn' : 'Erreur -
             </p>
 
             <script>
+                // API Configuration
+                const apiUrl = '<?php echo $api_url; ?>';
+                const reclamationDescription = '<?php echo addslashes($reclamation['description']); ?>';
+
+                // Suggest Response using Gemini API
+                async function suggestResponse() {
+                    console.log('Suggesting response for description:', reclamationDescription);
+                    const prompt = `Suggest a professional and concise response to the following reclamation complaint: "${reclamationDescription}". The response should address the issue, propose a solution, and maintain a polite tone. Return a JSON object with a "response" field containing the suggested reply.`;
+
+                    const requestBody = {
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }]
+                    };
+
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(requestBody)
+                        });
+
+                        console.log('Fetch response status:', response.status);
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.error('Fetch error response:', errorText);
+                            throw new Error('Failed to fetch suggestion from Gemini API: ' + response.status + ' ' + errorText);
+                        }
+
+                        const data = await response.json();
+                        console.log('Gemini API raw response:', data);
+
+                        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+                            throw new Error('Invalid response structure from Gemini API');
+                        }
+
+                        const textResponse = data.candidates[0].content.parts[0].text;
+                        console.log('Gemini API text response:', textResponse);
+
+                        // Clean the response to extract valid JSON
+                        let jsonString = textResponse.trim();
+                        if (jsonString.startsWith('```json') && jsonString.endsWith('```')) {
+                            jsonString = jsonString.replace(/```json/, '').replace(/```/, '').trim();
+                        } else if (jsonString.startsWith('{') && jsonString.endsWith('}')) {
+                            // If it's already a raw JSON object, take it as is
+                        } else {
+                            throw new Error('Unexpected response format: ' + jsonString);
+                        }
+
+                        let parsedResponse;
+                        try {
+                            parsedResponse = JSON.parse(jsonString);
+                        } catch (e) {
+                            console.error('Error parsing Gemini response as JSON:', e, 'Raw response:', jsonString);
+                            throw new Error('Failed to parse Gemini response as JSON: ' + jsonString);
+                        }
+
+                        if (parsedResponse.response) {
+                            document.getElementById('contenu').value = parsedResponse.response;
+                            console.log('Set suggested response:', parsedResponse.response);
+                            // Dispatch input event to trigger validation
+                            const inputEvent = new Event('input');
+                            document.getElementById('contenu').dispatchEvent(inputEvent);
+                        } else {
+                            throw new Error('No "response" field in Gemini API response');
+                        }
+                    } catch (error) {
+                        console.error('Error in suggestResponse:', error);
+                        alert('Erreur lors de la suggestion de réponse : ' + error.message);
+                    }
+                }
+
+                // Form validation
                 document.getElementById('responseForm').addEventListener('submit', function(event) {
                     event.preventDefault();
                     let isValid = true;

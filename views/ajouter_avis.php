@@ -1,11 +1,41 @@
 <?php
-// views/ajouter_avis.php
+// ajouter_avis.php
 
-// Définir le chemin racine du projet (pour les includes et assets)
-define('ROOT_PATH', realpath(__DIR__ . '/..') . DIRECTORY_SEPARATOR);
+// Start session at the very beginning
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Définir le chemin racine du projet
+define('ROOT_PATH', realpath(__DIR__ . '/..'));
 
 // Include translation helper
-require_once ROOT_PATH . 'translate.php';
+require_once ROOT_PATH . '/translate.php';
+
+// --- Retrieve Flash Message and Form Data (if any) ---
+$message = '';
+$message_type = 'error'; // Default
+$form_data = []; // Default empty form data
+
+// Check for flash message from session
+if (isset($_SESSION['flash_message'])) {
+    $message = $_SESSION['flash_message'];
+    $message_type = $_SESSION['flash_message_type'] ?? 'error';
+    // Clear the flash message from session
+    unset($_SESSION['flash_message']);
+    unset($_SESSION['flash_message_type']);
+}
+
+// Check for form data from session (used on validation errors)
+if (isset($_SESSION['form_data_flash'])) {
+    $form_data = $_SESSION['form_data_flash'];
+    // Clear the saved form data
+    unset($_SESSION['form_data_flash']);
+}
+// --- End Flash Message/Data Retrieval ---
+
+// Check login status
+$isLoggedIn = isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 
 // Define page title
 $pageTitle = t('submit_review');
@@ -440,11 +470,11 @@ $pageTitle = t('submit_review');
                         <button type="submit" class="lang-toggle"><?php echo $_SESSION['lang'] === 'en' ? t('toggle_language') : t('toggle_language_en'); ?></button>
                     </form>
                 </li>
-                <?php if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])): ?>
-                    <li><a href="../controllers/logout.php" class="login"><?php echo t('logout'); ?></a></li>
+                <?php if ($isLoggedIn): ?>
+                    <li><a href="../logout.php" class="login"><?php echo t('logout'); ?></a></li>
                 <?php else: ?>
-                    <li><a href="../views/login.php" class="login"><?php echo t('login'); ?></a></li>
-                    <li><a href="../views/signup.php" class="signin"><?php echo t('signup'); ?></a></li>
+                    <li><a href="../login.php" class="login"><?php echo t('login'); ?></a></li>
+                    <li><a href="../signup.php" class="signin"><?php echo t('signup'); ?></a></li>
                 <?php endif; ?>
             </ul>
         </nav>
@@ -453,18 +483,21 @@ $pageTitle = t('submit_review');
     <main>
         <h2><?php echo htmlspecialchars($pageTitle); ?></h2>
         <div class="container">
-            <?php if (isset($message)): ?>
-                <div class="message <?php echo ($message_type === 'success') ? 'success' : 'error'; ?>">
-                    <?php echo htmlspecialchars($message); ?>
-                    <?php if ($message_type === 'success'): ?>
-                        <a href="../views/ajouter_avis.php"><?php echo t('submit_another_review'); ?></a>
-                    <?php elseif ($message === t('login_required')): ?>
-                        <a href="../views/login.php"><?php echo t('login'); ?></a>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
+            <?php
+            // Display feedback message if it exists
+            if (!empty($message)) {
+                $msg_class = ($message_type === 'success') ? 'success' : 'error';
+                echo "<div class='message " . $msg_class . "'>" . htmlspecialchars($message);
+                if ($message_type === 'success') {
+                    echo " <a href='../views/ajouter_avis.php'>" . t('submit_another_review') . "</a>";
+                } elseif ($message === t('login_required')) {
+                    echo " <a href='../login.php'>" . t('login') . "</a>.";
+                }
+                echo "</div>";
+            }
+            ?>
 
-            <?php if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id']) && !isset($message) || $message_type !== 'success'): ?>
+            <?php if ($isLoggedIn && $message_type !== 'success'): ?>
                 <form action="../controllers/AvisController.php" method="POST" id="avisForm" novalidate>
                     <label for="titre"><?php echo t('title'); ?>:</label>
                     <input type="text" id="titre" name="titre" value="<?php echo htmlspecialchars($form_data['titre'] ?? ''); ?>">
@@ -488,8 +521,8 @@ $pageTitle = t('submit_review');
 
                     <button type="submit"><?php echo t('submit_review'); ?></button>
                 </form>
-            <?php elseif (!isset($_SESSION['user_id']) || empty($_SESSION['user_id']) && !isset($message)): ?>
-                <p class="message error"><?php echo t('login_required'); ?> <a href="../views/login.php"><?php echo t('login'); ?></a></p>
+            <?php elseif (!$isLoggedIn && empty($message)): ?>
+                <p class="message error"><?php echo t('login_required'); ?> <a href="../login.php"><?php echo t('login'); ?></a>.</p>
             <?php endif; ?>
         </div>
     </main>

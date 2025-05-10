@@ -26,7 +26,7 @@ require_once __DIR__ . '/../config/database.php';
 // Validate reclamation ID
 $reclamationId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($reclamationId <= 0) {
-    header('Location: ../liste_reclamations.php?error=' . urlencode(t('invalid_reclamation_id')));
+    header('Location: ../views/liste_reclamations.php?error=' . urlencode(t('invalid_reclamation_id')));
     exit;
 }
 
@@ -43,7 +43,7 @@ try {
     $reclamation = $reclamationModel->getParId($reclamationId);
     // Verify the reclamation exists and belongs to the user
     if (!$reclamation || $reclamation['utilisateur_id'] != $user_id) {
-        header('Location: ../liste_reclamations.php?error=' . urlencode(t('reclamation_not_found')));
+        header('Location: ../views/liste_reclamations.php?error=' . urlencode(t('reclamation_not_found')));
         exit;
     }
 
@@ -540,7 +540,7 @@ try {
                             </div>
                         <?php endif; ?>
                     </div>
-                    <a href="../liste_reclamations.php" class="btn"><?php echo t('back_to_list'); ?></a>
+                    <a href="../views/liste_reclamations.php" class="btn"><?php echo t('back_to_list'); ?></a>
                 </div>
             <?php endif; ?>
         </div>
