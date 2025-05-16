@@ -1,14 +1,17 @@
 {
-    "name": "projet/greentn",
-    "description": "Projet de gestion de réinitialisation de mot de passe avec Twilio",
-    "license": "proprietary",
-    "require": {
-        "php": "^7.4 || ^8.0",
-        "twilio/sdk": "^8.5"
-    },
+    "name": "shroudd/projetweb",
     "autoload": {
         "psr-4": {
-            "App\\": "src/"
+            "Shroudd\\Projetweb\\": "src/"
         }
+    },
+    "authors": [
+        {
+            "name": "Ousema00",
+            "email": "ziadia.oussema@esprit.tn"
+        }
+    ],
+    "require": {
+        "phpmailer/phpmailer": "^6.10"
     }
 }

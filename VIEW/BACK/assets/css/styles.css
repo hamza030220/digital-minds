@@ -1,0 +1,213 @@
+/* Global Styles */
+:root {
+    --green-primary: #198754;
+    --green-secondary: #157347;
+    --green-light: #d1e7dd;
+}
+
+body {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Navbar Customization */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+/* Card Styles */
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+}
+
+.card-title {
+    color: var(--green-primary);
+    font-weight: 600;
+}
+
+/* Dashboard Stats */
+.card-text {
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+/* Action Buttons */
+.btn-primary {
+    background-color: var(--green-primary);
+    border-color: var(--green-primary);
+}
+
+.btn-primary:hover {
+    background-color: var(--green-secondary);
+    border-color: var(--green-secondary);
+}
+
+/* List Group Items */
+.list-group-item {
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease-in-out;
+}
+
+.list-group-item:hover {
+    border-left-color: var(--green-primary);
+    background-color: var(--green-light);
+}
+
+.list-group-item i {
+    margin-right: 10px;
+    color: var(--green-primary);
+}
+
+/* Login Page Specific */
+.login-page {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+.login-card {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* Form Styles */
+.form-control:focus {
+    border-color: var(--green-primary);
+    box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+}
+
+/* Table Styles */
+.table thead th {
+    background-color: var(--green-light);
+    border-bottom: 2px solid var(--green-primary);
+}
+
+.table tbody tr:hover {
+    background-color: rgba(209, 231, 221, 0.3);
+}
+
+/* Alert Customization */
+.alert {
+    border-radius: 0.25rem;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
+}
+
+/* Status Indicators */
+.status-active {
+    color: var(--green-primary);
+}
+
+.status-inactive {
+    color: #dc3545;
+}
+
+/* Animation pour les messages de succès/erreur */
+.alert {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Style pour les champs de formulaire valides/invalides */
+.is-valid {
+    border-color: #198754 !important;
+    padding-right: calc(1.5em + 0.75rem) !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right calc(0.375em + 0.1875rem) center !important;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem) !important;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+    padding-right: calc(1.5em + 0.75rem) !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right calc(0.375em + 0.1875rem) center !important;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem) !important;
+}
+
+/* Animation pour les transitions de formulaire */
+.form-control {
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* Style pour le tableau des stations */
+.table {
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.table thead th {
+    background-color: #198754;
+    color: white;
+    border-color: #198754;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+/* Style pour les boutons d'action */
+.btn-sm {
+    transition: transform 0.2s;
+}
+
+.btn-sm:hover {
+    transform: scale(1.1);
+}
+
+/* Style pour la pagination */
+.pagination .page-item.active .page-link {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.pagination .page-link {
+    color: #198754;
+}
+
+/* Style pour les cards */
+.card {
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    border: none;
+}
+
+.card-header {
+    border-bottom: none;
+}

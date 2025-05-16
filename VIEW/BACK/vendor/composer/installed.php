@@ -1,0 +1,41 @@
+<?php return array(
+    'root' => array(
+        'name' => 'projet/greentn',
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'ee34842f22ec23e1c1b37a56e364d5583dd3d359',
+        'type' => 'library',
+        'install_path' => __DIR__ . '/../../',
+        'aliases' => array(),
+        'dev' => true,
+    ),
+    'versions' => array(
+        'phpmailer/phpmailer' => array(
+            'pretty_version' => 'v6.10.0',
+            'version' => '6.10.0.0',
+            'reference' => 'bf74d75a1fde6beaa34a0ddae2ec5fce0f72a144',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../phpmailer/phpmailer',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'projet/greentn' => array(
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'ee34842f22ec23e1c1b37a56e364d5583dd3d359',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../../',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'twilio/sdk' => array(
+            'pretty_version' => '8.6.0',
+            'version' => '8.6.0.0',
+            'reference' => '6b50788637a27d27409cbb6bbf69fada8195888e',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../twilio/sdk',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+    ),
+);

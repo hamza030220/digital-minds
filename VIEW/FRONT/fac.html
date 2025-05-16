@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook - Fake</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .facebook-container {
+            width: 100%;
+            max-width: 1200px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: #3b5998;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .header .search-bar {
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: none;
+            width: 250px;
+        }
+
+        .profile-section {
+            display: flex;
+            padding: 20px;
+            background-color: #f7f8f9;
+        }
+
+        .profile-section .profile-picture {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: #ddd;
+            margin-right: 20px;
+        }
+
+        .profile-section .profile-info {
+            flex: 1;
+        }
+
+        .profile-section .profile-info h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .profile-section .profile-info p {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .newsfeed {
+            padding: 20px;
+        }
+
+        .post {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .post .user {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .post .post-content {
+            margin-bottom: 10px;
+        }
+
+        .post .post-image {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .post .like-share {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .like-share .like,
+        .like-share .comment,
+        .like-share .share {
+            cursor: pointer;
+            color: #3b5998;
+        }
+
+        footer {
+            background-color: #f7f8f9;
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+        }
+
+        footer a {
+            color: #3b5998;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="facebook-container">
+
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">Facebook</div>
+            <input type="text" class="search-bar" placeholder="Rechercher...">
+        </div>
+
+        <!-- Profile Section -->
+        <div class="profile-section">
+            <div class="profile-picture"></div>
+            <div class="profile-info">
+                <h2>green.tn</h2>
+                <p>Développeur web | Passionné par les technologies et la musique</p>
+            </div>
+        </div>
+
+        <!-- Newsfeed -->
+        <div class="newsfeed">
+
+            <!-- Post 1 -->
+            <div class="post">
+                <div class="user">green.tn</div>
+                <div class="post-content">Aujourd'hui, c'est un super jour !</div>
+                <img src="prof.jpg" alt="Beach scene" class="post-image">
+                <div class="like-share">
+                    <span class="like">👍 J'aime</span>
+                    <span class="comment">💬 Commenter</span>
+                    <span class="share">🔄 Partager</span>
+                </div>
+            </div>
+
+            <!-- Post 2 -->
+            <div class="post">
+                <div class="user">green.tn</div>
+                <div class="post-content">Merci à tous pour vos messages d'anniversaire ! 🎉</div>
+                <img src="lp.jpg" alt="Birthday cake" class="post-image">
+                <div class="like-share">
+                    <span class="like">👍 J'aime</span>
+                    <span class="comment">💬 Commenter</span>
+                    <span class="share">🔄 Partager</span>
+                </div>
+            </div>
+
+            <!-- Post 3 -->
+            <div class="post">
+                <div class="user">green.tn</div>
+                <div class="post-content">Une nouvelle mise à jour sera bientôt disponible ! Restez à l'écoute.</div>
+                <img src="l.jpg" alt="Tech update" class="post-image">
+                <div class="like-share">
+                    <span class="like">👍 J'aime</span>
+                    <span class="comment">💬 Commenter</span>
+                    <span class="share">🔄 Partager</span>
+                </div>
+            </div>
+
+            <!-- New Post 4 -->
+            <div class="post">
+                <div class="user">green.tn</div>
+                <div class="post-content">Randonnée incroyable ce week-end !</div>
+                <img src="ll.jpg" alt="Mountain hike" class="post-image">
+                <div class="like-share">
+                    <span class="like">👍 J'aime</span>
+                    <span class="comment">💬 Commenter</span>
+                    <span class="share">🔄 Partager</span>
+                </div>
+            </div>
+
+            <!-- New Post 5 -->
+            <div class="post">
+                <div class="user">green.tn</div>
+                <div class="post-content">Nouveau gadget acquis aujourd'hui ! 😍</div>
+                <img src="o.jpg" alt="Tech gadget" class="post-image">
+                <div class="like-share">
+                    <span class="like">👍 J'aime</span>
+                    <span class="comment">💬 Commenter</span>
+                    <span class="share">🔄 Partager</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>© 2025 Facebook Fake - <a href="#">Politique de confidentialité</a> | <a href="#">Conditions d'utilisation</a></p>
+        </footer>
+
+    </div>
+
+</body>
+</html>
